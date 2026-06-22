@@ -97,36 +97,31 @@ const STEP_ICONS = [<IcoTruck />, <IcoPin />, <IcoFlag />, <IcoDoc />];
 
 /* ── Logo SVG (inline, transparent) ── */
 const Logo = ({ size = 56 }) => (
-  <svg viewBox="0 0 500 540" width={size} height={Math.round(size * 1.08)} xmlns="http://www.w3.org/2000/svg" aria-label="PT Alyssa Auto Logistik">
+  <svg viewBox="0 0 500 520" width={size} height={Math.round(size * 1.04)} xmlns="http://www.w3.org/2000/svg" aria-label="PT Alyssa Auto Logistik">
     <defs>
-      <radialGradient id="ord-cg" cx="40%" cy="22%" r="78%" gradientUnits="objectBoundingBox">
-        <stop offset="0%"   stopColor="#1EC8EE"/>
-        <stop offset="42%"  stopColor="#1880CC"/>
-        <stop offset="78%"  stopColor="#1040A8"/>
-        <stop offset="100%" stopColor="#0A1B6E"/>
-      </radialGradient>
-      <linearGradient id="ord-ag" x1="0%" y1="0%" x2="100%" y2="0%">
-        <stop offset="0%"   stopColor="#0A1B6E"/>
-        <stop offset="100%" stopColor="#112BB0"/>
+      <linearGradient id="ord-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stopColor="#12D2EE"/>
+        <stop offset="45%"  stopColor="#4A8AE0"/>
+        <stop offset="100%" stopColor="#8038C8"/>
       </linearGradient>
-      <path id="ord-arc" d="M 70,410 A 186,186 0 0,0 430,410"/>
-      <clipPath id="ord-clip">
-        <circle cx="250" cy="216" r="184"/>
-      </clipPath>
+      <linearGradient id="ord-tg" x1="44" y1="0" x2="456" y2="0" gradientUnits="userSpaceOnUse">
+        <stop offset="0%"   stopColor="#12D2EE"/>
+        <stop offset="100%" stopColor="#8038C8"/>
+      </linearGradient>
+      <clipPath id="ord-clip"><circle cx="250" cy="210" r="197"/></clipPath>
+      <path id="ord-arc" d="M 44,318 A 242,242 0 0,1 456,318"/>
     </defs>
-    <circle cx="250" cy="216" r="184" fill="url(#ord-cg)"/>
+    <circle cx="250" cy="210" r="200" fill="url(#ord-bg)"/>
     <g clipPath="url(#ord-clip)">
-      <path d="M 60,298 Q 150,278 250,282 Q 350,278 440,298 L 440,340 Q 350,320 250,324 Q 150,320 60,340 Z" fill="#0A1B6E" opacity="0.85"/>
-      <rect x="247.5" y="58" width="5" height="228" fill="white" rx="2"/>
-      <path d="M 250,62 C 220,100 200,165 208,280 L 250,280 Z" fill="white"/>
-      <path d="M 250,62 C 280,100 300,165 292,280 L 250,280 Z" fill="white"/>
-      <path d="M 247,148 C 205,165 148,190 115,255 L 205,268 Z" fill="white" opacity="0.92"/>
-      <path d="M 253,148 C 295,160 328,178 344,220 L 292,258 Z" fill="white" opacity="0.88"/>
-      <path d="M 175,282 Q 250,270 325,282 L 315,304 Q 250,294 185,304 Z" fill="#08175A" opacity="0.9"/>
+      <path d="M250,62 Q222,138 140,290 L250,280 Z" fill="white"/>
+      <path d="M250,62 Q278,138 360,290 L250,280 Z" fill="white"/>
+      <rect x="247" y="62" width="6" height="220" rx="3" fill="white" opacity="0.35"/>
+      <path d="M128,296 Q250,340 372,296 L360,317 Q250,358 140,317 Z" fill="white"/>
+      <path d="M68,334 Q165,316 250,334 Q335,352 432,334" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round"/>
+      <path d="M82,358 Q176,340 260,358 Q344,376 418,358" stroke="white" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
+      <path d="M98,380 Q190,363 272,380 Q354,397 410,380" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.65"/>
     </g>
-    <path d="M 112,365 Q 195,332 295,340 Q 360,344 412,368 L 420,354 Q 365,326 292,322 Q 185,314 98,352 Z" fill="url(#ord-ag)"/>
-    <path d="M 412,368 L 428,354 L 440,371 L 424,383 Z" fill="#0A1B6E"/>
-    <text fontFamily="'Arial Black','Arial','Helvetica Neue',sans-serif" fontWeight="900" fontSize="28.5" fill="#0A1B6E" letterSpacing="1.8">
+    <text fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="700" fontSize="27" letterSpacing="2.5" fill="url(#ord-tg)">
       <textPath href="#ord-arc" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
     </text>
   </svg>

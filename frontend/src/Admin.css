@@ -54,6 +54,52 @@
   --font-mono:    "SF Mono", "SFMono-Regular", ui-monospace, "Courier New", monospace;
 }
 
+/* ── Light mode overrides ── */
+[data-theme="light"] .adm-root,
+[data-theme="light"] .adm-pin-wrap {
+  --bg:           #F4F6FA;
+  --bg-2:         #FFFFFF;
+  --bg-3:         #EBF0F7;
+  --surface:      #FFFFFF;
+  --surface-2:    #EFF4FB;
+  --border:       #DDE4EF;
+  --border-light: #C4D0E2;
+  --text:         #0D1623;
+  --text-2:       #1E2D45;
+  --text-mute:    #5A6E88;
+  --text-dim:     #8A9EB8;
+  --gold-bg:      #FEF9E8;
+  --gold-border:  #F0C840;
+  --green-bg:     #EDF9F2;
+  --blue-bg:      #EFF6FF;
+  --red-bg:       #FEF2F2;
+  --purple-bg:    #F5F3FF;
+}
+[data-theme="light"] .adm-topbar {
+  background: rgba(244,246,250,0.94);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .adm-filters {
+  background: var(--bg);
+  border-bottom-color: var(--border);
+}
+[data-theme="light"] .adm-card-actions {
+  background: var(--bg-3);
+}
+[data-theme="light"] .adm-modal-head {
+  background: var(--bg-3);
+}
+[data-theme="light"] .adm-date {
+  color-scheme: light;
+}
+[data-theme="light"] .adm-status-sel option {
+  background: #fff;
+  color: #0D1623;
+}
+[data-theme="light"] .adm-toast {
+  background: #fff;
+}
+
 /* ── Root ── */
 .adm-root {
   min-height: 100vh;

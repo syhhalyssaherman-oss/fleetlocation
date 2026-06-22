@@ -186,7 +186,7 @@ export default function Homepage() {
           <nav className="hp-nav" aria-label="Main navigation">
             <a href="#fitur" className="hp-nav-a">Fitur</a>
             <a href="#cara-kerja" className="hp-nav-a">Cara Kerja</a>
-            <a href="/tracking" className="hp-nav-a">Tracking</a>
+            <a href="#lacak-resi" className="hp-nav-a">Tracking</a>
           </nav>
 
           <div className="hp-hdr-right">
@@ -248,7 +248,7 @@ export default function Homepage() {
         </section>
 
         {/* ══ TRACK BAR ═══════════════════════════════════ */}
-        <section className="hp-track">
+        <section className="hp-track" id="lacak-resi">
           <div className="hp-w">
             <div className="hp-track-card">
               <span className="hp-track-label">
@@ -401,7 +401,7 @@ export default function Homepage() {
               <div className="hp-foot-col">
                 <div className="hp-foot-col-hd">Layanan</div>
                 <a href="/order">Kirim Kendaraan</a>
-                <a href="/tracking">Lacak Resi</a>
+                <a href="#lacak-resi">Lacak Resi</a>
               </div>
               <div className="hp-foot-col">
                 <div className="hp-foot-col-hd">Dukungan</div>

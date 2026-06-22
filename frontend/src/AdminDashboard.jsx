@@ -29,52 +29,36 @@ function toggleTheme() {
   try { localStorage.setItem("aal-theme", isDark ? "light" : "dark"); } catch (_) {}
 }
 
-/* ── Company logo (sailboat, same as Order/Tracking pages) ── */
+/* ── Company logo ── */
 function Logo({ size = 100 }) {
-  const h = Math.round(size * 1.08);
+  const h = Math.round(size * 1.04);
   return (
-    <svg width={size} height={h} viewBox="0 0 500 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={h} viewBox="0 0 500 520" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <radialGradient id="aal-cg-a" cx="50%" cy="50%" r="50%">
-          <stop offset="0%"   stopColor="#1EC8EE"/>
-          <stop offset="100%" stopColor="#0A1B6E"/>
-        </radialGradient>
-        <linearGradient id="aal-ag-a" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%"   stopColor="#1EC8EE"/>
-          <stop offset="100%" stopColor="#0A1B6E"/>
+        <linearGradient id="adm-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#12D2EE"/>
+          <stop offset="45%" stopColor="#4A8AE0"/>
+          <stop offset="100%" stopColor="#8038C8"/>
         </linearGradient>
-        <clipPath id="aal-clip-a">
-          <circle cx="250" cy="235" r="200"/>
-        </clipPath>
-        <path id="aal-arc-a" d="M 60,235 A 190,190 0 0,1 440,235" fill="none"/>
+        <linearGradient id="adm-tg" x1="44" y1="0" x2="456" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#12D2EE"/>
+          <stop offset="100%" stopColor="#8038C8"/>
+        </linearGradient>
+        <clipPath id="adm-clip"><circle cx="250" cy="210" r="197"/></clipPath>
+        <path id="adm-arc" d="M 44,318 A 242,242 0 0,1 456,318"/>
       </defs>
-      {/* Circle border */}
-      <circle cx="250" cy="235" r="210" fill="url(#aal-cg-a)" opacity="0.15"/>
-      <circle cx="250" cy="235" r="200" fill="none" stroke="url(#aal-cg-a)" strokeWidth="6"/>
-      {/* Sailboat clipped to circle */}
-      <g clipPath="url(#aal-clip-a)">
-        {/* Water */}
-        <ellipse cx="250" cy="390" rx="200" ry="28" fill="#0A1B6E" opacity="0.35"/>
-        {/* Hull */}
-        <path d="M140,360 Q250,410 360,360 L340,385 Q250,425 160,385 Z" fill="#0A1B6E"/>
-        {/* Mast */}
-        <rect x="246" y="170" width="8" height="195" rx="4" fill="#D4A847"/>
-        {/* Main sail */}
-        <path d="M254,175 L380,280 L254,330 Z" fill="white" opacity="0.92"/>
-        {/* Fore sail */}
-        <path d="M246,195 L128,295 L246,325 Z" fill="#E0F0FF" opacity="0.82"/>
-        {/* Flag */}
-        <path d="M254,170 L298,152 L254,182 Z" fill="#DC2626"/>
-        {/* Arrow swoosh */}
-        <path d="M180,355 Q250,340 320,355" stroke="url(#aal-ag-a)" strokeWidth="5" fill="none" strokeLinecap="round"/>
+      <circle cx="250" cy="210" r="200" fill="url(#adm-bg)"/>
+      <g clipPath="url(#adm-clip)">
+        <path d="M250,62 Q222,138 140,290 L250,280 Z" fill="white"/>
+        <path d="M250,62 Q278,138 360,290 L250,280 Z" fill="white"/>
+        <rect x="247" y="62" width="6" height="220" rx="3" fill="white" opacity="0.35"/>
+        <path d="M128,296 Q250,340 372,296 L360,317 Q250,358 140,317 Z" fill="white"/>
+        <path d="M68,334 Q165,316 250,334 Q335,352 432,334" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round"/>
+        <path d="M82,358 Q176,340 260,358 Q344,376 418,358" stroke="white" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
+        <path d="M98,380 Q190,363 272,380 Q354,397 410,380" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.65"/>
       </g>
-      {/* Curved company name */}
-      <text fontFamily="'Inter','Helvetica Neue',sans-serif" fontSize="26" fontWeight="800" letterSpacing="2" fill="url(#aal-cg-a)">
-        <textPath href="#aal-arc-a" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
-      </text>
-      {/* Bottom tagline */}
-      <text x="250" y="490" textAnchor="middle" fontFamily="'Inter','Helvetica Neue',sans-serif" fontSize="18" fontWeight="600" letterSpacing="4" fill="#1EC8EE" opacity="0.85">
-        FAST · SAFE · RELIABLE
+      <text fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="700" fontSize="27" letterSpacing="2.5" fill="url(#adm-tg)">
+        <textPath href="#adm-arc" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
       </text>
     </svg>
   );
