@@ -229,9 +229,11 @@
 }
 .trk-tile-val {
   font-family: "JetBrains Mono", monospace;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 800;
   color: #fff;
+  word-break: break-word;
+  line-height: 1.1;
 }
 .trk-tile-ok .trk-tile-val { color: var(--green); }
 .trk-tile-lbl {

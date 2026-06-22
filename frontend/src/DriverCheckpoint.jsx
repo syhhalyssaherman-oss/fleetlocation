@@ -722,7 +722,7 @@ export default function DriverCheckpoint() {
 
       <footer className="drv-footer">
         PT Alyssa Auto Logistik · 0818 631 135<br/>
-        <span style={{ opacity: 0.55 }}>v2.0 Driver Checkpoint</span>
+        <span style={{ opacity: 0.55 }}>v2.2 Driver Checkpoint</span>
       </footer>
 
       {/* SOP MODAL */}
