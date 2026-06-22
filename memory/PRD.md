@@ -1,7 +1,7 @@
-# PRD — Alyssa Driver Checkpoint (v2.6b)
+# PRD — Alyssa Driver Checkpoint (v2.6c)
 
 ## Current Status
-**v2.6b SHIPPED & STABLE.** 93/93 backend pytest pass, frontend 100% verified across all 4 routes.
+**v2.6c SHIPPED & STABLE.** 106/106 backend pytest pass, frontend 100% verified.
 
 ## Tech Stack
 - React + Tailwind (custom theme Navy `#0A1628` + Gold `#D4A847`)
@@ -17,6 +17,11 @@
 ```
 
 ## Feature Matrix
+
+### v2.6c (NEW)
+- **QR Verifikasi BASTK**: scan-able QR (level=H, AAL logo center) pointing to `/?track=<trip_id>`. Metadata box dengan No. BASTK + Trip ID + No. Polisi + URL. Anti-fake corner accents.
+- **`POST /api/orders/{id}/convert`**: idempotent order → trip bridge. Pre-fills route/nopol/vehicle/customer_data + sets `order.status=DISPATCHED`.
+- **Real Odoo XML-RPC sync**: `_odoo_sync_order` best-effort `res.partner` + `sale.order` create. Env-gated, no-op when unconfigured, fire-and-forget.
 
 ### v2.6b (NEW)
 - **CustomerOrderForm**: 4-step wizard (Kendaraan → Asal → Tujuan → Konfirmasi). All form fields with data-testid. Premium Navy+Gold stepper, gold-active step indicator, sticky bottom-nav. Success screen with order_id chip + "Buat Pesanan Lagi".
@@ -83,8 +88,8 @@
 ```
 
 ## Testing Status (Feb-2026)
-- **Backend**: **93/93 pytest pass** (49 base + 10 v2.5 + 14 v2.6a + 19 v2.6b + 1 seed self-heal).
-- **Frontend**: 100% — wizard end-to-end, BASTK lifecycle, regression on bastk/track.
+- **Backend**: **106/106 pytest pass** (49 base + 10 v2.5 + 14 v2.6a + 19 v2.6b + 13 v2.6c + 1 seed self-heal).
+- **Frontend**: 100% — wizard E2E, BASTK QR + PDF, convert idempotent, regression clean.
 - **Mocked APIs**: Xendit (legalitas pending), Odoo XML-RPC (env-gated, real SDK ready when credentials filled), notify_odoo webhook (no-op when ODOO_WEBHOOK_URL empty).
 
 ## Env (backend/.env)
@@ -111,10 +116,11 @@ File `/app/INTEGRATION_PO_ADMIN_PHP.md` lengkap dengan snippet untuk:
 - Order Form: `/?order=1` (fresh form, public)
 
 ## Roadmap (Backlog)
-- **P1** Convert order → trip endpoint (admin one-click: `POST /api/orders/{order_id}/convert`).
-- **P1** Real Odoo XML-RPC wiring (call `sale.order/res.partner` create on order.created).
-- **P2** Real Xendit (legalitas done).
-- **P2** "Clear all marks" + sketch zoom/pan in BASTK editor.
-- **P2** Admin dashboard lokal untuk lihat semua orders + assign driver.
-- **P3** BASTK WhatsApp/email share otomatis ke pelanggan post-handover.
-- **P3** Multi-language (EN/ID toggle).
+- **P1 ✅ DONE (v2.6c)**: Convert order → trip endpoint, Odoo XML-RPC scaffold.
+- **P2** Real Xendit (legalitas done) — drop-in via `INTEGRATION_PO_ADMIN_PHP.md` §5.
+- **P2** "Clear all marks" + sketch zoom/pan in BASTK editor (UX polish).
+- **P2** Admin dashboard lokal: list orders + assign driver button calls `/convert`.
+- **P3** BASTK auto-share via WhatsApp/email post-handover.
+- **P3** Real Odoo product/uom mapping (currently sale.order created without order lines).
+- **P3** Multi-language toggle (EN/ID).
+- **P3** Upgrade vehicle sketches to high-detail premium illustrations (referensi image dari user).

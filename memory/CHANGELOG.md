@@ -1,5 +1,30 @@
 # CHANGELOG — Alyssa Driver Checkpoint
 
+## [v2.6c] — Feb 2026
+### Added
+- **QR Verifikasi panel** in BASTK print area (`BASTKPage.jsx` + `BASTK.css`):
+  - QR code SVG via `qrcode.react@4.2.0` with center logo (AAL bendera) + level=H error correction.
+  - Encodes `${origin}/?track=<trip_id>` — scan → langsung halaman tracking real-time pelanggan.
+  - Metadata box: No. BASTK (`BASTK/YYYYMM/XXXXXX`), Trip ID, No. Polisi, Tanggal Cetak, Verifikasi URL.
+  - Anti-fake corner accents (gold L-brackets) + italic verification note.
+- **`POST /api/orders/{order_id}/convert`** — bridge order → trip (idempotent):
+  - Creates trip with `trip_id` (default `TRIP-<order_id>`) pre-filled from order (route, nopol, vehicle_type, customer_data).
+  - Sets `order.status=DISPATCHED` + `order.trip_id`.
+  - Adds `trip.source_order_id` backlink.
+  - 409 collision check when trip_id already used.
+  - 404 if order not found.
+- **Real Odoo XML-RPC sync** (`_odoo_sync_order` in server.py):
+  - Best-effort fire-and-forget after `/convert`.
+  - When `ODOO_URL/DB/USER/KEY` env all set → creates `res.partner` + `sale.order` in Odoo.
+  - When empty → graceful skip (logs `[odoo:sync_order:skip]`), never raises.
+  - Order doc gets `odoo: {partner_id, sale_order_id, ts}` field on success.
+
+### Tests
+- New `backend/tests/test_orders_v26c_convert.py` — 13 tests.
+- Full suite **106/106 pass**.
+
+---
+
 ## [v2.6b] — Feb 2026
 ### Added
 - `CustomerOrderForm.jsx` — 4-step wizard at `/?order=1` (Kendaraan → Asal → Tujuan → Konfirmasi).

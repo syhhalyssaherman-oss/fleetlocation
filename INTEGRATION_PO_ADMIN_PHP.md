@@ -1,4 +1,4 @@
-# PO Admin PHP — Integration Snippets (v2.6b)
+# PO Admin PHP — Integration Snippets (v2.6c)
 
 Snippet siap copy-paste ke `po-admin.php` lu (existing). Ganti `REACT_APP_URL` dengan URL React app (PREVIEW atau PRODUCTION).
 
@@ -222,4 +222,67 @@ Cek koneksi: `GET /api/odoo/ping` (return enabled+server_version saat env terisi
 ---
 
 ## Catatan Stabilitas
-Semua endpoint baru bersifat **additive**. Tidak ada schema breaking. Existing PO Admin PHP flow tetap berfungsi tanpa modifikasi sampai poin 5. Poin 6 & 7 opsional.
+Semua endpoint baru bersifat **additive**. Tidak ada schema breaking. Existing PO Admin PHP flow tetap berfungsi tanpa modifikasi sampai poin 5. Poin 6, 7 & 8 opsional.
+
+---
+
+## 8. (v2.6c) — Convert Order → Trip + Real Odoo XML-RPC
+
+### One-click conversion: order pelanggan → trip driver
+Setelah pelanggan submit form di `/?order=1`, admin bisa konversi jadi trip aktif (driver bisa langsung mulai checkpoint, customer langsung dapat link tracking).
+
+```js
+async function convertOrderToTrip(orderId, opts = {}) {
+  // opts boleh berisi: trip_id, driver_id, uj, t1, t2, t3, bonus_daily, bonus_kerajinan
+  const r = await fetch(`${API_BASE}/api/orders/${orderId}/convert`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(opts || {}),
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json();
+  // → { order_id, trip_id, status:"DISPATCHED", trip:{...}, already_converted:false }
+}
+
+// Contoh tombol di PO Admin "Konversi Pesanan"
+async function onClickConvert(orderId) {
+  const trip_id = prompt("Trip ID (kosongkan untuk auto-generate)") || undefined;
+  const driver_id = prompt("Driver ID (opsional)") || undefined;
+  const uj = parseInt(prompt("Uang Jalan (Rp)") || "0", 10);
+  try {
+    const res = await convertOrderToTrip(orderId, { trip_id, driver_id, uj });
+    alert(`Berhasil! Trip: ${res.trip_id}\nLink driver: /?trip=${res.trip_id}\nLink customer: /?track=${res.trip_id}`);
+  } catch (e) { alert("Gagal: " + e.message); }
+}
+```
+
+### Sifat penting:
+- **Idempotent**: kalau order sudah dikonversi sebelumnya, re-call return trip yang sama (`already_converted: true`). Aman buat di-klik dua kali.
+- **Pre-filled**: trip baru otomatis berisi route (asal→tujuan), nopol, vehicle_type, no_rangka, customer_data dari order. Driver tinggal mulai cek poin foto wajib.
+- **Backlink**: `trip.source_order_id` = order_id, untuk audit.
+- **Status update**: order otomatis `status: NEW → DISPATCHED`, `order.trip_id` ter-set.
+
+### Real Odoo XML-RPC (env-gated)
+
+Saat user isi credentials di `backend/.env`, fungsi `_odoo_sync_order` akan auto-fire setelah convert:
+- Cari `res.partner` by name; create kalau tidak ada (name+phone+email+customer_rank=1).
+- Create `sale.order` dengan: `partner_id`, `origin=order_id`, `client_order_ref=trip_id`, `note` lengkap (route, vehicle, pickup, catatan).
+- Pada sukses, MongoDB `orders.{order_id}.odoo = {partner_id, sale_order_id, ts}`.
+
+```bash
+# backend/.env (saat ready)
+ODOO_URL=https://odoo.alyssa.co.id
+ODOO_DB=alyssa_prod
+ODOO_USER=api@alyssa.co.id
+ODOO_KEY=xxxxxxxxxxxxxxxxxxxxxxx   # dari Settings → Users → API Keys
+
+# Verifikasi koneksi:
+curl https://your-app.example.com/api/odoo/ping
+# expected (configured): {"enabled":true,"server_version":{...},"db":"...","user":"..."}
+# expected (empty):       {"enabled":false,"reason":"missing ODOO_URL/DB/USER/KEY env vars"}
+```
+
+Belum diset? Tidak masalah — `_odoo_sync_order` skip dengan log `[odoo:sync_order:skip]` dan tidak pernah crash. Workflow tetap jalan (webhook `notify_odoo` masih fire kalau `ODOO_WEBHOOK_URL` di-set).
+
+### QR Verifikasi BASTK (v2.6c)
+Setiap PDF BASTK sekarang membawa QR code yang scan langsung ke `/?track=<trip_id>` — bisa dipakai pelanggan untuk verifikasi keaslian dokumen + buka real-time tracking dari kertas cetakan. No integration kerja tambahan di PHP — tinggal cetak.
