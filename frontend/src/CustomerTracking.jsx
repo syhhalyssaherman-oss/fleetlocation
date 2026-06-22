@@ -17,6 +17,10 @@ function stageIcon(s) {
 
 function readTrackId() {
   const u = new URL(window.location.href);
+  // New: /track/{trip_id}
+  const seg = u.pathname.match(/^\/track\/(.+)/);
+  if (seg) return decodeURIComponent(seg[1]);
+  // Legacy: ?track=
   return u.searchParams.get("track") || "";
 }
 
@@ -37,7 +41,7 @@ export default function CustomerTracking() {
 
   useEffect(() => {
     if (!tripId) {
-      setError("Link tidak valid. Hubungi admin AAL.");
+      setError("not_found");
       setLoading(false);
       return;
     }
@@ -47,7 +51,7 @@ export default function CustomerTracking() {
         const r = await axios.get(`${API}/public/trips/${tripId}`);
         if (!cancelled) setData(r.data);
       } catch (e) {
-        if (!cancelled) setError("Data perjalanan tidak ditemukan.");
+        if (!cancelled) setError("not_found");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -58,8 +62,33 @@ export default function CustomerTracking() {
   }, [tripId]);
 
   if (loading) return <div className="drv-loading">Memuat status pengiriman…</div>;
-  if (error)   return <div className="drv-error" data-testid="trk-error">{error}</div>;
-  if (!data)   return <div className="drv-error">Data tidak ditemukan.</div>;
+  if (error) return (
+    <div className="drv-root">
+      <header className="drv-header">
+        <div className="drv-brand">
+          <div className="drv-brand-mark">AAL</div>
+          <div>
+            <div className="drv-brand-name">Tracking Pengiriman</div>
+            <div className="drv-brand-sub">Alyssa Auto Logistik</div>
+          </div>
+        </div>
+      </header>
+      <div style={{ textAlign:"center", padding:"48px 24px" }}>
+        <div style={{ fontSize:48, marginBottom:16 }}>🔍</div>
+        <h2 style={{ color:"#D4A847", marginBottom:8 }}>Trip Tidak Ditemukan</h2>
+        <p style={{ color:"#8aa3c4", marginBottom:4 }}>
+          {tripId ? `Trip ID "${tripId}" tidak ditemukan dalam sistem.` : "Trip ID tidak disertakan dalam link ini."}
+        </p>
+        <p style={{ color:"#8aa3c4", marginBottom:24 }}>Silakan hubungi admin PT Alyssa Auto Logistik.</p>
+        <a href="/" style={{ color:"#D4A847", textDecoration:"none", marginRight:16 }}>← Kembali ke Beranda</a>
+        <a href="https://wa.me/628186311350" target="_blank" rel="noreferrer"
+           style={{ background:"#16a34a", color:"#fff", padding:"8px 16px", borderRadius:8, textDecoration:"none", fontSize:14 }}>
+          Hubungi via WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+  if (!data) return <div className="drv-error">Data tidak ditemukan.</div>;
 
   const album = data.album || { asal: [], kapal: [], tujuan: [], dokumen: [] };
   const legs = data.legs || [];

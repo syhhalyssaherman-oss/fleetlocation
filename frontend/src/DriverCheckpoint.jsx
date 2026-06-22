@@ -73,6 +73,9 @@ function todayIso() {
 function readURLParams() {
   const u = new URL(window.location.href);
   const q = u.searchParams;
+  // New: /trip/{trip_id} — extra params still come from query string
+  const pathSeg = u.pathname.match(/^\/trip\/(.+)/);
+  const tripFromPath = pathSeg ? decodeURIComponent(pathSeg[1]) : "";
   let legs = [];
   try {
     const raw = q.get("legs");
@@ -80,7 +83,7 @@ function readURLParams() {
     if (!Array.isArray(legs)) legs = [];
   } catch { legs = []; }
   return {
-    trip:   q.get("trip")   || "",
+    trip:   tripFromPath || q.get("trip") || "",
     driver: q.get("driver") || "",
     route:  q.get("route")  || "",
     nopol:  q.get("nopol")  || "",
@@ -339,7 +342,30 @@ export default function DriverCheckpoint() {
     return <div className="drv-loading">Memuat…</div>;
   }
   if (error) {
-    return <div className="drv-error" data-testid="drv-error">{error}</div>;
+    return (
+      <div className="drv-root">
+        <header className="drv-header">
+          <div className="drv-brand">
+            <div className="drv-brand-mark">AAL</div>
+            <div>
+              <div className="drv-brand-name">Driver Checkpoint</div>
+              <div className="drv-brand-sub">Alyssa Auto Logistik</div>
+            </div>
+          </div>
+        </header>
+        <div style={{ textAlign:"center", padding:"48px 24px" }} data-testid="drv-error">
+          <div style={{ fontSize:48, marginBottom:16 }}>⚠️</div>
+          <h2 style={{ color:"#D4A847", marginBottom:8 }}>Link Tidak Valid</h2>
+          <p style={{ color:"#8aa3c4", marginBottom:4 }}>{error}</p>
+          <p style={{ color:"#8aa3c4", marginBottom:24 }}>Minta link yang benar dari admin PT Alyssa Auto Logistik.</p>
+          <a href="/" style={{ color:"#D4A847", textDecoration:"none", marginRight:16 }}>← Beranda</a>
+          <a href="https://wa.me/628186311350" target="_blank" rel="noreferrer"
+             style={{ background:"#16a34a", color:"#fff", padding:"8px 16px", borderRadius:8, textDecoration:"none", fontSize:14 }}>
+            Hubungi via WhatsApp
+          </a>
+        </div>
+      </div>
+    );
   }
   if (!trip) {
     return <div className="drv-error">Trip tidak ditemukan.</div>;

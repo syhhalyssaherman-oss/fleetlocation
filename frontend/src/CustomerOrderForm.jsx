@@ -330,7 +330,7 @@ function SummaryRow({ k, v }) {
 }
 
 function SuccessScreen({ order }) {
-  const trackUrl = order.trip_id ? `${window.location.origin}/?track=${order.trip_id}` : "";
+  const trackUrl = order.trip_id ? `${window.location.origin}/track/${order.trip_id}` : "";
   return (
     <div className="ord-root">
       <div className="ord-success" data-testid="ord-success">

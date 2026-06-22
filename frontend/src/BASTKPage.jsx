@@ -19,6 +19,10 @@ function fmtDateID(iso) {
 
 function readBastkId() {
   const u = new URL(window.location.href);
+  // New: /bastk/{trip_id}
+  const seg = u.pathname.match(/^\/bastk\/(.+)/);
+  if (seg) return decodeURIComponent(seg[1]);
+  // Legacy: ?bastk=
   return u.searchParams.get("bastk") || "";
 }
 

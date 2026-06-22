@@ -61,6 +61,9 @@ let webpackConfig = {
 };
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Enable SPA fallback so /track/X, /trip/X etc. don't 404 on refresh
+  devServerConfig.historyApiFallback = true;
+
   // Add health check endpoints if enabled
   if (config.enableHealthCheck && setupHealthEndpoints && healthPluginInstance) {
     const originalSetupMiddlewares = devServerConfig.setupMiddlewares;

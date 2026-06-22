@@ -6,25 +6,71 @@ import BASTKPage from "@/BASTKPage";
 import CustomerOrderForm from "@/CustomerOrderForm";
 import AdminDashboard from "@/AdminDashboard";
 import OperationGuide from "@/OperationGuide";
+import Homepage from "@/Homepage";
+
+// Resolve path segment: /track/TRIP-XXX -> "TRIP-XXX"
+function pathSegment(pathname, prefix) {
+  const seg = pathname.startsWith(prefix) ? pathname.slice(prefix.length) : "";
+  return seg.replace(/^\//, "").split("?")[0].trim();
+}
 
 function App() {
-  const route = useMemo(() => {
+  const { route, redirect } = useMemo(() => {
     const u = new URL(window.location.href);
-    if (u.searchParams.get("guide")) return "guide";
-    if (u.searchParams.get("admin")) return "admin";
-    if (u.searchParams.get("order")) return "order";
-    if (u.searchParams.get("bastk")) return "bastk";
-    if (u.searchParams.get("track")) return "track";
-    if (u.searchParams.get("trip"))  return "driver";
-    return "driver"; // default
+    const p = u.pathname.replace(/\/$/, "") || "/";
+    const sp = u.searchParams;
+
+    // ── Path-based routing (new scheme) ────────────────────────────
+    if (p === "/order")             return { route: "order" };
+    if (p === "/admin")             return { route: "admin" };
+    if (p === "/guide")             return { route: "guide" };
+    if (p.startsWith("/track/"))    return { route: "track" };
+    if (p.startsWith("/trip/"))     return { route: "driver" };
+    if (p.startsWith("/bastk/"))    return { route: "bastk" };
+
+    // ── Legacy query-param redirect to new paths ────────────────────
+    if (sp.get("guide") !== null)   return { redirect: "/guide" };
+    if (sp.get("admin") !== null)   return { redirect: "/admin" };
+    if (sp.get("order") !== null)   return { redirect: "/order" };
+
+    const bastk = sp.get("bastk");
+    if (bastk) return { redirect: `/bastk/${bastk}` };
+
+    const track = sp.get("track");
+    if (track) return { redirect: `/track/${track}` };
+
+    const trip = sp.get("trip");
+    if (trip) {
+      // Keep extra params (nopol, driver, etc) when redirecting
+      const extras = new URLSearchParams();
+      ["nopol","driver","route","tipe","rangka","uj","b1","b2","b3","legs"].forEach(k => {
+        const v = sp.get(k);
+        if (v) extras.set(k, v);
+      });
+      const qs = extras.toString() ? `?${extras.toString()}` : "";
+      return { redirect: `/trip/${trip}${qs}` };
+    }
+
+    // ── Root → Homepage ─────────────────────────────────────────────
+    if (p === "/") return { route: "home" };
+
+    return { route: "home" };
   }, []);
 
-  if (route === "guide") return <OperationGuide />;
-  if (route === "admin") return <AdminDashboard />;
-  if (route === "order") return <CustomerOrderForm />;
-  if (route === "bastk") return <BASTKPage />;
-  if (route === "track") return <CustomerTracking />;
-  return <DriverCheckpoint />;
+  // Execute redirect (replaces history so back-button works cleanly)
+  if (redirect) {
+    window.location.replace(redirect);
+    return null;
+  }
+
+  if (route === "home")   return <Homepage />;
+  if (route === "guide")  return <OperationGuide />;
+  if (route === "admin")  return <AdminDashboard />;
+  if (route === "order")  return <CustomerOrderForm />;
+  if (route === "bastk")  return <BASTKPage />;
+  if (route === "track")  return <CustomerTracking />;
+  if (route === "driver") return <DriverCheckpoint />;
+  return <Homepage />;
 }
 
 export default App;
