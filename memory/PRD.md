@@ -1,92 +1,87 @@
-# PRD — Alyssa Driver Checkpoint (v2.3)
+# PRD — Alyssa Driver Checkpoint (v2.4)
 
 ## Original Problem Statement
 Sistem kontrol driver borongan + tracking pengiriman PT Alyssa Auto Logistik. Pelanggan rental/dealer/kontraktor butuh BASTK+Resi sendiri untuk tagihan. Driver borongan tua/gaptek dapat link via WA, isi nama, baca SOP, foto unit, daily checkpoint (bonus Rp 30k/jepret via Xendit), serah terima.
 
+## v2.4 Focus (Stable & Deploy-Ready)
+- **Retheme Navy + Gold** (premium feel)
+- **Proof of Delivery card** premium di driver & customer page
+- **Integration snippet PHP** untuk admin existing (Copy Link Tracking + Kirim CP redirect)
+- **NO database schema change** — hanya tambah optional `lat`/`lng` di daily_checkpoints (additive, backward compat)
+- **NO new features** beyond PoD card — fokus stabil
+
 ## User Choices (Cumulative)
 - v2.0: halaman driver only, URL param, MongoDB, mock cair
 - v2.1: + sync tipe/rangka/legs PO Admin, Odoo webhook, Xendit stub
-- v2.2: + album foto 4 tahap (Asal/Dalam Kapal/Tujuan/Dokumen), halaman customer tracking read-only
-- **v2.3 (now)**: redesign UI premium match screenshot user existing — 5 slot foto (drop bbm), full-screen NameStep + SOPStep forced sequential flow, logo bendera golf SVG, 7-poin SOP "WAJIB BACA SEBELUM JALAN", box DARURAT gold
+- v2.2: + album foto 4 tahap, halaman customer tracking
+- v2.3: + redesign UI premium (logo bendera golf, NameStep + SOPStep forced, 5 slot foto)
+- **v2.4 (now): retheme navy+gold + PoD card + admin PHP integration doc**
 
 ## Architecture
 - Backend FastAPI port 8001, MongoDB motor. Static `/api/uploads/*`.
-- Frontend React 19 + Craco. Routes by query param:
-  - `/?trip=...` → DriverCheckpoint (3-step forced flow)
+- Frontend React 19 + Craco. Routes:
+  - `/?trip=...` → DriverCheckpoint (NameStep → SOPStep → Dashboard)
   - `/?track=...` → CustomerTracking (read-only, auto-refresh 30s)
+- Theme: navy palette `--bg #0A1628`, `--bg-2 #0F1E35`, `--surface #152238` + gold `--gold #BA7517`, `--gold-light #D4A847`
 - Storage `/app/backend/uploads/<trip_id>/{initial,daily,handover,album}/...`
 - Odoo webhook optional env `ODOO_WEBHOOK_URL`
-- Xendit MOCKED stub (drop-in replacement saat legalitas done)
+- Xendit MOCKED stub (drop-in replace saat legalitas done)
 
-## Driver Flow (v2.3 enforced sequence)
-1. **NameStep** (full-screen): logo bendera golf SVG, brand ALYSSA LOGISTIK, "Halo Driver! 👋", input nama lengkap KTP, tombol hijau "Lanjut →", footer "Data rekening akan diisi oleh admin", pill UNIT NoPol. Enter-key submit. Empty → toast error.
-2. **SOPStep** (full-screen, FORCED — no skip/close): banner merah "⚠️ WAJIB BACA SEBELUM JALAN! · 7 PERINTAH DRIVER ALYSSA", 7 poin (CEK FISIK / FOTO UNIT / UPDATE FOTO JALUR / ATURAN KABIN / PENAMPILAN / ATURAN FINISH / DOKUMEN AMAN) dengan numbered green circle, box DARURAT gold "🚨 Hubungi admin: 0818 631 135", tombol dashed "🤚 Saya Sudah Baca & Setuju".
-3. **MainDashboard**: trip banner (NoPol+tipe+rangka+route+greet), rute legs, SOP card "✓ Sudah Dibaca" + Baca Ulang, **5 foto awal wajib** (depan/belakang/kiri/kanan/spidometer — drop BBM, dashboard menampilkan keduanya), album 4 tahap (Asal/Dalam Kapal/Tujuan/Dokumen, PDF only di Dokumen), daily checkpoint (gated allInitialDone), 3 tahap pencairan (T1 auto saat 5 foto, T2 manual, T3 setelah BASTK+Resi), handover BASTK+Resi.
+## Proof of Delivery Card (v2.4 NEW)
+Per daily checkpoint, tampilkan card premium dengan:
+- 📸 **Foto kendaraan** besar (aspect 4:3, object-cover) dengan badge CP-N gold
+- 🗺️ **Mini Leaflet map 160px** dengan marker merah pulsing (kalau ada lat/lng) atau placeholder "Lokasi GPS tidak dicatat"
+- 👤 Nama driver
+- 🚗 No. Polisi (font monospace gold)
+- 📅 Tanggal **dd-mm-yyyy**
+- 🕒 Jam **HH.MM WIB** (format Indonesia)
+- 🗺️ Koordinat + link "Buka Google Maps" (deeplink)
 
-## Customer Flow
-- Admin share `/?track=TRIP-...` ke pelanggan via WA.
-- Read-only page: status overall (Persiapan/Siap Berangkat/Sedang Dikirim/Tiba/Diterima), progress tiles, rute legs, album 4-tab, berkas serah terima (BASTK+Resi terpisah).
-- Field sensitif (xendit, t1/t2/t3, bonus, cair, driver_id, odoo_synced, sop_read) **TIDAK** ter-expose.
+Tampil di:
+- **Driver page**: section `data-testid="pod-card-list"` setelah daily checkpoint button
+- **Customer tracking**: section `data-testid="trk-pod-list"` antara progress dan album
 
-## Trip Document Schema (v2.3)
+GPS capture: best-effort di driver page saat upload daily — `navigator.geolocation.getCurrentPosition()` dengan timeout 5s. Kalau gagal/denied, upload tanpa GPS (tetap dihitung valid).
+
+## Trip Document Schema (v2.4)
+**NO BREAKING CHANGE**. Hanya tambah optional `lat`/`lng` di entry `daily_checkpoints`:
 ```js
-{
-  trip_id, driver_id, nopol, route, uj, t1, t2, t3,
-  tipe_kendaraan, no_rangka,
-  legs: [{ jalur, asal, tujuan, kapal, harga, status }],
-  bonus_daily (30000), bonus_kerajinan (150000),
-  nama_driver, sop_read,
-  initial_photos: { depan, belakang, kiri, kanan, spidometer },  // 5 slots (was 6)
-  daily_checkpoints: [{ id, date, url, ts }],
-  album: { asal: [], kapal: [], tujuan: [], dokumen: [] },
-  handover: { bastk: [{id, url, ts}], resi: {url, ts} },
-  cair: { "1": bool, "2": bool, "3": bool },
-  xendit: { t1: {id, status, ts}, t2: {...}, t3: {...} },
-  odoo_synced: { handover, cair_1, cair_2, cair_3 },
-  created_at, updated_at
-}
+daily_checkpoints: [
+  { id, date, url, ts, lat?, lng? },  // ← lat/lng optional (v2.4+)
+]
 ```
+Field lain identik dengan v2.3.
 
-## API (Cumulative)
-- `GET /api/`, `POST /api/trips/init` (idempotent + backfill album), `GET /api/trips/{id}`, `GET /api/public/trips/{id}` (sanitized)
-- `POST /api/trips/{id}/driver-name`, `POST /api/trips/{id}/sop-read`
-- `POST /api/trips/{id}/photos/initial` (slot ∈ {depan,belakang,kiri,kanan,spidometer})
-- `POST /api/trips/{id}/photos/daily`, `DELETE /api/trips/{id}/daily/today`
-- `POST /api/trips/{id}/album` (multipart: stage, foto, catatan, uploaded_by; PDF hanya stage=dokumen)
-- `DELETE /api/trips/{id}/album/{stage}/{photo_id}`
-- `POST /api/trips/{id}/photos/handover-bastk` (max 6), `POST /api/trips/{id}/photos/handover-resi`
-- `POST /api/trips/{id}/cair` (gate: T1 need 5 initial, T3 need BASTK+Resi)
-- `POST /api/trips/{id}/xendit/disburse` — MOCKED stub
+## API (v2.4 changes)
+- `POST /api/trips/{id}/photos/daily` — sekarang terima optional Form fields `lat: float?` dan `lng: float?`
+- `GET /api/public/trips/{id}` — sekarang return `daily_checkpoints` (array lengkap) di samping `daily_count`
+- Semua endpoint lain tidak berubah
 
 ## Testing Status
-- Backend: **42/42 pytest pass** (37 regression + 5 v2.3 baru: bbm rejection, 5-slot cair gate, public progress)
-- Frontend: 3/3 step-by-step flows verified (NameStep, SOPStep forced, Dashboard + Baca Ulang modal)
-- All copy "6 foto" → "5 foto" fixed
-- Visual contrast OK (white-on-red banner, white-on-dark cards)
+- Backend: **49/49 pytest pass** (42 regression + 7 v2.4 baru: version v2.4, lat/lng optional, public daily_checkpoints, backward-compat no-GPS, seed, integration doc)
+- Frontend: **100% verified** (PoDCard render, mini map, GPS marker, dd-mm-yyyy, HH.MM WIB, Google Maps link, no-GPS placeholder, /5 fix, navy+gold theme contrast OK)
+- Mock APIs: 1 (Xendit MOCKED disburse)
+- No critical/minor issues; 1 design note (time uses "." separator standard Indonesia)
 
-## Integration ke PO Admin PHP existing
-**Link driver (tombol "Kirim CP"):**
-```
-{REACT_URL}/?trip=TRIP-{po}-{unit}&nopol=...&tipe=...&rangka=...
-&route={asal}-{tujuan}&uj=...&t1=...&t2=...&t3=...
-&legs={encodeURIComponent(JSON.stringify(u.legs))}
-```
-**Link customer (tombol "Copy Link Tracking"):**
-```
-{REACT_URL}/?track=TRIP-{po}-{unit}
-```
+## Integration Doc untuk Admin PHP (v2.4 deliverable)
+File `/app/INTEGRATION_PO_ADMIN_PHP.md` berisi 5 snippet siap copy-paste:
+1. Konstanta `REACT_APP_URL`
+2. Replacement `kirimLinkCheckpoint()` — link ke React app + push tipe/rangka/legs
+3. **BARU**: `copyLinkTracking()` + tombol "📦 Copy Link Tracking" untuk share ke pelanggan
+4. Aktivasi Odoo webhook env
+5. Xendit drop-in replacement saat legalitas done
 
 ## Backlog (P1/P2)
-- P1: Split DriverCheckpoint.jsx (~800 lines) → NameStep.jsx + SOPStep.jsx + AAlyssaLogo.jsx + Dashboard subkomponen
+- P1: Split DriverCheckpoint.jsx (~800 lines) → NameStep.jsx + SOPStep.jsx + AAlyssaLogo.jsx
+- P1: Split server.py upload handlers ke module terpisah
 - P1: Backend max upload-size enforcement
-- P1: Shared util module untuk ALBUM_STAGES/stageLabel/stageIcon
-- P2: Real Xendit integration saat legalitas done (drop-in replace `xendit_disburse()`)
-- P2: WhatsApp auto-reminder jam 06.00 (Fonnte murah untuk lokal Indo)
+- P2: Real Xendit integration saat legalitas done
+- P2: WhatsApp auto-reminder jam 06.00 (Fonnte)
 - P2: Form pesanan customer 4-step
-- P2: Admin mini-dashboard React (list trip aktif, resend WA, trigger Xendit, export CSV)
-- P2: Email subscribe untuk customer tracking (SendGrid/Resend)
+- P2: Admin mini-dashboard React (lihat semua trip aktif, export CSV)
 
 ## Next Action Items
-- User update PO Admin PHP: tombol "Kirim CP" ke `/?trip=...` + tombol baru "Copy Link Tracking" ke `/?track=...`
-- (Opsional) set `ODOO_WEBHOOK_URL` di backend .env
-- Saat Xendit legalitas done → edit `xendit_disburse()` di server.py
+- User integrate snippet dari `/app/INTEGRATION_PO_ADMIN_PHP.md` ke `po-admin.php` existing
+- Set `ODOO_WEBHOOK_URL` di backend `.env` (opsional)
+- Deploy production
+- Saat Xendit legalitas done → drop-in replace `xendit_disburse()`
