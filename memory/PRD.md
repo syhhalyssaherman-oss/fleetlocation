@@ -1,22 +1,40 @@
-# PRD — Alyssa Driver Checkpoint (v2.6c)
+# PRD — Alyssa Driver Checkpoint (v2.6d.1)
 
 ## Current Status
-**v2.6c SHIPPED & STABLE.** 106/106 backend pytest pass, frontend 100% verified.
+**v2.6d.1 SHIPPED — PRODUCTION READY.** 137/137 backend pytest pass, frontend 100% verified across 5 routes (driver/track/bastk/order/admin). Mobile responsive confirmed. Admin Dashboard with CSV Export ready for daily ops.
 
 ## Tech Stack
 - React + Tailwind (custom theme Navy `#0A1628` + Gold `#D4A847`)
 - FastAPI + Motor (Async MongoDB)
 - Libraries: react-leaflet, jspdf, html2canvas, axios (frontend); xmlrpc.client stdlib (Odoo)
 
-## App Structure (4 routes)
+## App Structure (5 routes)
 ```
-/?trip=<trip_id>[&driver=<id>]  → DriverCheckpoint   (driver-side, full lifecycle)
+/?trip=<trip_id>[&driver=<id>]  → DriverCheckpoint   (driver-side)
 /?track=<trip_id>               → CustomerTracking   (read-only PoD)
-/?bastk=<trip_id>               → BASTKPage          (premium A4 PDF generator)
+/?bastk=<trip_id>               → BASTKPage          (premium A4 PDF + QR)
 /?order=1                       → CustomerOrderForm  (4-step wizard, public)
+/?admin=1                       → AdminDashboard     (PIN-gated, internal)
 ```
 
 ## Feature Matrix
+
+### v2.6d.1 (NEW — CSV Export)
+- **"📥 Export CSV"** button in Admin topbar.
+- Endpoint `GET /api/admin/orders/export.csv?status=&q=&limit=` — UTF-8 BOM (Excel-compatible), 11 columns, filter-aware.
+- Harga (UJ) auto-pulled from linked trip; batch-loaded for performance.
+
+### v2.6d (Admin Mini-Dashboard)
+- **PIN gate** (`ADMIN_PIN` env, default `0000`) via `X-Admin-Pin` header — no JWT, no session.
+- **Stats strip** — 6 tiles: Total + 5 status counts, clickable filters.
+- **Search + filter** — case-insensitive regex on customer_nama/hp/asal_kota/tujuan_kota/nopol/order_id + status dropdown.
+- **Order cards** — Pelanggan/Rute/Kendaraan/Trip ID/Driver rows + status chip + actions footer.
+- **1-click Convert → Trip** modal — driver_id (optional), UJ/T1/T2/T3, bonus_daily, bonus_kerajinan. Now mirrors driver_id to BOTH order + trip docs.
+- **Status workflow** — NEW → DISPATCHED → ON_TRIP → DELIVERED, CANCELLED terminal. Inline buttons per state.
+- **Inline driver assign** — ✎ pencil → input → OK, mirrors driver_id to linked trip.
+- **Mobile responsive** — 2-col stats on mobile, card actions wrap, sticky topbar+filters.
+- **localStorage PIN cache** (`aal_admin_pin`) with re-auth on mount for revocation safety.
+- **Endpoints**: `POST /api/admin/auth`, `GET /api/admin/stats`, `GET /api/admin/orders`, `PATCH /api/admin/orders/{id}`.
 
 ### v2.6c (NEW)
 - **QR Verifikasi BASTK**: scan-able QR (level=H, AAL logo center) pointing to `/?track=<trip_id>`. Metadata box dengan No. BASTK + Trip ID + No. Polisi + URL. Anti-fake corner accents.
@@ -88,14 +106,15 @@
 ```
 
 ## Testing Status (Feb-2026)
-- **Backend**: **106/106 pytest pass** (49 base + 10 v2.5 + 14 v2.6a + 19 v2.6b + 13 v2.6c + 1 seed self-heal).
-- **Frontend**: 100% — wizard E2E, BASTK QR + PDF, convert idempotent, regression clean.
+- **Backend**: **137/137 pytest pass** (49 base + 10 v2.5 + 14 v2.6a + 19 v2.6b + 13 v2.6c + 31 v2.6d + 1 seed self-heal).
+- **Frontend**: 100% — Admin Dashboard PIN gate, status workflow, search/filter, convert modal, **CSV export download**, mobile responsive (390px). All other routes regression clean.
 - **Mocked APIs**: Xendit (legalitas pending), Odoo XML-RPC (env-gated, real SDK ready when credentials filled), notify_odoo webhook (no-op when ODOO_WEBHOOK_URL empty).
 
 ## Env (backend/.env)
 ```
 MONGO_URL, DB_NAME, CORS_ORIGINS
-ODOO_WEBHOOK_URL  # generic webhook (no-op when empty)
+ADMIN_PIN                            # required for /api/admin/* (default '0000')
+ODOO_WEBHOOK_URL                     # optional generic webhook (no-op when empty)
 ODOO_URL, ODOO_DB, ODOO_USER, ODOO_KEY  # XML-RPC real SDK (placeholders)
 ```
 
@@ -112,15 +131,17 @@ File `/app/INTEGRATION_PO_ADMIN_PHP.md` lengkap dengan snippet untuk:
 ## Demo URLs (TRIP-POD-DEMO)
 - Driver: `/?trip=TRIP-POD-DEMO&driver=DRV-DEMO`
 - Customer: `/?track=TRIP-POD-DEMO`
-- BASTK: `/?bastk=TRIP-POD-DEMO` (seeded: Truck Box + 3 marks + customer Logistik Jaya)
+- BASTK + QR: `/?bastk=TRIP-POD-DEMO` (seeded: Truck Box + 3 marks + Logistik Jaya)
 - Order Form: `/?order=1` (fresh form, public)
+- **Admin Dashboard**: `/?admin=1` (PIN: `0000` — ganti via `ADMIN_PIN` env sebelum production!)
 
 ## Roadmap (Backlog)
 - **P1 ✅ DONE (v2.6c)**: Convert order → trip endpoint, Odoo XML-RPC scaffold.
-- **P2** Real Xendit (legalitas done) — drop-in via `INTEGRATION_PO_ADMIN_PHP.md` §5.
-- **P2** "Clear all marks" + sketch zoom/pan in BASTK editor (UX polish).
-- **P2** Admin dashboard lokal: list orders + assign driver button calls `/convert`.
-- **P3** BASTK auto-share via WhatsApp/email post-handover.
-- **P3** Real Odoo product/uom mapping (currently sale.order created without order lines).
+- **P1 ✅ DONE (v2.6d)**: Admin Mini-Dashboard with PIN gate, search/filter, status workflow.
+- **P2** Real Xendit (saat legalitas done) — drop-in via `INTEGRATION_PO_ADMIN_PHP.md` §5.
+- **P2** Real Odoo product/UoM mapping (sale.order saat ini tanpa order_line).
+- **P2** "Clear all marks" + sketch zoom/pan di BASTK editor.
+- **P3** BASTK auto-share WhatsApp/email post-handover.
 - **P3** Multi-language toggle (EN/ID).
-- **P3** Upgrade vehicle sketches to high-detail premium illustrations (referensi image dari user).
+- **P3** Upgrade 20 vehicle sketches → high-detail illustrations (5 referensi user diterima).
+- **P3** Stronger admin auth (JWT + multi-user role) saat skala butuh.

@@ -319,3 +319,102 @@ class TestPublicRegression:
         )
         assert r.status_code in (200, 201)
         assert "order_id" in r.json()
+
+
+
+
+# ---------- CSV Export (v2.6d.1) ----------
+class TestCsvExport:
+    """GET /api/admin/orders/export.csv — UTF-8 BOM, Excel-friendly, filter-aware."""
+
+    @pytest.fixture
+    def session(self):
+        s = requests.Session()
+        s.headers.update(H_GOOD)
+        return s
+
+    def test_export_unauth(self):
+        """Missing PIN must be rejected."""
+        r = requests.get(f"{API}/admin/orders/export.csv", timeout=10)
+        assert r.status_code == 401
+
+    def test_export_returns_csv(self, session):
+        """Headers + UTF-8 BOM + correct column order."""
+        # seed at least one order so we have a row
+        s2 = requests.Session()
+        s2.post(f"{API}/orders", json={
+            "vehicle_type": "Sedan",
+            "asal_kota": "TEST_CSV_ASAL",
+            "tujuan_kota": "TEST_CSV_TUJUAN",
+            "customer_nama": "TEST_CSV_CUSTOMER",
+            "customer_hp": "0818-CSV",
+            "nopol": "B 9 CSV",
+        }, timeout=10)
+
+        r = session.get(f"{API}/admin/orders/export.csv", timeout=15)
+        assert r.status_code == 200
+        ct = r.headers.get("content-type", "")
+        assert "text/csv" in ct.lower()
+        assert "utf-8" in ct.lower()
+        cd = r.headers.get("content-disposition", "")
+        assert "attachment" in cd.lower()
+        assert ".csv" in cd.lower()
+        body = r.content
+        # UTF-8 BOM at start
+        assert body.startswith(b"\xef\xbb\xbf"), "Missing UTF-8 BOM (Excel compatibility)"
+        # Header row in expected order
+        text = body.decode("utf-8-sig")
+        first_line = text.splitlines()[0]
+        expected_cols = ["Order ID", "Tanggal", "Customer", "HP", "Driver",
+                         "Nomor Polisi", "Asal", "Tujuan", "Status", "Harga (UJ)", "Trip ID"]
+        for col in expected_cols:
+            assert col in first_line, f"missing column: {col}"
+
+    def test_export_includes_test_customer(self, session):
+        """Seeded TEST_CSV_CUSTOMER row should appear in export."""
+        r = session.get(f"{API}/admin/orders/export.csv", timeout=15)
+        text = r.content.decode("utf-8-sig")
+        assert "TEST_CSV_CUSTOMER" in text
+        assert "0818-CSV" in text
+        assert "TEST_CSV_ASAL" in text
+        assert "TEST_CSV_TUJUAN" in text
+
+    def test_export_status_filter(self, session):
+        """status=DELIVERED returns only header + matching rows."""
+        r = session.get(f"{API}/admin/orders/export.csv?status=DELIVERED", timeout=15)
+        assert r.status_code == 200
+        # If no DELIVERED orders, still returns valid CSV with just header line
+        text = r.content.decode("utf-8-sig").strip()
+        lines = text.splitlines()
+        assert lines[0].startswith("Order ID")
+        # All data rows must have Status=DELIVERED (col index 8 in zero-indexed CSV cols)
+        import csv as _csv, io as _io
+        rdr = _csv.reader(_io.StringIO(text))
+        rows = list(rdr)
+        for row in rows[1:]:
+            assert row[8] == "DELIVERED", f"non-DELIVERED row leaked: {row}"
+
+    def test_export_q_filter_match(self, session):
+        """q='TEST_CSV_CUSTOMER' returns at least one row containing that text."""
+        r = session.get(f"{API}/admin/orders/export.csv?q=TEST_CSV_CUSTOMER", timeout=15)
+        assert r.status_code == 200
+        text = r.content.decode("utf-8-sig")
+        lines = text.splitlines()
+        assert len(lines) >= 2, "expected header + ≥1 match"
+        assert "TEST_CSV_CUSTOMER" in text
+
+    def test_export_q_filter_no_match(self, session):
+        """q='ZZZNOMATCHEXISTS' returns valid CSV with only header."""
+        r = session.get(f"{API}/admin/orders/export.csv?q=ZZZNOMATCHEXISTS-{uuid.uuid4().hex}", timeout=15)
+        assert r.status_code == 200
+        text = r.content.decode("utf-8-sig").strip()
+        lines = text.splitlines()
+        assert len(lines) == 1, f"expected only header, got {len(lines)} lines"
+        assert lines[0].startswith("Order ID")
+
+    def test_export_limit_clamp(self, session):
+        """limit=0 should clamp to ≥1; limit=99999 should clamp to ≤20000 (not error)."""
+        r = session.get(f"{API}/admin/orders/export.csv?limit=99999", timeout=15)
+        assert r.status_code == 200
+        r2 = session.get(f"{API}/admin/orders/export.csv?limit=0", timeout=15)
+        assert r2.status_code == 200

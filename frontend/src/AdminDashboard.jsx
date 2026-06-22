@@ -149,6 +149,32 @@ function Dashboard({ pin, onLogout }) {
     } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
   };
 
+  const exportCsv = async () => {
+    try {
+      const params = {};
+      if (statusFilter) params.status = statusFilter;
+      if (search.trim()) params.q = search.trim();
+      const r = await axios.get(`${API}/admin/orders/export.csv`, {
+        headers,
+        params,
+        responseType: "blob",
+      });
+      const blob = new Blob([r.data], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
+      a.download = `alyssa-orders-${today}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      flash("CSV diunduh");
+    } catch (e) {
+      flash("Gagal export: " + (e?.response?.data?.detail || "error"));
+    }
+  };
+
   return (
     <div className="adm-root" data-testid="adm-dashboard">
       {/* Top bar */}
@@ -158,6 +184,9 @@ function Dashboard({ pin, onLogout }) {
           <div className="adm-topbar-sub">PT Alyssa Auto Logistik</div>
         </div>
         <div className="adm-topbar-actions">
+          <button className="adm-btn adm-btn-gold adm-btn-sm" onClick={exportCsv} data-testid="adm-export-csv">
+            📥 Export CSV
+          </button>
           <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={loadAll} data-testid="adm-refresh">
             ↻ Refresh
           </button>

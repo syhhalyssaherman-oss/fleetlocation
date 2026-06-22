@@ -1,6 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Header, Depends
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -760,10 +760,13 @@ async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
         "updated_at": now,
     }
     await db.trips.insert_one(trip_doc)
-    # Update order
+    # Update order — include driver_id if provided in convert payload
+    order_upd: dict = {"trip_id": trip_id, "status": "DISPATCHED", "updated_at": now}
+    if payload.driver_id:
+        order_upd["driver_id"] = payload.driver_id.strip()[:60]
     await db.orders.update_one(
         {"order_id": order_id},
-        {"$set": {"trip_id": trip_id, "status": "DISPATCHED", "updated_at": now}},
+        {"$set": order_upd},
     )
     # Fire Odoo sync (webhook + real XML-RPC if env present)
     await notify_odoo("order.converted", {
@@ -888,6 +891,17 @@ async def admin_list_orders(
     - status: filter by single status (or empty = all)
     - q: case-insensitive search in customer_nama, customer_hp, asal_kota, tujuan_kota, nopol, order_id
     Returns newest-first up to limit (clamped 1..500)."""
+    filt = _admin_orders_filter(status, q)
+    cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(500, limit)))
+    items = []
+    async for d in cur:
+        d.pop("_id", None)
+        items.append(d)
+    return {"count": len(items), "items": items}
+
+
+def _admin_orders_filter(status: Optional[str], q: Optional[str]) -> dict:
+    """Shared filter builder for /admin/orders and /admin/orders/export.csv."""
     filt: dict = {}
     if status:
         s = status.strip().upper()
@@ -906,12 +920,86 @@ async def admin_list_orders(
                 {"nopol": rx},
                 {"order_id": rx},
             ]
-    cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(500, limit)))
-    items = []
+    return filt
+
+
+@api_router.get("/admin/orders/export.csv", dependencies=[Depends(require_admin_pin)])
+async def admin_export_csv(
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+    limit: int = 5000,
+):
+    """Export filtered orders to UTF-8 CSV (Excel-compatible, BOM prefixed).
+    Columns: Order ID, Tanggal, Customer, HP, Driver, Nomor Polisi, Asal, Tujuan, Status, Harga (UJ), Trip ID.
+    Harga is sourced from linked trip.uj when available (set during convert).
+    """
+    import csv as _csv
+    import io as _io
+    filt = _admin_orders_filter(status, q)
+    cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(20000, limit)))
+
+    # Collect orders + linked trip_ids for batch lookup
+    rows = []
+    trip_ids = set()
     async for d in cur:
         d.pop("_id", None)
-        items.append(d)
-    return {"count": len(items), "items": items}
+        rows.append(d)
+        if d.get("trip_id"):
+            trip_ids.add(d["trip_id"])
+
+    # Batch-load trip uj values
+    trip_uj_map: dict = {}
+    if trip_ids:
+        async for t in db.trips.find({"trip_id": {"$in": list(trip_ids)}}, {"trip_id": 1, "uj": 1, "_id": 0}):
+            trip_uj_map[t.get("trip_id")] = t.get("uj", 0) or 0
+
+    def _fmt_date(s: str) -> str:
+        if not s: return ""
+        try:
+            dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+            # Convert to WIB for human readability
+            dt_wib = dt + timedelta(hours=7)
+            return dt_wib.strftime("%d-%m-%Y %H:%M")
+        except Exception:
+            return s[:19]
+
+    # Build CSV in-memory
+    buf = _io.StringIO()
+    # Excel detects encoding via BOM; semicolon delimiter is friendlier in id-ID Excel locale.
+    # We use comma + UTF-8 BOM for broad compatibility.
+    w = _csv.writer(buf, delimiter=",", quoting=_csv.QUOTE_MINIMAL, lineterminator="\r\n")
+    w.writerow([
+        "Order ID", "Tanggal", "Customer", "HP", "Driver",
+        "Nomor Polisi", "Asal", "Tujuan", "Status", "Harga (UJ)", "Trip ID",
+    ])
+    for r in rows:
+        tid = r.get("trip_id") or ""
+        harga = trip_uj_map.get(tid, 0) if tid else 0
+        w.writerow([
+            r.get("order_id", ""),
+            _fmt_date(r.get("created_at", "")),
+            r.get("customer_nama", ""),
+            r.get("customer_hp", ""),
+            r.get("driver_id", "") or "",
+            r.get("nopol", ""),
+            r.get("asal_kota", ""),
+            r.get("tujuan_kota", ""),
+            r.get("status", ""),
+            harga,
+            tid,
+        ])
+
+    body = "\ufeff" + buf.getvalue()  # UTF-8 BOM for Excel
+    today = datetime.now(timezone.utc).strftime("%Y%m%d")
+    fname = f"alyssa-orders-{today}.csv"
+    return Response(
+        content=body.encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{fname}"',
+            "Cache-Control": "no-store",
+        },
+    )
 
 
 class OrderPatchBody(BaseModel):

@@ -1,4 +1,4 @@
-# PO Admin PHP — Integration Snippets (v2.6c)
+# PO Admin PHP — Integration Snippets (v2.6d.1)
 
 Snippet siap copy-paste ke `po-admin.php` lu (existing). Ganti `REACT_APP_URL` dengan URL React app (PREVIEW atau PRODUCTION).
 
@@ -286,3 +286,54 @@ Belum diset? Tidak masalah — `_odoo_sync_order` skip dengan log `[odoo:sync_or
 
 ### QR Verifikasi BASTK (v2.6c)
 Setiap PDF BASTK sekarang membawa QR code yang scan langsung ke `/?track=<trip_id>` — bisa dipakai pelanggan untuk verifikasi keaslian dokumen + buka real-time tracking dari kertas cetakan. No integration kerja tambahan di PHP — tinggal cetak.
+
+---
+
+## 9. (v2.6d) — Admin Mini-Dashboard
+
+Tidak perlu integrasi PHP sama sekali. Admin tinggal akses:
+```
+{REACT_APP_URL}/?admin=1
+```
+Login pakai PIN dari env `ADMIN_PIN` (default `0000` — **WAJIB diganti sebelum production!**).
+
+### Cara ganti PIN admin
+1. Edit `backend/.env`:
+   ```
+   ADMIN_PIN=8472   # PIN 4-6 digit, contoh
+   ```
+2. Restart backend (`sudo supervisorctl restart backend`).
+3. Semua admin yang sedang login otomatis di-logout pada request berikutnya (auto-redirect ke PIN screen).
+
+### Fitur Admin Dashboard
+- **Stats**: 6 tile (Total + 5 status) — klik untuk filter cepat.
+- **Search**: cari di order_id, nama, HP, kota asal/tujuan, nopol.
+- **Filter status**: NEW / DISPATCHED / ON_TRIP / DELIVERED / CANCELLED.
+- **Konversi → Trip**: tombol gold 1-klik buka modal, isi driver_id + nominal UJ/T1/T2/T3, submit → trip dibuat, status order jadi DISPATCHED, link Driver/Track/BASTK otomatis muncul.
+- **Status workflow**: tombol biru ▶ Mark On-Trip, hijau ✓ Mark Delivered. Manual update tanpa perlu DB shell.
+- **Assign Driver**: pencil ✎ di samping driver_id, edit inline, save → mirror ke trip terkait.
+- **Cancel order**: tombol merah ✕ dengan konfirmasi.
+
+### Disable admin endpoints
+Set `ADMIN_PIN=""` (empty) di `backend/.env` — semua `/api/admin/*` return 503. Berguna untuk app yang hanya dipakai driver/customer (admin akses lewat PO Admin PHP existing).
+
+### Admin API (untuk dipanggil dari PHP juga jika perlu)
+Semua endpoint butuh header `X-Admin-Pin: <PIN>`:
+```bash
+# List orders
+curl -H "X-Admin-Pin: 0000" {URL}/api/admin/orders?status=NEW&q=jakarta
+
+# Update status
+curl -X PATCH -H "X-Admin-Pin: 0000" -H "Content-Type: application/json" \
+  -d '{"status":"ON_TRIP"}' \
+  {URL}/api/admin/orders/ORD-XXXXXXXXXX
+
+# Stats
+curl -H "X-Admin-Pin: 0000" {URL}/api/admin/stats
+
+# Export CSV (Excel-compatible UTF-8 BOM)
+curl -H "X-Admin-Pin: 0000" -OJ \
+  "{URL}/api/admin/orders/export.csv?status=DELIVERED&q=jakarta"
+# Filename: alyssa-orders-YYYYMMDD.csv
+# Columns: Order ID, Tanggal, Customer, HP, Driver, Nomor Polisi, Asal, Tujuan, Status, Harga (UJ), Trip ID
+```

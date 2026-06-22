@@ -1,5 +1,46 @@
 # CHANGELOG — Alyssa Driver Checkpoint
 
+## [v2.6d.1] — Feb 2026 (CSV Export)
+### Added
+- **`GET /api/admin/orders/export.csv`** (PIN-gated) — filter-aware (status + q) UTF-8 BOM CSV export, Excel-compatible.
+  - Columns: Order ID, Tanggal (WIB dd-mm-yyyy HH:MM), Customer, HP, Driver, Nomor Polisi, Asal, Tujuan, Status, Harga (UJ, from linked trip), Trip ID.
+  - Batch-loads trip uj values for performance.
+  - Filename pattern: `alyssa-orders-YYYYMMDD.csv`.
+  - Limit clamped 1..20000.
+- **"📥 Export CSV"** gold button in Admin Dashboard topbar — uses current `search` + `statusFilter` state, triggers blob download, "CSV diunduh" toast.
+
+### Refactored
+- Shared `_admin_orders_filter()` helper used by both `/admin/orders` and `/admin/orders/export.csv` (DRY).
+
+### Tests
+- 7 new CSV export tests in `test_admin_v26d.py` (BOM, headers, status filter, q match, no-match, limit clamp, auth).
+- Full suite **137/137 pass**.
+
+---
+
+## [v2.6d] — Feb 2026 (Admin Mini-Dashboard)
+### Added
+- **`/?admin=1`** new route → `AdminDashboard.jsx` (450 lines) + `Admin.css`.
+- **PIN gate** via `ADMIN_PIN` env (default `0000` for testing). No JWT, no session — header `X-Admin-Pin` per request. PIN cached in `localStorage` (key `aal_admin_pin`) + re-auth on mount.
+- **Stat strip** (6 tiles): Total + 5 status counts. Clickable filters with active highlight.
+- **Search + Filter**: case-insensitive regex search across order_id/customer_nama/HP/asal/tujuan/nopol + status dropdown.
+- **Order cards**: status chip, customer/route/vehicle/trip_id/driver rows, action footer with state-aware buttons.
+- **Convert modal**: prefilled customer info + form (driver_id, UJ/T1/T2/T3, bonus_daily/bonus_kerajinan). One-click POST `/api/orders/{id}/convert`. Now mirrors driver_id to order doc (was trip-only).
+- **Status workflow**: NEW → DISPATCHED (via convert) → ON_TRIP → DELIVERED, CANCELLED terminal. Toggle buttons + Batal.
+- **Inline driver assign**: ✎ pencil → input + OK/×. Saves to order + mirrors to linked trip.
+- **Mobile responsive**: 2-col stats, wrapped actions, sticky topbar+filters.
+- New endpoints: `POST /api/admin/auth`, `GET /api/admin/stats`, `GET /api/admin/orders?status=&q=&limit=`, `PATCH /api/admin/orders/{id}` (status/driver_id/catatan).
+
+### Fixed
+- Convert endpoint: `driver_id` from convert payload now written to **both** trip + order (data consistency nit reported by testing agent).
+- Version assertion in `test_orders_v26c_convert.py` made forward-compatible (`startswith("2.6")`).
+
+### Tests
+- New `backend/tests/test_admin_v26d.py` — 24 tests (auth 3, guard 4, stats 1, list/filter/search 8, patch 6, regression 2).
+- Full suite **130/130 pass**.
+
+---
+
 ## [v2.6c] — Feb 2026
 ### Added
 - **QR Verifikasi panel** in BASTK print area (`BASTKPage.jsx` + `BASTK.css`):
