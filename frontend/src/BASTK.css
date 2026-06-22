@@ -138,10 +138,112 @@
   margin: 2px 0 4px;
   word-break: break-all;
 }
+.bk-doc-trip-id {
+  font-size: 10.5px;
+  color: #5F7494;
+  margin-bottom: 4px;
+  letter-spacing: 0.3px;
+}
 .bk-doc-date {
   font-size: 11.5px;
   color: #854F0B;
   font-weight: 700;
+}
+
+/* ----- QR Verifikasi Panel ----- */
+.bk-qr-panel { page-break-inside: avoid; }
+.bk-qr-body {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  gap: 16px;
+  padding: 14px;
+  align-items: stretch;
+}
+@media (max-width: 540px) {
+  .bk-qr-body { grid-template-columns: 1fr; }
+}
+.bk-qr-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: #fbfcfe;
+  border: 1.5px solid #D4A847;
+  border-radius: 12px;
+  position: relative;
+}
+.bk-qr-box::before, .bk-qr-box::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #854F0B;
+}
+.bk-qr-box::before { top: -3px; left: -3px; border-right: 0; border-bottom: 0; }
+.bk-qr-box::after  { bottom: -3px; right: -3px; border-left: 0; border-top: 0; }
+.bk-qr-svg {
+  background: #fff;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bk-qr-svg svg {
+  display: block;
+  width: 132px;
+  height: 132px;
+}
+.bk-qr-cap {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #854F0B;
+  text-transform: uppercase;
+}
+.bk-qr-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 2px;
+}
+.bk-qr-row {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px;
+  font-size: 11.5px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #e4e7ee;
+}
+.bk-qr-row:last-of-type { border-bottom: 0; }
+.bk-qr-k {
+  color: #5F7494;
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.bk-qr-v {
+  color: #0A1628;
+  font-weight: 700;
+  word-break: break-all;
+}
+.bk-qr-url {
+  font-size: 10.5px;
+  color: #854F0B;
+}
+.bk-qr-note {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: linear-gradient(90deg, #fdf6e6 0%, #fbfcfe 100%);
+  border-left: 3px solid #D4A847;
+  font-size: 10.5px;
+  color: #0A1628;
+  line-height: 1.4;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
 }
 
 /* ----- Grid 2 kolom ----- */

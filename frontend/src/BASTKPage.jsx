@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import axios from "axios";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { QRCodeSVG } from "qrcode.react";
 import "@/App.css";
 import "@/Driver.css";
 import "@/BASTK.css";
@@ -198,6 +199,14 @@ export default function BASTKPage() {
   if (!data)   return <div className="drv-error">Data tidak ditemukan.</div>;
 
   const todayStr = fmtDateID(new Date().toISOString());
+  // BASTK No: BASTK/{YYYYMM}/{6-char-hash-tripid} — stable per trip, easy to print, hard to fake.
+  const bastkNo = (() => {
+    const tid = (data.trip_id || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    const tail = tid.slice(-6).padStart(6, "0");
+    const d = new Date(); const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0");
+    return `BASTK/${y}${m}/${tail}`;
+  })();
+  const trackUrl = `${window.location.origin}/?track=${encodeURIComponent(data.trip_id || "")}`;
 
   return (
     <div className="bk-root" data-testid="bk-root">
@@ -239,7 +248,8 @@ export default function BASTKPage() {
           </div>
           <div className="bk-header-right">
             <div className="bk-doc-no">No. BASTK</div>
-            <div className="bk-doc-no-val">{(data.trip_id || "").slice(0, 24)}</div>
+            <div className="bk-doc-no-val" data-testid="bk-doc-no">{bastkNo}</div>
+            <div className="bk-doc-trip-id">Trip: <span className="bk-mono">{(data.trip_id || "").slice(0, 24)}</span></div>
             <div className="bk-doc-date">{todayStr}</div>
           </div>
         </div>
@@ -337,6 +347,66 @@ export default function BASTKPage() {
         <section className="bk-panel">
           <div className="bk-panel-head">📝 CATATAN TAMBAHAN</div>
           <div className="bk-catatan-display">{catatan || "—"}</div>
+        </section>
+
+        {/* QR VERIFIKASI + TRACKING */}
+        <section className="bk-panel bk-qr-panel" data-testid="bk-qr-panel">
+          <div className="bk-panel-head">🔐 VERIFIKASI &amp; TRACKING REAL-TIME</div>
+          <div className="bk-qr-body">
+            <div className="bk-qr-box">
+              <div className="bk-qr-svg">
+                <QRCodeSVG
+                  value={trackUrl}
+                  size={132}
+                  level="H"
+                  includeMargin={false}
+                  bgColor="#FFFFFF"
+                  fgColor="#0A1628"
+                  imageSettings={{
+                    src:
+                      "data:image/svg+xml;utf8," +
+                      encodeURIComponent(
+                        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">' +
+                        '<circle cx="40" cy="40" r="38" fill="#0A1628"/>' +
+                        '<ellipse cx="40" cy="62" rx="14" ry="3" fill="#D4A847"/>' +
+                        '<rect x="39" y="28" width="2" height="34" fill="#D4A847"/>' +
+                        '<path d="M41,26 L60,32 L41,40 Z" fill="#D4A847"/>' +
+                        '</svg>'
+                      ),
+                    height: 28,
+                    width: 28,
+                    excavate: true,
+                  }}
+                />
+              </div>
+              <div className="bk-qr-cap">SCAN UNTUK LACAK</div>
+            </div>
+            <div className="bk-qr-meta">
+              <div className="bk-qr-row">
+                <span className="bk-qr-k">No. BASTK</span>
+                <span className="bk-qr-v bk-mono" data-testid="bk-qr-bastk-no">{bastkNo}</span>
+              </div>
+              <div className="bk-qr-row">
+                <span className="bk-qr-k">Trip ID</span>
+                <span className="bk-qr-v bk-mono">{data.trip_id || "—"}</span>
+              </div>
+              <div className="bk-qr-row">
+                <span className="bk-qr-k">No. Polisi</span>
+                <span className="bk-qr-v bk-mono">{data.nopol || "—"}</span>
+              </div>
+              <div className="bk-qr-row">
+                <span className="bk-qr-k">Tanggal Cetak</span>
+                <span className="bk-qr-v">{todayStr}</span>
+              </div>
+              <div className="bk-qr-row">
+                <span className="bk-qr-k">Verifikasi URL</span>
+                <span className="bk-qr-v bk-qr-url bk-mono">{trackUrl}</span>
+              </div>
+              <div className="bk-qr-note">
+                Dokumen ini terverifikasi digital. Scan QR untuk konfirmasi keaslian &amp; pantau perjalanan kendaraan secara real-time di sistem Alyssa Auto Logistik.
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* TANDA TANGAN */}

@@ -91,7 +91,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6b"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6c"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
@@ -662,6 +662,176 @@ async def list_orders(limit: int = 50, status: Optional[str] = None):
         d.pop("_id", None)
         items.append(d)
     return {"count": len(items), "items": items}
+
+
+class OrderConvertBody(BaseModel):
+    trip_id: Optional[str] = None        # if empty, auto-generate from order_id
+    driver_id: Optional[str] = None
+    uj: int = 0
+    t1: int = 0
+    t2: int = 0
+    t3: int = 0
+    bonus_daily: int = 30000
+    bonus_kerajinan: int = 150000
+
+
+@api_router.post("/orders/{order_id}/convert")
+async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
+    """Bridge order → trip. Idempotent: if order.trip_id already set, return existing trip.
+    Creates a trip with route/vehicle pre-filled from order; sets order.trip_id + status=DISPATCHED."""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+
+    # Idempotent: if order already converted, return existing trip
+    existing_trip_id = order.get("trip_id")
+    if existing_trip_id:
+        existing = await db.trips.find_one({"trip_id": existing_trip_id})
+        if existing:
+            return {
+                "order_id": order_id,
+                "trip_id": existing_trip_id,
+                "status": order.get("status"),
+                "trip": trip_doc_to_public(existing),
+                "already_converted": True,
+            }
+
+    # Derive trip_id
+    trip_id = (payload.trip_id or "").strip() or f"TRIP-{order_id}"
+    # Refuse if trip_id already used by another order/trip
+    existing = await db.trips.find_one({"trip_id": trip_id})
+    if existing:
+        raise HTTPException(409, f"trip_id '{trip_id}' sudah dipakai. Sebutkan trip_id lain.")
+
+    route = f'{order.get("asal_kota","")} - {order.get("tujuan_kota","")}'.strip(" -") or "—"
+    nopol = (order.get("nopol") or "").strip() or f"TBD-{order_id[-4:]}"
+
+    now = datetime.now(timezone.utc).isoformat()
+    trip_doc = {
+        "trip_id": trip_id,
+        "id": str(uuid.uuid4()),
+        "driver_id": (payload.driver_id or "").strip() or None,
+        "nopol": nopol[:20],
+        "route": route[:200],
+        "uj": payload.uj, "t1": payload.t1, "t2": payload.t2, "t3": payload.t3,
+        "bonus_daily": payload.bonus_daily, "bonus_kerajinan": payload.bonus_kerajinan,
+        "tipe_kendaraan": order.get("vehicle_type", ""),
+        "no_rangka": order.get("no_rangka", ""),
+        "legs": [],
+        "nama_driver": "",
+        "sop_read": False,
+        "initial_photos": {},
+        "daily_checkpoints": [],
+        "handover": {"bastk": [], "resi": None},
+        "album": {"asal": [], "kapal": [], "tujuan": [], "dokumen": []},
+        "cair": {"1": False, "2": False, "3": False},
+        "xendit": {
+            "t1": {"id": None, "status": None, "ts": None},
+            "t2": {"id": None, "status": None, "ts": None},
+            "t3": {"id": None, "status": None, "ts": None},
+        },
+        "odoo_synced": {"handover": False, "cair_1": False, "cair_2": False, "cair_3": False},
+        # Pre-fill BASTK customer_data from order so PDF auto-populated
+        "customer_data": {
+            "nama":    (order.get("customer_nama") or "")[:120],
+            "hp":      (order.get("customer_hp") or "")[:30],
+            "alamat":  (order.get("tujuan_alamat") or order.get("asal_alamat") or "")[:300],
+            "pic":     (order.get("delivery_pic") or order.get("pickup_pic") or "")[:120],
+            "warna":   (order.get("warna") or "")[:40],
+            "tahun":   (order.get("tahun") or "")[:6],
+            "km":      (order.get("km") or "")[:12],
+            "kondisi": (order.get("kondisi") or "Bekas")[:20],
+        },
+        "vehicle_type": order.get("vehicle_type", ""),
+        # Backlink to source order
+        "source_order_id": order_id,
+        "created_at": now,
+        "updated_at": now,
+    }
+    await db.trips.insert_one(trip_doc)
+    # Update order
+    await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": {"trip_id": trip_id, "status": "DISPATCHED", "updated_at": now}},
+    )
+    # Fire Odoo sync (webhook + real XML-RPC if env present)
+    await notify_odoo("order.converted", {
+        "order_id": order_id, "trip_id": trip_id,
+        "route": route, "nopol": nopol, "vehicle": order.get("vehicle_type"),
+        "customer": {"nama": order.get("customer_nama"), "hp": order.get("customer_hp")},
+    })
+    # Real Odoo XML-RPC: create sale.order if configured (best-effort, fire-and-forget)
+    asyncio.create_task(_odoo_sync_order(order_id, trip_id, order))
+
+    doc_pub = trip_doc_to_public(trip_doc)
+    return {
+        "order_id": order_id,
+        "trip_id": trip_id,
+        "status": "DISPATCHED",
+        "trip": doc_pub,
+        "already_converted": False,
+    }
+
+
+async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
+    """Best-effort real Odoo XML-RPC sync.
+    - Creates res.partner (customer) if not exists.
+    - Creates sale.order linked to partner with origin=order_id.
+    No-op when OdooClient.enabled is False. Never raises."""
+    odoo = OdooClient()
+    if not odoo.enabled:
+        logger.info(f"[odoo:sync_order:skip] order_id={order_id} (env not configured)")
+        return
+    try:
+        # 1. Find or create partner
+        partner_name = (order.get("customer_nama") or "").strip() or f"Customer {order_id}"
+        partner_hp = (order.get("customer_hp") or "").strip()
+        partner_email = (order.get("customer_email") or "").strip()
+
+        # search by phone or name
+        partner_ids = await asyncio.to_thread(
+            odoo.call, "res.partner", "search",
+            [[["name", "=", partner_name]]], {"limit": 1},
+        )
+        if partner_ids:
+            partner_id = partner_ids[0]
+        else:
+            partner_id = await asyncio.to_thread(
+                odoo.call, "res.partner", "create",
+                [{"name": partner_name, "phone": partner_hp, "email": partner_email or False, "customer_rank": 1}],
+            )
+        if not partner_id:
+            logger.warning(f"[odoo:sync_order:partner_fail] order_id={order_id}")
+            return
+
+        # 2. Create sale.order with origin = order_id, client_order_ref = trip_id
+        sale_id = await asyncio.to_thread(
+            odoo.call, "sale.order", "create",
+            [{
+                "partner_id": partner_id,
+                "origin": order_id,
+                "client_order_ref": trip_id,
+                "note": (
+                    f"Order: {order_id} | Trip: {trip_id}\n"
+                    f"Route: {order.get('asal_kota','')} → {order.get('tujuan_kota','')}\n"
+                    f"Vehicle: {order.get('vehicle_type','')} {order.get('nopol','')}\n"
+                    f"Pickup: {order.get('pickup_date','')} {order.get('pickup_time','')}\n"
+                    f"Catatan: {order.get('catatan','')}"
+                ),
+            }],
+        )
+        if sale_id:
+            logger.info(f"[odoo:sync_order:ok] order={order_id} trip={trip_id} partner={partner_id} sale={sale_id}")
+            await db.orders.update_one(
+                {"order_id": order_id},
+                {"$set": {
+                    "odoo": {"partner_id": partner_id, "sale_order_id": sale_id, "ts": datetime.now(timezone.utc).isoformat()},
+                }},
+            )
+        else:
+            logger.warning(f"[odoo:sync_order:sale_fail] order_id={order_id}")
+    except Exception as e:
+        logger.warning(f"[odoo:sync_order:exception] order_id={order_id}: {e}")
 
 
 # ---------- Static file serving for uploads ----------
