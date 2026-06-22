@@ -8,7 +8,7 @@ Premium logistics ops platform untuk **PT Alyssa Auto Logistik** — designed fo
 | URL                          | Audience          | Auth         |
 |------------------------------|-------------------|--------------|
 | `/?order=1`                  | Customer (public) | None         |
-| `/?trip=<id>[&driver=<id>]`  | Driver            | URL is key   |
+| `/?trip=<id>&driver=<id>&nopol=<nopol>` | Driver         | URL is key   |
 | `/?track=<id>`               | Customer          | URL is key   |
 | `/?bastk=<id>`               | Admin / Customer  | URL is key   |
 | `/?admin=1`                  | Internal admin    | `ADMIN_PIN`  |

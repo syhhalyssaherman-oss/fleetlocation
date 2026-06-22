@@ -312,7 +312,7 @@ function OrderCard({ order, onConvert, onPatch }) {
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
   const isNew = order.status === "NEW";
-  const linkDriver = order.trip_id ? `?trip=${order.trip_id}${order.driver_id ? `&driver=${order.driver_id}` : ""}` : null;
+  const linkDriver = order.trip_id ? `?trip=${order.trip_id}${order.driver_id ? `&driver=${order.driver_id}` : ""}${order.nopol ? `&nopol=${encodeURIComponent(order.nopol)}` : ""}` : null;
   const linkTrack  = order.trip_id ? `?track=${order.trip_id}` : null;
   const linkBastk  = order.trip_id ? `?bastk=${order.trip_id}` : null;
 
