@@ -299,7 +299,7 @@ export default function DriverCheckpoint() {
           {trip.nama_driver ? (
             <>
               <div className="drv-greet-lbl">Halo,</div>
-              <div className="drv-greet-name" data-testid="drv-greet-name">.{trip.nama_driver}</div>
+              <div className="drv-greet-name" data-testid="drv-greet-name">{trip.nama_driver}</div>
             </>
           ) : (
             <div className="drv-greet-empty">Isi nama dulu yuk</div>

@@ -1,56 +1,63 @@
-# PRD — Fleet Driver Checkpoint Console
+# PRD — Alyssa Driver Checkpoint (v2.0)
 
 ## Original Problem Statement
-Tambahkan fitur peta lokasi interaktif (Live Map) dan form manifes perjalanan ke aplikasi:
-1. Peta lokasi (Google Maps stub) untuk tracking posisi saat ini.
-2. Jam, Tanggal, Bulan, Tahun real-time.
-3. Input + display Nomor Polisi Mobil (No Pol).
-4. Driver Checkpoint: catat & tampilkan titik pemeriksaan dengan timestamp saat tombol checkpoint ditekan.
-Desain bersih, responsif, data langsung muncul di dashboard utama.
+Halaman driver-facing untuk PT Alyssa Auto Logistik. Driver borongan (mayoritas tua/gaptek) buka link dari WA admin, isi nama, baca SOP, upload 6 foto awal kendaraan (4 sisi + spidometer + jarum BBM), checkpoint harian (1 foto/hari = bonus Rp 30.000), serah terima akhir (BASTK PDF max 6 lembar + foto Resi), pencairan uang jalan 3 tahap.
 
-## User Choices (confirmed)
-- Stack: React + FastAPI + MongoDB (existing)
-- Map: Leaflet + OpenStreetMap (no API key)
-- GPS source: `navigator.geolocation` (real device GPS)
-- Storage: MongoDB via FastAPI
-- Locale/UI Language: Indonesian
+**PIVOT** dari versi 1 (live GPS tracking) karena driver borongan tidak kooperatif untuk tracking real-time.
+
+## User Choices (Confirmed)
+- Halaman driver only — PO Admin tetap di PHP existing user
+- Identifikasi via URL param (`?trip=...&driver=...&route=...&nopol=...&uj=...&t1=...&t2=...&t3=...`) + input nama (no password)
+- Penyimpanan foto lokal di backend filesystem (`/app/backend/uploads/`)
+- Pencairan via mock (admin transfer manual), bukan Xendit otomatis
+- UI Bahasa Indonesia, tema dark premium (warna brand: gold #BA7517)
 
 ## Architecture
-- Backend: FastAPI (port 8001), MongoDB (motor). Routes under `/api`:
-  - `GET /api/` health
-  - `POST /api/manifests`, `GET /api/manifests`, `GET /api/manifests/active`, `POST /api/manifests/{id}/complete`
-  - `POST /api/checkpoints`, `GET /api/checkpoints?manifest_id=...`, `DELETE /api/checkpoints`
-- Frontend: React 19 + CRA/Craco, react-leaflet 5, leaflet 1.9.
-- Single-page dashboard at `/`. All data shown real-time on main screen.
+- Backend: FastAPI di port 8001, MongoDB via motor. Routes:
+  - `GET /api/`, `POST /api/trips/init` (idempotent), `GET /api/trips/{id}`
+  - `POST /api/trips/{id}/driver-name`, `POST /api/trips/{id}/sop-read`
+  - `POST /api/trips/{id}/photos/initial` (multipart, slot=depan|belakang|kiri|kanan|spidometer|bbm)
+  - `POST /api/trips/{id}/photos/daily` (1x per hari WIB, 409 jika duplikat)
+  - `DELETE /api/trips/{id}/daily/today` (tester reset)
+  - `POST /api/trips/{id}/photos/handover-bastk` (max 6), `POST /api/trips/{id}/photos/handover-resi`
+  - `POST /api/trips/{id}/cair` ({tahap: 1|2|3}) — dengan gate: T1 butuh 6 initial, T3 butuh BASTK+Resi
+  - Static mount `/api/uploads/*` untuk serve gambar/PDF
+- Frontend: React 19 + CRA/Craco. Single page `DriverCheckpoint.jsx` di `/`.
+- Storage: lokal `/app/backend/uploads/<trip_id>/{initial,daily,handover}/...`
 
-## What's Been Implemented (2026-06-22)
-- Real-time clock (jam:menit:detik + Senin, 22 Juni 2026 format, locale id-ID).
-- Live Map with OpenStreetMap tiles, animated pulsing live-position marker, checkpoint markers, and dashed polyline connecting checkpoints.
-- Auto fly-to on GPS update.
-- Manifest form (No Pol, Nama Driver, Asal, Tujuan, Muatan) → POST to MongoDB; active manifest summary card with "Selesaikan Manifes" CTA.
-- Nomor Polisi prominent display card (inverted dark style).
-- "Tambah Checkpoint" CTA (Signal Red) — uses `navigator.geolocation` and persists checkpoint to MongoDB; instantly prepends to vertical timeline with timestamp + coords.
-- Responsive 12-col grid (Map col-span 8 / Sidebar col-span 4 on desktop, stacked on mobile).
-- Toast notifications for actions; GPS error banner fallback to Jakarta default.
+## Implemented (2026-06-22)
+- Real-time clock Indonesia (jam:menit:detik, Senin DD Bulan YYYY)
+- Trip banner: NoPol besar (font mono), rute, greeting driver
+- Input nama (sekali, persistent ke MongoDB)
+- Modal SOP 10 poin + tombol "Saya Mengerti & Setuju"
+- Grid 6 foto awal dengan camera capture (HTML5 `capture="environment"`)
+- Auto-cair Tahap 1 setelah 6 foto awal selesai
+- Daily checkpoint: tombol bulat besar "BELUM HARI INI"/"SUDAH HARI INI ✅", counter foto, total bonus, alert ok/info, tombol Reset (tester)
+- Bonus Kerajinan Rp 150.000 card
+- 3 Tahap Pencairan: Tahap 1 (50%/saat mulai), Tahap 2 (30%/tengah jalan), Tahap 3 (20%+bonus/saat tiba)
+- Serah terima akhir: BASTK max 6 lembar (PDF/foto), Foto Resi
+- Tombol "Kirim Lokasi ke Admin via WA" → wa.me deeplink
+- Premium dark theme: gold gradient, glow effects, mobile-first ≤560px
 
 ## Testing Status
-- Backend: 11/11 pytest cases pass (`/app/backend/tests/test_driver_checkpoint.py`).
-- Frontend: 100% UI flow verified (clock ticks, map renders with 15 tiles, manifest form, checkpoint add increments count, persistence across reload).
-- No mocked APIs.
-
-## Personas
-- Driver / Operator Logistik — needs single-screen console while in transit.
-- Dispatcher (future) — review trip manifests + checkpoint history.
+- Backend: 18/18 pytest pass (`/app/backend/tests/test_driver_checkpoint.py`)
+- Frontend: ~95% UI flow verified (all data-testids, clock, modal, photo grid, cair card, handover, dark theme)
+- Fixed: leading "." typo on driver greeting
 
 ## Backlog (P1/P2)
-- P1: Multi-driver / multi-manifest list view & history page.
-- P1: Reverse-geocode checkpoint coords into readable address.
-- P2: Auth (driver login) + role-based dashboards.
-- P2: Export manifest+checkpoints to CSV/PDF.
-- P2: Live broadcast over WebSocket so dispatcher map updates in real-time.
-- P2: Geofence / route-deviation alerts.
+- P1: Server-returned `today` date (WIB) supaya frontend & backend selalu sync untuk gate "todayDone"
+- P1: Backend file-size enforcement (sekarang cuma frontend)
+- P1: Split `DriverCheckpoint.jsx` ke komponen kecil (TahapCard, SOPModal, PhotoSlot, dll)
+- P2: Integrasi Xendit untuk pencairan otomatis
+- P2: Admin view (read-only) untuk monitor semua trip dari React (atau extend PO Admin PHP)
+- P2: Push notification reminder jam 06.00 untuk foto harian
+- P2: Geofence detection pasif (untuk Tahap 2 "tengah jalan" otomatis kalau GPS terdeteksi di luar kota asal)
+
+## Personas
+- **Driver borongan**: 40-65 tahun, mayoritas Android low-end, koneksi 3G-4G, gaptek. UI harus 1-tap, font besar, label jelas, jangan ada navigation rumit.
+- **Admin AAL**: existing PHP user; copy link checkpoint dari PO Admin → kirim WA ke driver.
 
 ## Next Action Items
-- Add address resolution (Nominatim) for each checkpoint.
-- Add dispatcher view listing all active manifests with mini-maps.
-- Add driver auth (JWT) before going to production.
+- Konfirmasi user untuk feedback visual & flow
+- Kalau OK: deploy ke production & integrasikan link dari PHP PO Admin
+- Implementasi Xendit kalau user mau pencairan auto
