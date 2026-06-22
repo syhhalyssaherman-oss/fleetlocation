@@ -1107,11 +1107,10 @@ app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads"
 
 
 app.include_router(api_router)
-_cors_origins = os.environ.get('CORS_ORIGINS', '*').strip()
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=False,
-    allow_origins=["*"] if _cors_origins == "*" else [o.strip() for o in _cors_origins.split(',')],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
