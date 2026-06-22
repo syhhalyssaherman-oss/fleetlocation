@@ -165,7 +165,7 @@ export default function Homepage() {
 
   const doTrack = () => {
     const v = trackCode.trim();
-    if (v) window.location.href = `/tracking?resi=${encodeURIComponent(v)}`;
+    if (v) window.location.href = `/track/${encodeURIComponent(v)}`;
   };
 
   return (

@@ -29,13 +29,78 @@ function toggleTheme() {
   try { localStorage.setItem("aal-theme", isDark ? "light" : "dark"); } catch (_) {}
 }
 
+/* ── Company logo (sailboat, same as Order/Tracking pages) ── */
+function Logo({ size = 100 }) {
+  const h = Math.round(size * 1.08);
+  return (
+    <svg width={size} height={h} viewBox="0 0 500 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="aal-cg-a" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stopColor="#1EC8EE"/>
+          <stop offset="100%" stopColor="#0A1B6E"/>
+        </radialGradient>
+        <linearGradient id="aal-ag-a" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%"   stopColor="#1EC8EE"/>
+          <stop offset="100%" stopColor="#0A1B6E"/>
+        </linearGradient>
+        <clipPath id="aal-clip-a">
+          <circle cx="250" cy="235" r="200"/>
+        </clipPath>
+        <path id="aal-arc-a" d="M 60,235 A 190,190 0 0,1 440,235" fill="none"/>
+      </defs>
+      {/* Circle border */}
+      <circle cx="250" cy="235" r="210" fill="url(#aal-cg-a)" opacity="0.15"/>
+      <circle cx="250" cy="235" r="200" fill="none" stroke="url(#aal-cg-a)" strokeWidth="6"/>
+      {/* Sailboat clipped to circle */}
+      <g clipPath="url(#aal-clip-a)">
+        {/* Water */}
+        <ellipse cx="250" cy="390" rx="200" ry="28" fill="#0A1B6E" opacity="0.35"/>
+        {/* Hull */}
+        <path d="M140,360 Q250,410 360,360 L340,385 Q250,425 160,385 Z" fill="#0A1B6E"/>
+        {/* Mast */}
+        <rect x="246" y="170" width="8" height="195" rx="4" fill="#D4A847"/>
+        {/* Main sail */}
+        <path d="M254,175 L380,280 L254,330 Z" fill="white" opacity="0.92"/>
+        {/* Fore sail */}
+        <path d="M246,195 L128,295 L246,325 Z" fill="#E0F0FF" opacity="0.82"/>
+        {/* Flag */}
+        <path d="M254,170 L298,152 L254,182 Z" fill="#DC2626"/>
+        {/* Arrow swoosh */}
+        <path d="M180,355 Q250,340 320,355" stroke="url(#aal-ag-a)" strokeWidth="5" fill="none" strokeLinecap="round"/>
+      </g>
+      {/* Curved company name */}
+      <text fontFamily="'Inter','Helvetica Neue',sans-serif" fontSize="26" fontWeight="800" letterSpacing="2" fill="url(#aal-cg-a)">
+        <textPath href="#aal-arc-a" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
+      </text>
+      {/* Bottom tagline */}
+      <text x="250" y="490" textAnchor="middle" fontFamily="'Inter','Helvetica Neue',sans-serif" fontSize="18" fontWeight="600" letterSpacing="4" fill="#1EC8EE" opacity="0.85">
+        FAST · SAFE · RELIABLE
+      </text>
+    </svg>
+  );
+}
+
+/* ── SVG icons (no emoji) ── */
+const IcoBook    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+const IcoDownload= () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+const IcoRefresh = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const IcoLogout  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const IcoTruck   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+const IcoPlay    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const IcoCheck   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoX       = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoPencil  = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IcoSearch  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IcoInbox   = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
+const IcoSun     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IcoMoon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+
 export default function AdminDashboard() {
   const [pin, setPin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const [authed, setAuthed] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authing, setAuthing] = useState(false);
 
-  // Auto-auth if PIN cached (run once on mount)
   useEffect(() => {
     const cached = localStorage.getItem(PIN_KEY) || "";
     if (!cached) return;
@@ -66,17 +131,13 @@ export default function AdminDashboard() {
   return <Dashboard pin={pin} onLogout={logout} />;
 }
 
-/* -------------------- PIN screen -------------------- */
+/* ── PIN screen ── */
 function PinScreen({ pin, setPin, doLogin, authing, authError }) {
   return (
     <div className="adm-root">
       <div className="adm-pin-wrap" data-testid="adm-pin-wrap">
         <div className="adm-pin-logo">
-          <svg viewBox="0 0 80 80" width="64" height="64" xmlns="http://www.w3.org/2000/svg">
-            <ellipse cx="40" cy="62" rx="22" ry="6" fill="#0F5132"/>
-            <rect x="39" y="20" width="2" height="42" fill="#D4A847"/>
-            <path d="M41,18 L62,25 L41,34 Z" fill="#DC2626"/>
-          </svg>
+          <Logo size={96} />
         </div>
         <h1 className="adm-pin-title">Admin Dashboard</h1>
         <p className="adm-pin-sub">PT Alyssa Auto Logistik · Internal Control</p>
@@ -105,7 +166,7 @@ function PinScreen({ pin, setPin, doLogin, authing, authError }) {
   );
 }
 
-/* -------------------- Dashboard -------------------- */
+/* ── Dashboard ── */
 function Dashboard({ pin, onLogout }) {
   const headers = useMemo(() => ({ "X-Admin-Pin": pin }), [pin]);
   const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
@@ -167,11 +228,7 @@ function Dashboard({ pin, onLogout }) {
       if (search.trim()) params.q = search.trim();
       if (dateFrom) params.date_from = dateFrom;
       if (dateTo)   params.date_to   = dateTo;
-      const r = await axios.get(`${API}/admin/orders/export.csv`, {
-        headers,
-        params,
-        responseType: "blob",
-      });
+      const r = await axios.get(`${API}/admin/orders/export.csv`, { headers, params, responseType: "blob" });
       const blob = new Blob([r.data], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -193,28 +250,35 @@ function Dashboard({ pin, onLogout }) {
       {/* Top bar */}
       <header className="adm-topbar">
         <div className="adm-topbar-left">
-          <div className="adm-topbar-title">Admin Control</div>
-          <div className="adm-topbar-sub">PT Alyssa Auto Logistik</div>
+          <div className="adm-topbar-logo">
+            <Logo size={36} />
+          </div>
+          <div>
+            <div className="adm-topbar-title">Admin Control</div>
+            <div className="adm-topbar-sub">PT Alyssa Auto Logistik</div>
+          </div>
         </div>
         <div className="adm-topbar-actions">
           <a href="?guide=1" target="_blank" rel="noreferrer" className="adm-btn adm-btn-ghost adm-btn-sm" data-testid="adm-tutorial-link">
-            📘 Tutorial
+            <IcoBook /> Tutorial
           </a>
           <button className="adm-btn adm-btn-gold adm-btn-sm" onClick={exportCsv} data-testid="adm-export-csv">
-            📥 Export CSV
+            <IcoDownload /> Export CSV
           </button>
           <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={loadAll} data-testid="adm-refresh">
-            ↻ Refresh
+            <IcoRefresh /> Refresh
           </button>
           <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={onLogout} data-testid="adm-logout">
-            ⤴ Logout
+            <IcoLogout /> Keluar
           </button>
-          <button className="theme-toggle" onClick={() => { toggleTheme(); setDark(d => !d); }}
-            aria-label="Toggle dark mode" title={dark ? "Mode terang" : "Mode gelap"} style={{ marginLeft: 4 }}>
-            {dark
-              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            }
+          <button
+            className="theme-toggle"
+            onClick={() => { toggleTheme(); setDark(d => !d); }}
+            aria-label="Toggle dark mode"
+            title={dark ? "Mode terang" : "Mode gelap"}
+            style={{ marginLeft: 4 }}
+          >
+            {dark ? <IcoSun /> : <IcoMoon />}
           </button>
         </div>
       </header>
@@ -239,14 +303,20 @@ function Dashboard({ pin, onLogout }) {
 
       {/* Filters */}
       <section className="adm-filters">
-        <input
-          type="search"
-          className="adm-search"
-          placeholder="🔍 Cari nama, HP, kota, nopol, atau ID order…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          data-testid="adm-search"
-        />
+        <div style={{ position:"relative", flex:1, minWidth:200 }}>
+          <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-dim)", pointerEvents:"none" }}>
+            <IcoSearch />
+          </span>
+          <input
+            type="search"
+            className="adm-search"
+            style={{ paddingLeft: 36 }}
+            placeholder="Cari nama, HP, kota, nopol, atau ID order..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            data-testid="adm-search"
+          />
+        </div>
         <select
           className="adm-status-sel"
           value={statusFilter}
@@ -272,7 +342,7 @@ function Dashboard({ pin, onLogout }) {
             className="adm-btn adm-btn-ghost adm-btn-sm"
             onClick={() => { setSearch(""); setStatusFilter(""); setDateFrom(""); setDateTo(""); }}
             data-testid="adm-filter-reset"
-          >✕ Reset filter</button>
+          ><IcoX /> Reset filter</button>
         )}
       </section>
 
@@ -292,7 +362,7 @@ function Dashboard({ pin, onLogout }) {
         {error && <div className="adm-error" data-testid="adm-list-err">{error}</div>}
         {!loading && !error && orders.length === 0 && (
           <div className="adm-empty" data-testid="adm-empty">
-            <div className="adm-empty-icon">📭</div>
+            <div className="adm-empty-icon"><IcoInbox /></div>
             Tidak ada pesanan {statusFilter ? `dengan status ${STATUS_LABEL[statusFilter].txt}` : ""}.
           </div>
         )}
@@ -319,7 +389,7 @@ function Dashboard({ pin, onLogout }) {
   );
 }
 
-/* -------------------- Sub-components -------------------- */
+/* ── Sub-components ── */
 function StatTile({ label, value, cls = "", onClick, active, testid }) {
   return (
     <div
@@ -367,7 +437,7 @@ function OrderCard({ order, onConvert, onPatch }) {
         </div>
         <div className="adm-row">
           <span className="adm-k">Rute</span>
-          <span className="adm-v">{order.asal_kota || "—"} → {order.tujuan_kota || "—"}</span>
+          <span className="adm-v">{order.asal_kota || "—"} &rarr; {order.tujuan_kota || "—"}</span>
         </div>
         <div className="adm-row">
           <span className="adm-k">Kendaraan</span>
@@ -394,12 +464,16 @@ function OrderCard({ order, onConvert, onPatch }) {
                   data-testid={`adm-driver-input-${order.order_id}`}
                 />
                 <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveDriver} data-testid={`adm-driver-save-${order.order_id}`}>OK</button>
-                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditingDriver(false); setDriverDraft(order.driver_id || ""); }}>×</button>
+                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditingDriver(false); setDriverDraft(order.driver_id || ""); }}>
+                  <IcoX />
+                </button>
               </span>
             ) : (
               <span className="adm-driver-show">
                 {order.driver_id ? <span className="adm-mono adm-pill-mini">{order.driver_id}</span> : <i className="adm-mute">belum di-assign</i>}
-                <button className="adm-link" onClick={() => setEditingDriver(true)} data-testid={`adm-driver-edit-${order.order_id}`}>✎</button>
+                <button className="adm-link" onClick={() => setEditingDriver(true)} data-testid={`adm-driver-edit-${order.order_id}`}>
+                  <IcoPencil />
+                </button>
               </span>
             )}
           </span>
@@ -409,17 +483,17 @@ function OrderCard({ order, onConvert, onPatch }) {
       <footer className="adm-card-actions">
         {isNew && (
           <button className="adm-btn adm-btn-gold adm-btn-sm" onClick={onConvert} data-testid={`adm-convert-${order.order_id}`}>
-            🚚 Konversi → Trip
+            <IcoTruck /> Konversi ke Trip
           </button>
         )}
         {order.status === "DISPATCHED" && (
           <button className="adm-btn adm-btn-blue adm-btn-sm" onClick={() => onPatch({ status: "ON_TRIP" })} data-testid={`adm-mark-ontrip-${order.order_id}`}>
-            ▶ Mark On-Trip
+            <IcoPlay /> Mark On-Trip
           </button>
         )}
         {order.status === "ON_TRIP" && (
           <button className="adm-btn adm-btn-green adm-btn-sm" onClick={() => onPatch({ status: "DELIVERED" })} data-testid={`adm-mark-delivered-${order.order_id}`}>
-            ✓ Mark Delivered
+            <IcoCheck /> Mark Delivered
           </button>
         )}
         {linkDriver  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkDriver}  target="_blank" rel="noreferrer" data-testid={`adm-link-driver-${order.order_id}`}>Driver</a>}
@@ -427,7 +501,7 @@ function OrderCard({ order, onConvert, onPatch }) {
         {linkBastk   && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkBastk}   target="_blank" rel="noreferrer" data-testid={`adm-link-bastk-${order.order_id}`}>BASTK</a>}
         {!["DELIVERED","CANCELLED"].includes(order.status) && (
           <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => { if (window.confirm("Batalkan order ini?")) onPatch({ status: "CANCELLED" }); }} data-testid={`adm-cancel-${order.order_id}`}>
-            ✕ Batal
+            <IcoX /> Batal
           </button>
         )}
       </footer>
@@ -464,14 +538,16 @@ function ConvertModal({ order, onClose, onSubmit }) {
       <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
         <div className="adm-modal-head">
           <div>
-            <div className="adm-modal-title">🚚 Konversi Pesanan → Trip</div>
+            <div className="adm-modal-title">Konversi Pesanan ke Trip</div>
             <div className="adm-modal-sub adm-mono">{order.order_id}</div>
           </div>
-          <button className="adm-modal-close" onClick={onClose}>×</button>
+          <button className="adm-modal-close" onClick={onClose} aria-label="Tutup">
+            <IcoX />
+          </button>
         </div>
         <div className="adm-modal-body">
           <div className="adm-modal-info">
-            <b>{order.customer_nama}</b> · {order.asal_kota} → {order.tujuan_kota}
+            <b>{order.customer_nama}</b> &middot; {order.asal_kota} &rarr; {order.tujuan_kota}
             <br/><span className="adm-mute">{order.vehicle_type || "—"} {order.nopol || ""}</span>
           </div>
           <div className="adm-form-grid">
