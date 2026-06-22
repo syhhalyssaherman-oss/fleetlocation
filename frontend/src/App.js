@@ -1,8 +1,8 @@
 import "@/App.css";
-import Dashboard from "@/Dashboard";
+import DriverCheckpoint from "@/DriverCheckpoint";
 
 function App() {
-  return <Dashboard />;
+  return <DriverCheckpoint />;
 }
 
 export default App;
