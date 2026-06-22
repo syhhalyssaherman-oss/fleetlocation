@@ -19,8 +19,10 @@ const STATUS_LABEL = {
 
 const fmtDate = (s) => {
   if (!s) return "—";
-  try { const d = new Date(s); return d.toLocaleString("id-ID", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"}); }
-  catch { return s; }
+  try {
+    const d = new Date(s);
+    return d.toLocaleString("id-ID", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" });
+  } catch { return s; }
 };
 
 function toggleTheme() {
@@ -29,26 +31,29 @@ function toggleTheme() {
   try { localStorage.setItem("aal-theme", isDark ? "light" : "dark"); } catch (_) {}
 }
 
-/* ── Company logo ── */
+/* ── Logo ── */
 function Logo({ size = 100 }) {
   return <img src="/logo.png" alt="PT Alyssa Auto Logistik" width={size} height={size} style={{ objectFit: "contain" }} />;
 }
 
-/* ── SVG icons (no emoji) ── */
-const IcoBook    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
-const IcoDownload= () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
-const IcoRefresh = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
-const IcoLogout  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
-const IcoTruck   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
-const IcoPlay    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
-const IcoCheck   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-const IcoX       = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-const IcoPencil  = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
-const IcoSearch  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
-const IcoInbox   = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
-const IcoSun     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
-const IcoMoon    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+/* ── SVG icons ── */
+const IcoBook     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>;
+const IcoDownload = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+const IcoRefresh  = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>;
+const IcoLogout   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const IcoTruck    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>;
+const IcoPlay     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
+const IcoCheck    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
+const IcoX        = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+const IcoPencil   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>;
+const IcoSearch   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IcoInbox    = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
+const IcoSun      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+const IcoMoon     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
 
+/* ════════════════════════════════════════
+   ROOT
+════════════════════════════════════════ */
 export default function AdminDashboard() {
   const [pin, setPin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const [authed, setAuthed] = useState(false);
@@ -79,48 +84,55 @@ export default function AdminDashboard() {
 
   const logout = () => { localStorage.removeItem(PIN_KEY); setPin(""); setAuthed(false); };
 
-  if (!authed) return (
-    <PinScreen pin={pin} setPin={setPin} doLogin={doLogin} authing={authing} authError={authError} />
-  );
+  if (!authed) return <PinScreen pin={pin} setPin={setPin} doLogin={doLogin} authing={authing} authError={authError} />;
   return <Dashboard pin={pin} onLogout={logout} />;
 }
 
-/* ── PIN screen ── */
+/* ════════════════════════════════════════
+   PIN SCREEN
+════════════════════════════════════════ */
 function PinScreen({ pin, setPin, doLogin, authing, authError }) {
   return (
     <div className="adm-root">
       <div className="adm-pin-wrap" data-testid="adm-pin-wrap">
-        <div className="adm-pin-logo">
-          <Logo size={96} />
+        <div className="adm-pin-card">
+          <div className="adm-pin-logo-wrap">
+            <Logo size={96} />
+          </div>
+          <h1 className="adm-pin-title">Admin Dashboard</h1>
+          <p className="adm-pin-sub">PT Alyssa Auto Logistik · Internal Control</p>
+          <div className="adm-pin-divider" />
+          <input
+            type="password"
+            inputMode="numeric"
+            autoFocus
+            value={pin}
+            onChange={(e) => setPin(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
+            className="adm-pin-input"
+            placeholder="••••"
+            data-testid="adm-pin-input"
+            maxLength={20}
+          />
+          {authError && <div className="adm-pin-err" data-testid="adm-pin-err">{authError}</div>}
+          <button
+            className="adm-pin-btn"
+            onClick={doLogin}
+            disabled={authing || !pin}
+            data-testid="adm-pin-submit"
+          >
+            {authing ? "Memverifikasi..." : "Masuk ke Dashboard"}
+          </button>
+          <div className="adm-pin-hint">Hubungi admin sistem jika lupa PIN.</div>
         </div>
-        <h1 className="adm-pin-title">Admin Dashboard</h1>
-        <p className="adm-pin-sub">PT Alyssa Auto Logistik · Internal Control</p>
-        <input
-          type="password"
-          inputMode="numeric"
-          autoFocus
-          value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") doLogin(); }}
-          className="adm-pin-input"
-          placeholder="••••"
-          data-testid="adm-pin-input"
-          maxLength={20}
-        />
-        {authError && <div className="adm-pin-err" data-testid="adm-pin-err">{authError}</div>}
-        <button
-          className="adm-btn adm-btn-gold adm-pin-btn"
-          onClick={doLogin}
-          disabled={authing || !pin}
-          data-testid="adm-pin-submit"
-        >{authing ? "Memverifikasi..." : "Masuk"}</button>
-        <div className="adm-pin-hint">Hubungi admin sistem jika lupa PIN.</div>
       </div>
     </div>
   );
 }
 
-/* ── Dashboard ── */
+/* ════════════════════════════════════════
+   DASHBOARD
+════════════════════════════════════════ */
 function Dashboard({ pin, onLogout }) {
   const headers = useMemo(() => ({ "X-Admin-Pin": pin }), [pin]);
   const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
@@ -135,7 +147,7 @@ function Dashboard({ pin, onLogout }) {
   const [convertModal, setConvertModal] = useState(null);
   const [toast, setToast] = useState("");
 
-  const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2400); };
+  const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2600); };
 
   const loadAll = useCallback(async () => {
     setLoading(true); setError("");
@@ -187,27 +199,23 @@ function Dashboard({ pin, onLogout }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
-      a.download = `alyssa-orders-${today}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.download = `alyssa-orders-${new Date().toISOString().slice(0,10).replace(/-/g,"")}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       flash("CSV diunduh");
-    } catch (e) {
-      flash("Gagal export: " + (e?.response?.data?.detail || "error"));
-    }
+    } catch (e) { flash("Gagal export: " + (e?.response?.data?.detail || "error")); }
   };
 
   return (
     <div className="adm-root" data-testid="adm-dashboard">
-      {/* Top bar */}
+
+      {/* ── Topbar ── */}
       <header className="adm-topbar">
         <div className="adm-topbar-left">
           <div className="adm-topbar-logo">
-            <Logo size={36} />
+            <Logo size={38} />
           </div>
-          <div>
+          <div className="adm-topbar-info">
             <div className="adm-topbar-title">Admin Control</div>
             <div className="adm-topbar-sub">PT Alyssa Auto Logistik</div>
           </div>
@@ -229,24 +237,23 @@ function Dashboard({ pin, onLogout }) {
             className="theme-toggle"
             onClick={() => { toggleTheme(); setDark(d => !d); }}
             aria-label="Toggle dark mode"
-            title={dark ? "Mode terang" : "Mode gelap"}
-            style={{ marginLeft: 4 }}
+            style={{ marginLeft: 2 }}
           >
             {dark ? <IcoSun /> : <IcoMoon />}
           </button>
         </div>
       </header>
 
-      {/* Stats strip */}
+      {/* ── Stats ── */}
       {stats && (
         <section className="adm-stats" data-testid="adm-stats">
-          <StatTile label="Total Pesanan" value={stats.total} cls="" />
+          <StatTile label="Total Pesanan" value={stats.total} />
           {STATUS_LIST.map((s) => (
             <StatTile
               key={s}
               label={STATUS_LABEL[s].txt}
               value={stats.by_status?.[s] || 0}
-              cls={STATUS_LABEL[s].cls + " adm-stat-clickable"}
+              cls={STATUS_LABEL[s].cls}
               onClick={() => setStatusFilter(statusFilter === s ? "" : s)}
               active={statusFilter === s}
               testid={`adm-stat-${s.toLowerCase()}`}
@@ -255,16 +262,13 @@ function Dashboard({ pin, onLogout }) {
         </section>
       )}
 
-      {/* Filters */}
+      {/* ── Filters ── */}
       <section className="adm-filters">
-        <div style={{ position:"relative", flex:1, minWidth:200 }}>
-          <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"var(--text-dim)", pointerEvents:"none" }}>
-            <IcoSearch />
-          </span>
+        <div className="adm-search-wrap">
+          <span className="adm-search-ico"><IcoSearch /></span>
           <input
             type="search"
             className="adm-search"
-            style={{ paddingLeft: 36 }}
             placeholder="Cari nama, HP, kota, nopol, atau ID order..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -282,48 +286,46 @@ function Dashboard({ pin, onLogout }) {
         </select>
         <div className="adm-date-range">
           <label className="adm-date-lbl">Dari</label>
-          <input type="date" className="adm-date" value={dateFrom}
-                 onChange={(e) => setDateFrom(e.target.value)} max={dateTo || undefined}
-                 data-testid="adm-date-from" />
+          <input type="date" className="adm-date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} max={dateTo || undefined} data-testid="adm-date-from" />
           <label className="adm-date-lbl">Sampai</label>
-          <input type="date" className="adm-date" value={dateTo}
-                 onChange={(e) => setDateTo(e.target.value)} min={dateFrom || undefined}
-                 data-testid="adm-date-to" />
+          <input type="date" className="adm-date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} min={dateFrom || undefined} data-testid="adm-date-to" />
         </div>
         {(search || statusFilter || dateFrom || dateTo) && (
-          <button
-            type="button"
-            className="adm-btn adm-btn-ghost adm-btn-sm"
-            onClick={() => { setSearch(""); setStatusFilter(""); setDateFrom(""); setDateTo(""); }}
-            data-testid="adm-filter-reset"
-          ><IcoX /> Reset filter</button>
+          <button type="button" className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => { setSearch(""); setStatusFilter(""); setDateFrom(""); setDateTo(""); }} data-testid="adm-filter-reset">
+            <IcoX /> Reset
+          </button>
         )}
       </section>
 
-      {/* Orders list */}
+      {/* ── List ── */}
       <section className="adm-list" data-testid="adm-list">
         {loading && [1,2,3].map(i => (
-          <div key={i} className="adm-card" style={{ padding:"14px" }}>
-            <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12 }}>
-              <span className="skeleton" style={{ width:80, height:20, borderRadius:6 }}/>
-              <span className="skeleton" style={{ width:60, height:20, borderRadius:6 }}/>
-              <span className="skeleton" style={{ width:100, height:14, borderRadius:6, marginLeft:"auto" }}/>
+          <div key={i} className="adm-card" style={{ padding: 18 }}>
+            <div style={{ display:"flex", gap:10, marginBottom:14 }}>
+              <div className="adm-skel" style={{ width:120, height:18 }} />
+              <div className="adm-skel" style={{ width:80, height:18 }} />
+              <div className="adm-skel" style={{ width:100, height:14, marginLeft:"auto" }} />
             </div>
-            <span className="skeleton" style={{ display:"block", width:"70%", height:13, borderRadius:6, marginBottom:8 }}/>
-            <span className="skeleton" style={{ display:"block", width:"50%", height:13, borderRadius:6 }}/>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 20px" }}>
+              {[140,110,160,90].map((w,j) => <div key={j} className="adm-skel" style={{ height:36 }} />)}
+            </div>
           </div>
         ))}
         {error && <div className="adm-error" data-testid="adm-list-err">{error}</div>}
         {!loading && !error && orders.length === 0 && (
           <div className="adm-empty" data-testid="adm-empty">
-            <div className="adm-empty-icon"><IcoInbox /></div>
-            Tidak ada pesanan {statusFilter ? `dengan status ${STATUS_LABEL[statusFilter].txt}` : ""}.
+            <div className="adm-empty-ico"><IcoInbox /></div>
+            <div style={{ fontWeight:700, fontSize:15, marginBottom:6, color:"var(--text-2)" }}>
+              Tidak ada pesanan
+            </div>
+            <div>{statusFilter ? `dengan status "${STATUS_LABEL[statusFilter]?.txt}"` : "yang cocok dengan filter saat ini."}</div>
           </div>
         )}
-        {orders.map((o) => (
+        {orders.map((o, idx) => (
           <OrderCard
             key={o.order_id}
             order={o}
+            idx={idx}
             onConvert={() => setConvertModal(o)}
             onPatch={(body) => patchOrder(o.order_id, body)}
           />
@@ -331,7 +333,6 @@ function Dashboard({ pin, onLogout }) {
       </section>
 
       {toast && <div className="adm-toast" data-testid="adm-toast">{toast}</div>}
-
       {convertModal && (
         <ConvertModal
           order={convertModal}
@@ -343,13 +344,16 @@ function Dashboard({ pin, onLogout }) {
   );
 }
 
-/* ── Sub-components ── */
+/* ════════════════════════════════════════
+   STAT TILE
+════════════════════════════════════════ */
 function StatTile({ label, value, cls = "", onClick, active, testid }) {
   return (
     <div
-      className={`adm-stat ${cls} ${active ? "adm-stat-active" : ""}`}
+      className={`adm-stat ${cls} ${onClick ? "adm-stat-clickable" : ""} ${active ? "adm-stat-active" : ""}`}
       onClick={onClick}
       role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       data-testid={testid}
     >
       <div className="adm-stat-val">{value}</div>
@@ -358,84 +362,96 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
   );
 }
 
-function OrderCard({ order, onConvert, onPatch }) {
-  const [editingDriver, setEditingDriver] = useState(false);
+/* ════════════════════════════════════════
+   ORDER CARD
+════════════════════════════════════════ */
+function OrderCard({ order, idx, onConvert, onPatch }) {
+  const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
-  const isNew = order.status === "NEW";
-  const linkDriver = order.trip_id ? `/trip/${order.trip_id}${order.driver_id ? `?driver=${order.driver_id}` : ""}${order.nopol ? `${order.driver_id ? "&" : "?"}nopol=${encodeURIComponent(order.nopol)}` : ""}` : null;
-  const linkTrack  = order.trip_id ? `/track/${order.trip_id}` : null;
-  const linkBastk  = order.trip_id ? `/bastk/${order.trip_id}` : null;
 
-  const saveDriver = async () => {
-    await onPatch({ driver_id: driverDraft });
-    setEditingDriver(false);
-  };
+  const linkDriver = order.trip_id
+    ? `/trip/${order.trip_id}${order.driver_id ? `?driver=${order.driver_id}` : ""}${order.nopol ? `${order.driver_id?"&":"?"}nopol=${encodeURIComponent(order.nopol)}` : ""}`
+    : null;
+  const linkTrack = order.trip_id ? `/track/${order.trip_id}` : null;
+  const linkBastk = order.trip_id ? `/bastk/${order.trip_id}` : null;
+
+  const saveDriver = async () => { await onPatch({ driver_id: driverDraft }); setEditDriver(false); };
 
   return (
-    <article className="adm-card" data-testid={`adm-order-${order.order_id}`}>
+    <article
+      className="adm-card"
+      data-status={order.status}
+      data-testid={`adm-order-${order.order_id}`}
+      style={{ animationDelay: `${idx * 40}ms` }}
+    >
+      {/* Head */}
       <header className="adm-card-head">
-        <div className="adm-card-id">
-          <span className="adm-mono">{order.order_id}</span>
-          <span className={`adm-chip ${lbl.cls}`} data-testid={`adm-status-${order.order_id}`}>
-            {lbl.txt}
-          </span>
+        <div className="adm-card-id-row">
+          <span className="adm-card-id adm-mono">{order.order_id}</span>
+          <span className={`adm-chip ${lbl.cls}`} data-testid={`adm-status-${order.order_id}`}>{lbl.txt}</span>
         </div>
         <div className="adm-card-date">{fmtDate(order.created_at)}</div>
       </header>
 
+      {/* Body — 2-col grid */}
       <div className="adm-card-body">
-        <div className="adm-row">
-          <span className="adm-k">Pelanggan</span>
-          <span className="adm-v">{order.customer_nama || "—"} · {order.customer_hp || "—"}</span>
+        <div className="adm-field-row">
+          <div className="adm-field-key">Pelanggan</div>
+          <div className="adm-field-val">
+            {order.customer_nama || "—"} &middot; {order.customer_hp || "—"}
+          </div>
         </div>
-        <div className="adm-row">
-          <span className="adm-k">Rute</span>
-          <span className="adm-v">{order.asal_kota || "—"} &rarr; {order.tujuan_kota || "—"}</span>
+        <div className="adm-field-row">
+          <div className="adm-field-key">Rute</div>
+          <div className="adm-field-val">
+            {order.asal_kota || "—"} &rarr; {order.tujuan_kota || "—"}
+          </div>
         </div>
-        <div className="adm-row">
-          <span className="adm-k">Kendaraan</span>
-          <span className="adm-v">
-            {order.vehicle_type || "—"} {order.nopol && <span className="adm-mono adm-pill-mini">{order.nopol}</span>}
-          </span>
+        <div className="adm-field-row">
+          <div className="adm-field-key">Kendaraan</div>
+          <div className="adm-field-val">
+            {order.vehicle_type || "—"}
+            {order.nopol && <span className="adm-pill adm-mono">{order.nopol}</span>}
+          </div>
         </div>
         {order.trip_id && (
-          <div className="adm-row">
-            <span className="adm-k">Trip ID</span>
-            <span className="adm-v adm-mono">{order.trip_id}</span>
+          <div className="adm-field-row">
+            <div className="adm-field-key">Trip ID</div>
+            <div className="adm-field-val adm-mono">{order.trip_id}</div>
           </div>
         )}
-        <div className="adm-row">
-          <span className="adm-k">Driver</span>
-          <span className="adm-v">
-            {editingDriver ? (
-              <span className="adm-driver-edit">
+        <div className="adm-field-row adm-full">
+          <div className="adm-field-key">Driver</div>
+          <div className="adm-field-val">
+            {editDriver ? (
+              <span className="adm-driver-edit-row">
                 <input
-                  className="adm-input-inline"
+                  className="adm-input-inline adm-mono"
                   value={driverDraft}
                   onChange={(e) => setDriverDraft(e.target.value)}
                   placeholder="DRV-XXXX"
+                  autoFocus
                   data-testid={`adm-driver-input-${order.order_id}`}
                 />
                 <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveDriver} data-testid={`adm-driver-save-${order.order_id}`}>OK</button>
-                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditingDriver(false); setDriverDraft(order.driver_id || ""); }}>
-                  <IcoX />
-                </button>
+                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditDriver(false); setDriverDraft(order.driver_id || ""); }}><IcoX /></button>
               </span>
             ) : (
-              <span className="adm-driver-show">
-                {order.driver_id ? <span className="adm-mono adm-pill-mini">{order.driver_id}</span> : <i className="adm-mute">belum di-assign</i>}
-                <button className="adm-link" onClick={() => setEditingDriver(true)} data-testid={`adm-driver-edit-${order.order_id}`}>
-                  <IcoPencil />
-                </button>
+              <span className="adm-driver-row">
+                {order.driver_id
+                  ? <span className="adm-pill adm-mono">{order.driver_id}</span>
+                  : <i className="adm-mute">belum di-assign</i>}
+                <button className="adm-link" onClick={() => setEditDriver(true)} data-testid={`adm-driver-edit-${order.order_id}`}><IcoPencil /></button>
               </span>
             )}
-          </span>
+          </div>
         </div>
       </div>
 
-      <footer className="adm-card-actions">
-        {isNew && (
+      {/* Footer actions */}
+      <footer className="adm-card-foot">
+        {order.status === "NEW" && (
           <button className="adm-btn adm-btn-gold adm-btn-sm" onClick={onConvert} data-testid={`adm-convert-${order.order_id}`}>
             <IcoTruck /> Konversi ke Trip
           </button>
@@ -450,9 +466,9 @@ function OrderCard({ order, onConvert, onPatch }) {
             <IcoCheck /> Mark Delivered
           </button>
         )}
-        {linkDriver  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkDriver}  target="_blank" rel="noreferrer" data-testid={`adm-link-driver-${order.order_id}`}>Driver</a>}
-        {linkTrack   && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkTrack}   target="_blank" rel="noreferrer" data-testid={`adm-link-track-${order.order_id}`}>Track</a>}
-        {linkBastk   && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkBastk}   target="_blank" rel="noreferrer" data-testid={`adm-link-bastk-${order.order_id}`}>BASTK</a>}
+        {linkDriver && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkDriver} target="_blank" rel="noreferrer" data-testid={`adm-link-driver-${order.order_id}`}>Driver</a>}
+        {linkTrack  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkTrack}  target="_blank" rel="noreferrer" data-testid={`adm-link-track-${order.order_id}`}>Track</a>}
+        {linkBastk  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkBastk}  target="_blank" rel="noreferrer" data-testid={`adm-link-bastk-${order.order_id}`}>BASTK</a>}
         {!["DELIVERED","CANCELLED"].includes(order.status) && (
           <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => { if (window.confirm("Batalkan order ini?")) onPatch({ status: "CANCELLED" }); }} data-testid={`adm-cancel-${order.order_id}`}>
             <IcoX /> Batal
@@ -463,26 +479,26 @@ function OrderCard({ order, onConvert, onPatch }) {
   );
 }
 
+/* ════════════════════════════════════════
+   CONVERT MODAL
+════════════════════════════════════════ */
 function ConvertModal({ order, onClose, onSubmit }) {
   const [driverId, setDriverId] = useState("");
-  const [uj, setUj] = useState("0");
-  const [t1, setT1] = useState("0");
-  const [t2, setT2] = useState("0");
-  const [t3, setT3] = useState("0");
-  const [bd, setBd] = useState("30000");
-  const [bk, setBk] = useState("150000");
+  const [uj, setUj]   = useState("0");
+  const [t1, setT1]   = useState("0");
+  const [t2, setT2]   = useState("0");
+  const [t3, setT3]   = useState("0");
+  const [bd, setBd]   = useState("30000");
+  const [bk, setBk]   = useState("150000");
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
     setSubmitting(true);
     await onSubmit({
       driver_id: driverId.trim() || undefined,
-      uj: parseInt(uj || "0", 10),
-      t1: parseInt(t1 || "0", 10),
-      t2: parseInt(t2 || "0", 10),
-      t3: parseInt(t3 || "0", 10),
-      bonus_daily: parseInt(bd || "0", 10),
-      bonus_kerajinan: parseInt(bk || "0", 10),
+      uj: parseInt(uj||"0",10), t1: parseInt(t1||"0",10),
+      t2: parseInt(t2||"0",10), t3: parseInt(t3||"0",10),
+      bonus_daily: parseInt(bd||"0",10), bonus_kerajinan: parseInt(bk||"0",10),
     });
     setSubmitting(false);
   };
@@ -493,16 +509,14 @@ function ConvertModal({ order, onClose, onSubmit }) {
         <div className="adm-modal-head">
           <div>
             <div className="adm-modal-title">Konversi Pesanan ke Trip</div>
-            <div className="adm-modal-sub adm-mono">{order.order_id}</div>
+            <div className="adm-modal-sub">{order.order_id}</div>
           </div>
-          <button className="adm-modal-close" onClick={onClose} aria-label="Tutup">
-            <IcoX />
-          </button>
+          <button className="adm-modal-close" onClick={onClose} aria-label="Tutup"><IcoX /></button>
         </div>
         <div className="adm-modal-body">
           <div className="adm-modal-info">
-            <b>{order.customer_nama}</b> &middot; {order.asal_kota} &rarr; {order.tujuan_kota}
-            <br/><span className="adm-mute">{order.vehicle_type || "—"} {order.nopol || ""}</span>
+            <strong>{order.customer_nama}</strong> &middot; {order.asal_kota} &rarr; {order.tujuan_kota}
+            <br /><span className="adm-mute">{order.vehicle_type || "—"} {order.nopol || ""}</span>
           </div>
           <div className="adm-form-grid">
             <Field label="Driver ID" hint="Opsional. Bisa diisi nanti.">
@@ -528,7 +542,7 @@ function ConvertModal({ order, onClose, onSubmit }) {
             </Field>
           </div>
         </div>
-        <div className="adm-modal-footer">
+        <div className="adm-modal-foot">
           <button className="adm-btn adm-btn-ghost" onClick={onClose} disabled={submitting}>Batal</button>
           <button className="adm-btn adm-btn-gold" onClick={submit} disabled={submitting} data-testid="adm-modal-submit">
             {submitting ? "Memproses..." : "Konversi Sekarang"}
