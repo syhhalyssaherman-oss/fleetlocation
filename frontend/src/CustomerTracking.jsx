@@ -104,34 +104,7 @@ const STAGE_ICONS = {
 
 /* ── Inline Logo ── */
 const Logo = ({ size = 44 }) => (
-  <svg viewBox="0 0 500 520" width={size} height={Math.round(size * 1.04)} xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="trk-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#12D2EE"/>
-        <stop offset="45%" stopColor="#4A8AE0"/>
-        <stop offset="100%" stopColor="#8038C8"/>
-      </linearGradient>
-      <linearGradient id="trk-tg" x1="44" y1="0" x2="456" y2="0" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#12D2EE"/>
-        <stop offset="100%" stopColor="#8038C8"/>
-      </linearGradient>
-      <clipPath id="trk-clip"><circle cx="250" cy="210" r="197"/></clipPath>
-      <path id="trk-arc" d="M 44,318 A 242,242 0 0,1 456,318"/>
-    </defs>
-    <circle cx="250" cy="210" r="200" fill="url(#trk-bg)"/>
-    <g clipPath="url(#trk-clip)">
-      <path d="M250,62 Q222,138 140,290 L250,280 Z" fill="white"/>
-      <path d="M250,62 Q278,138 360,290 L250,280 Z" fill="white"/>
-      <rect x="247" y="62" width="6" height="220" rx="3" fill="white" opacity="0.35"/>
-      <path d="M128,296 Q250,340 372,296 L360,317 Q250,358 140,317 Z" fill="white"/>
-      <path d="M68,334 Q165,316 250,334 Q335,352 432,334" stroke="white" strokeWidth="7" fill="none" strokeLinecap="round"/>
-      <path d="M82,358 Q176,340 260,358 Q344,376 418,358" stroke="white" strokeWidth="5.5" fill="none" strokeLinecap="round"/>
-      <path d="M98,380 Q190,363 272,380 Q354,397 410,380" stroke="white" strokeWidth="4" fill="none" strokeLinecap="round" opacity="0.65"/>
-    </g>
-    <text fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" fontWeight="700" fontSize="27" letterSpacing="2.5" fill="url(#trk-tg)">
-      <textPath href="#trk-arc" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
-    </text>
-  </svg>
+  <img src="/logo.png" alt="PT Alyssa Auto Logistik" width={size} height={size} style={{ objectFit: "contain" }} />
 );
 
 function useDarkMode() {
