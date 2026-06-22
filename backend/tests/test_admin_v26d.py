@@ -418,3 +418,71 @@ class TestCsvExport:
         assert r.status_code == 200
         r2 = session.get(f"{API}/admin/orders/export.csv?limit=0", timeout=15)
         assert r2.status_code == 200
+
+
+# ---------- v2.6d.2 — Date range filter on /admin/orders + export.csv ----------
+class TestAdminDateFilter:
+    """Tests for date_from / date_to query params (YYYY-MM-DD inclusive)."""
+
+    @pytest.fixture
+    def session(self):
+        s = requests.Session()
+        s.headers.update(H_GOOD)
+        return s
+
+    def test_date_filter_today_returns_recent_orders(self, session, seed_orders):
+        """date_from=today: includes today's orders, count > 0 (seed_orders just created)."""
+        import datetime as _dt
+        today = _dt.datetime.utcnow().strftime("%Y-%m-%d")
+        r = session.get(f"{API}/admin/orders?date_from={today}", headers=H_GOOD, timeout=15)
+        assert r.status_code == 200
+        body = r.json()
+        # All returned items must have created_at >= today
+        for it in body["items"]:
+            assert it["created_at"] >= today + "T00:00:00", f"order before date_from leaked: {it.get('created_at')}"
+        # Seed orders should be visible
+        names = [it.get("customer_nama", "") for it in body["items"]]
+        assert any(n.startswith("TEST_Admin") or n.startswith("TEST_CSV") for n in names), \
+            "expected seeded TEST_ orders in today's window"
+
+    def test_date_filter_past_date_to_zero_results(self, session):
+        """date_to in distant past returns zero orders."""
+        r = session.get(f"{API}/admin/orders?date_to=2000-01-01", headers=H_GOOD, timeout=15)
+        assert r.status_code == 200
+        body = r.json()
+        assert body["count"] == 0
+        assert body["items"] == []
+
+    def test_date_filter_bad_format_does_not_crash(self, session):
+        """Malformed date (e.g. 2026-99-99 or garbage) returns 200 without crashing.
+        Per server logic the length check + Mongo string compare degrades gracefully (no match or no filter)."""
+        for bad in ["2026-99-99", "notadate", "abc", "2026-13", "2026"]:
+            r = session.get(f"{API}/admin/orders?date_from={bad}", headers=H_GOOD, timeout=15)
+            assert r.status_code == 200, f"crashed on date_from={bad!r}"
+
+    def test_date_filter_empty_params_behave_like_no_filter(self, session):
+        """date_from= and date_to= (empty) returns same count as no filter."""
+        r_none = session.get(f"{API}/admin/orders?limit=500", headers=H_GOOD, timeout=15)
+        r_empty = session.get(f"{API}/admin/orders?date_from=&date_to=&limit=500", headers=H_GOOD, timeout=15)
+        assert r_none.status_code == 200 and r_empty.status_code == 200
+        assert r_none.json()["count"] == r_empty.json()["count"]
+
+    def test_export_csv_date_filter_today_inclusive(self, session, seed_orders):
+        """CSV export with date_from=today should include seeded TEST_ orders (created today)."""
+        import datetime as _dt
+        today = _dt.datetime.utcnow().strftime("%Y-%m-%d")
+        r = session.get(f"{API}/admin/orders/export.csv?date_from={today}", headers=H_GOOD, timeout=15)
+        assert r.status_code == 200
+        text = r.content.decode("utf-8-sig")
+        assert text.splitlines()[0].startswith("Order ID")
+        # Seeded TEST_ orders should appear
+        assert "TEST_Admin" in text or "TEST_CSV" in text
+
+    def test_export_csv_date_filter_past_returns_only_header(self, session):
+        """CSV export with date_to=2000-01-01 returns only header line."""
+        r = session.get(f"{API}/admin/orders/export.csv?date_to=2000-01-01", headers=H_GOOD, timeout=15)
+        assert r.status_code == 200
+        text = r.content.decode("utf-8-sig").strip()
+        lines = text.splitlines()
+        assert len(lines) == 1
+        assert lines[0].startswith("Order ID")

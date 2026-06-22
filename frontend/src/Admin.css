@@ -189,6 +189,42 @@
   min-width: 140px;
 }
 
+/* Date range */
+.adm-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface, #152238);
+  border: 1px solid var(--border, #1F2F4A);
+  border-radius: 10px;
+  flex-wrap: wrap;
+}
+.adm-date-lbl {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--text-mute, #94A3C4);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.adm-date {
+  background: var(--bg-2, #0F1E35);
+  border: 1px solid var(--border-light, #2C4264);
+  border-radius: 6px;
+  color: var(--text, #E6EDF3);
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  color-scheme: dark;
+}
+.adm-date:focus { border-color: var(--gold-light, #D4A847); }
+@media (max-width: 540px) {
+  .adm-date-range { width: 100%; justify-content: space-between; }
+  .adm-date { flex: 1; min-width: 0; }
+}
+
 /* ============== Orders list ============== */
 .adm-list {
   display: grid;

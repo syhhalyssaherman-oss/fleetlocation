@@ -108,6 +108,8 @@ function Dashboard({ pin, onLogout }) {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [convertModal, setConvertModal] = useState(null);
   const [toast, setToast] = useState("");
 
@@ -119,6 +121,8 @@ function Dashboard({ pin, onLogout }) {
       const params = {};
       if (statusFilter) params.status = statusFilter;
       if (search.trim()) params.q = search.trim();
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo)   params.date_to   = dateTo;
       const [s, o] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/admin/orders`, { headers, params }),
@@ -128,7 +132,7 @@ function Dashboard({ pin, onLogout }) {
     } catch (e) {
       setError(e?.response?.data?.detail || "Gagal memuat data");
     } finally { setLoading(false); }
-  }, [headers, statusFilter, search]);
+  }, [headers, statusFilter, search, dateFrom, dateTo]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
@@ -154,6 +158,8 @@ function Dashboard({ pin, onLogout }) {
       const params = {};
       if (statusFilter) params.status = statusFilter;
       if (search.trim()) params.q = search.trim();
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo)   params.date_to   = dateTo;
       const r = await axios.get(`${API}/admin/orders/export.csv`, {
         headers,
         params,
@@ -233,6 +239,24 @@ function Dashboard({ pin, onLogout }) {
           <option value="">Semua status</option>
           {STATUS_LIST.map((s) => <option key={s} value={s}>{STATUS_LABEL[s].txt}</option>)}
         </select>
+        <div className="adm-date-range">
+          <label className="adm-date-lbl">Dari</label>
+          <input type="date" className="adm-date" value={dateFrom}
+                 onChange={(e) => setDateFrom(e.target.value)} max={dateTo || undefined}
+                 data-testid="adm-date-from" />
+          <label className="adm-date-lbl">Sampai</label>
+          <input type="date" className="adm-date" value={dateTo}
+                 onChange={(e) => setDateTo(e.target.value)} min={dateFrom || undefined}
+                 data-testid="adm-date-to" />
+        </div>
+        {(search || statusFilter || dateFrom || dateTo) && (
+          <button
+            type="button"
+            className="adm-btn adm-btn-ghost adm-btn-sm"
+            onClick={() => { setSearch(""); setStatusFilter(""); setDateFrom(""); setDateTo(""); }}
+            data-testid="adm-filter-reset"
+          >✕ Reset filter</button>
+        )}
       </section>
 
       {/* Orders list */}

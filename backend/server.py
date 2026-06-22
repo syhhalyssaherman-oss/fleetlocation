@@ -886,12 +886,15 @@ async def admin_list_orders(
     limit: int = 100,
     status: Optional[str] = None,
     q: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
 ):
     """Search + filter list for admin dashboard.
     - status: filter by single status (or empty = all)
     - q: case-insensitive search in customer_nama, customer_hp, asal_kota, tujuan_kota, nopol, order_id
+    - date_from / date_to: YYYY-MM-DD (inclusive), filter on created_at
     Returns newest-first up to limit (clamped 1..500)."""
-    filt = _admin_orders_filter(status, q)
+    filt = _admin_orders_filter(status, q, date_from, date_to)
     cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(500, limit)))
     items = []
     async for d in cur:
@@ -900,8 +903,15 @@ async def admin_list_orders(
     return {"count": len(items), "items": items}
 
 
-def _admin_orders_filter(status: Optional[str], q: Optional[str]) -> dict:
-    """Shared filter builder for /admin/orders and /admin/orders/export.csv."""
+def _admin_orders_filter(
+    status: Optional[str],
+    q: Optional[str],
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
+) -> dict:
+    """Shared filter builder for /admin/orders and /admin/orders/export.csv.
+    date_from/date_to: 'YYYY-MM-DD' inclusive. created_at stored as ISO string (UTC) — string compare safe because lexicographic == chronological for ISO 8601.
+    """
     filt: dict = {}
     if status:
         s = status.strip().upper()
@@ -920,6 +930,19 @@ def _admin_orders_filter(status: Optional[str], q: Optional[str]) -> dict:
                 {"nopol": rx},
                 {"order_id": rx},
             ]
+    # Date range — created_at is ISO UTC; filter via lexicographic compare (chronological for ISO 8601)
+    date_q: dict = {}
+    if date_from:
+        df = date_from.strip()[:10]
+        if len(df) == 10:
+            date_q["$gte"] = df + "T00:00:00"
+    if date_to:
+        dt = date_to.strip()[:10]
+        if len(dt) == 10:
+            # Inclusive end-of-day
+            date_q["$lt"] = dt + "T23:59:59.999"
+    if date_q:
+        filt["created_at"] = date_q
     return filt
 
 
@@ -928,14 +951,17 @@ async def admin_export_csv(
     status: Optional[str] = None,
     q: Optional[str] = None,
     limit: int = 5000,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
 ):
     """Export filtered orders to UTF-8 CSV (Excel-compatible, BOM prefixed).
     Columns: Order ID, Tanggal, Customer, HP, Driver, Nomor Polisi, Asal, Tujuan, Status, Harga (UJ), Trip ID.
     Harga is sourced from linked trip.uj when available (set during convert).
+    Supports same filters as /admin/orders: status, q, date_from (YYYY-MM-DD), date_to (YYYY-MM-DD).
     """
     import csv as _csv
     import io as _io
-    filt = _admin_orders_filter(status, q)
+    filt = _admin_orders_filter(status, q, date_from, date_to)
     cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(20000, limit)))
 
     # Collect orders + linked trip_ids for batch lookup
