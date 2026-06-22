@@ -1,4 +1,4 @@
-# PO Admin PHP — Integration Snippets (v2.4)
+# PO Admin PHP — Integration Snippets (v2.6b)
 
 Snippet siap copy-paste ke `po-admin.php` lu (existing). Ganti `REACT_APP_URL` dengan URL React app (PREVIEW atau PRODUCTION).
 
@@ -154,3 +154,72 @@ async def xendit_disburse(trip_id: str, payload: CairBody):
 ```
 
 UI driver page tidak perlu diubah.
+
+---
+
+## 6. (v2.6a) — Link BASTK Premium
+
+Tombol cetak BASTK (PDF A4) per trip — bisa di-add di kolom "Aksi" PO Admin:
+```js
+function bukaBASTK(tripId){
+  window.open(REACT_APP_URL + '/?bastk=' + encodeURIComponent(tripId), '_blank');
+}
+```
+Halaman BASTK auto-load data trip via `GET /api/public/trips/<trip_id>`, lalu admin/customer:
+- pilih tipe kendaraan (20 opsi),
+- klik area sketsa untuk menandai kerusakan (6 kode: RSK/B/P/PC/CL/L),
+- isi data pelanggan + catatan,
+- driver & customer tanda tangan via canvas,
+- klik **⬇ Download PDF A4** untuk file `BASTK-<nopol>.pdf` print-ready.
+
+Semua data BASTK tersimpan di `trips.{vehicle_type, damage_marks, customer_data, signatures, bastk_catatan}` via `POST /api/trips/<trip_id>/bastk` (partial update, fully additive — schema lama tetap valid).
+
+---
+
+## 7. (v2.6b) — Customer Order Form & Endpoint Orders
+
+Public form pemesanan pelanggan (4-step wizard) live di:
+```
+{REACT_APP_URL}/?order=1
+```
+Embed sebagai link di website utama / WhatsApp footer / business card. Pelanggan mengisi:
+1. **Kendaraan** — tipe (20 enum) + nopol/rangka/warna/tahun/km/kondisi.
+2. **Asal** — kota + alamat + tgl & jam pickup + PIC.
+3. **Tujuan** — kota + alamat + PIC penerima.
+4. **Konfirmasi** — nama PT/personal + HP + email + catatan.
+
+Submit POST → `/api/orders` → tersimpan dengan `status=NEW`, `order_id=ORD-XXXXXXXXXX`. Admin bisa:
+- List semua orders: `GET /api/orders?status=NEW&limit=50`
+- Detail satu order: `GET /api/orders/<order_id>`
+- Konversi order → trip via UI PO Admin existing (set `trip_id` lewat update doc — bisa langsung MongoDB shell atau bikin endpoint mini).
+
+### Event Odoo `order.created`
+Setiap order baru auto-fire webhook (kalau `ODOO_WEBHOOK_URL` di-set):
+```json
+{
+  "event": "order.created",
+  "data": {
+    "order_id": "ORD-AB12CD34EF",
+    "customer": {"nama":"PT X","hp":"08...","email":"..."},
+    "vehicle": {"type":"Truck Box","nopol":"..."},
+    "route": "Jakarta → Surabaya",
+    "pickup": {"date":"2026-07-01","time":"09:00"}
+  },
+  "ts": "2026-06-22T..."
+}
+```
+
+### Odoo XML-RPC (real SDK) — saat siap
+Backend ada `OdooClient` stub (env-gated). Set di `backend/.env`:
+```
+ODOO_URL=https://alyssa-odoo.example.com
+ODOO_DB=alyssa_prod
+ODOO_USER=api@alyssa.co.id
+ODOO_KEY=your-api-key-from-odoo-user-settings
+```
+Cek koneksi: `GET /api/odoo/ping` (return enabled+server_version saat env terisi). Belum auto-create record Odoo — scaffold disiapkan, tinggal call `odoo.call("sale.order", "create", [...])` di handler `create_order` saat business mapping sudah disetujui.
+
+---
+
+## Catatan Stabilitas
+Semua endpoint baru bersifat **additive**. Tidak ada schema breaking. Existing PO Admin PHP flow tetap berfungsi tanpa modifikasi sampai poin 5. Poin 6 & 7 opsional.
