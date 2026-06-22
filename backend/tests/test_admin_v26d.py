@@ -23,7 +23,7 @@ if not BASE_URL:
             break
 
 API = f"{BASE_URL}/api"
-ADMIN_PIN = os.environ.get("ADMIN_PIN", "0000")
+ADMIN_PIN = os.environ.get("ADMIN_PIN", "345374")
 H_GOOD = {"X-Admin-Pin": ADMIN_PIN}
 H_BAD = {"X-Admin-Pin": "9999"}
 

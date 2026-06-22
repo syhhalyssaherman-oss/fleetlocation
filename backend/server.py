@@ -29,6 +29,40 @@ db = client[os.environ['DB_NAME']]
 # When empty -> no-op (events only logged).
 ODOO_WEBHOOK = os.environ.get("ODOO_WEBHOOK_URL", "").strip()
 
+
+def _validate_env_on_startup() -> None:
+    """Production env hygiene — log warnings for unsafe defaults. Non-fatal."""
+    warnings = []
+    pin = (os.environ.get("ADMIN_PIN") or "").strip()
+    if not pin:
+        warnings.append("[ENV] ADMIN_PIN not set — /api/admin/* endpoints will return 503.")
+    elif pin == "0000":
+        warnings.append("[ENV] ADMIN_PIN is default '0000' — CHANGE before public production deploy!")
+    elif len(pin) < 4:
+        warnings.append(f"[ENV] ADMIN_PIN length {len(pin)} < 4 — consider stronger PIN.")
+
+    cors = (os.environ.get("CORS_ORIGINS") or "").strip()
+    if cors == "*":
+        warnings.append("[ENV] CORS_ORIGINS='*' — acceptable for v1.0 launch, restrict to production domain post-launch.")
+    elif not cors:
+        warnings.append("[ENV] CORS_ORIGINS empty — all cross-origin requests will be blocked.")
+
+    if not (os.environ.get("MONGO_URL") or "").strip():
+        warnings.append("[ENV] MONGO_URL missing — backend will not start.")
+    if not (os.environ.get("DB_NAME") or "").strip():
+        warnings.append("[ENV] DB_NAME missing — backend will not start.")
+
+    # Odoo: just informational
+    odoo_keys = [k for k in ("ODOO_URL", "ODOO_DB", "ODOO_USER", "ODOO_KEY") if (os.environ.get(k) or "").strip()]
+    if odoo_keys and len(odoo_keys) < 4:
+        warnings.append(f"[ENV] Partial Odoo config ({odoo_keys}) — all 4 required to enable XML-RPC sync.")
+
+    for w in warnings:
+        logging.warning(w)
+
+
+_validate_env_on_startup()
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
