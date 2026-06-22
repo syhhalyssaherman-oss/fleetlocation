@@ -32,7 +32,6 @@ function toggleTheme() {
 export default function AdminDashboard() {
   const [pin, setPin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const [authed, setAuthed] = useState(false);
-  const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const [authError, setAuthError] = useState("");
   const [authing, setAuthing] = useState(false);
 
@@ -109,6 +108,7 @@ function PinScreen({ pin, setPin, doLogin, authing, authError }) {
 /* -------------------- Dashboard -------------------- */
 function Dashboard({ pin, onLogout }) {
   const headers = useMemo(() => ({ "X-Admin-Pin": pin }), [pin]);
+  const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
