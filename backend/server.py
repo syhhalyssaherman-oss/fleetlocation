@@ -4,10 +4,11 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-import os, logging, uuid, shutil
+import os, logging, uuid, shutil, asyncio
+import requests as _requests
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone, timedelta
 
 ROOT_DIR = Path(__file__).parent
@@ -23,13 +24,36 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Optional Odoo webhook (admin can set this in backend/.env to e.g. https://alyssalogistik.co.id/odoo-proxy.php).
+# When empty -> no-op (events only logged).
+ODOO_WEBHOOK = os.environ.get("ODOO_WEBHOOK_URL", "").strip()
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
+
+logger = logging.getLogger(__name__)
 
 # WIB timezone helper (UTC+7) for daily checkpoint
 WIB = timezone(timedelta(hours=7))
 def today_wib() -> str:
     return datetime.now(WIB).strftime("%Y-%m-%d")
+
+
+async def notify_odoo(event: str, payload: dict) -> None:
+    """Fire-and-forget event to admin's Odoo proxy. Never raises."""
+    if not ODOO_WEBHOOK:
+        logger.info(f"[odoo:skip] {event}: {payload}")
+        return
+    body = {"event": event, "data": payload, "ts": datetime.now(timezone.utc).isoformat()}
+    def _post():
+        try:
+            _requests.post(ODOO_WEBHOOK, json=body, timeout=5)
+        except Exception as e:
+            logger.warning(f"[odoo:fail] {event}: {e}")
+    try:
+        await asyncio.to_thread(_post)
+    except Exception as e:
+        logger.warning(f"[odoo:dispatch_fail] {e}")
 
 
 # ---------- Models ----------
@@ -44,6 +68,9 @@ class TripInit(BaseModel):
     t3: int = 0
     bonus_daily: int = 30000
     bonus_kerajinan: int = 150000
+    tipe_kendaraan: str = ""
+    no_rangka: str = ""
+    legs: List[Dict[str, Any]] = []   # [{jalur, asal, tujuan, kapal, harga, status}]
 
 class DriverName(BaseModel):
     nama: str
@@ -81,6 +108,13 @@ async def init_trip(payload: TripInit):
         "daily_checkpoints": [],  # [{date: 'YYYY-MM-DD', url, ts}]
         "handover": {"bastk": [], "resi": None},  # bastk: list pdf/jpg, resi: single
         "cair": {"1": False, "2": False, "3": False},
+        # Xendit stub — filled when admin triggers disburse; MOCKED until legalitas done.
+        "xendit": {
+            "t1": {"id": None, "status": None, "ts": None},
+            "t2": {"id": None, "status": None, "ts": None},
+            "t3": {"id": None, "status": None, "ts": None},
+        },
+        "odoo_synced": {"handover": False, "cair_1": False, "cair_2": False, "cair_3": False},
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     })
@@ -147,8 +181,17 @@ async def upload_initial_photo(trip_id: str, slot: str = Form(...), foto: Upload
     )
     # auto-cair T1 kalau semua 6 initial sudah lengkap
     trip = await db.trips.find_one({"trip_id": trip_id})
-    if all(s in (trip.get("initial_photos") or {}) for s in valid_slots) and not trip.get("cair", {}).get("1"):
+    initial_complete_now = all(s in (trip.get("initial_photos") or {}) for s in valid_slots)
+    if initial_complete_now and not trip.get("cair", {}).get("1"):
         await db.trips.update_one({"trip_id": trip_id}, {"$set": {"cair.1": True}})
+        # Notify Odoo: initial complete + T1 auto-cair
+        await notify_odoo("trip.initial_complete", {
+            "trip_id": trip_id,
+            "nopol": trip.get("nopol"),
+            "nama_driver": trip.get("nama_driver"),
+            "tahap": 1,
+            "amount": trip.get("t1", 0),
+        })
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
 
@@ -173,6 +216,25 @@ async def upload_daily_photo(trip_id: str, foto: UploadFile = File(...)):
     return trip_doc_to_public(doc)
 
 
+async def _maybe_notify_handover_complete(trip_id: str):
+    """Trigger Odoo notification once when both BASTK + Resi are present (idempotent)."""
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        return
+    h = trip.get("handover") or {}
+    if h.get("bastk") and h.get("resi") and not (trip.get("odoo_synced") or {}).get("handover"):
+        await db.trips.update_one({"trip_id": trip_id}, {"$set": {"odoo_synced.handover": True}})
+        await notify_odoo("trip.handover_complete", {
+            "trip_id": trip_id,
+            "nopol": trip.get("nopol"),
+            "nama_driver": trip.get("nama_driver"),
+            "tipe_kendaraan": trip.get("tipe_kendaraan"),
+            "no_rangka": trip.get("no_rangka"),
+            "bastk_count": len(h.get("bastk", [])),
+            "resi_url": (h.get("resi") or {}).get("url"),
+        })
+
+
 @api_router.post("/trips/{trip_id}/photos/handover-bastk")
 async def upload_bastk(trip_id: str, foto: UploadFile = File(...)):
     """BASTK: PDF atau gambar, max 6 file"""
@@ -188,6 +250,7 @@ async def upload_bastk(trip_id: str, foto: UploadFile = File(...)):
         {"trip_id": trip_id},
         {"$push": {"handover.bastk": entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+    await _maybe_notify_handover_complete(trip_id)
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
 
@@ -203,6 +266,7 @@ async def upload_resi(trip_id: str, foto: UploadFile = File(...)):
         {"trip_id": trip_id},
         {"$set": {"handover.resi": entry, "updated_at": datetime.now(timezone.utc).isoformat()}}
     )
+    await _maybe_notify_handover_complete(trip_id)
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
 
@@ -223,8 +287,51 @@ async def request_cair(trip_id: str, payload: CairBody):
         if not h.get("bastk") or not h.get("resi"):
             raise HTTPException(400, "Upload BASTK & Resi dulu")
     await db.trips.update_one({"trip_id": trip_id}, {"$set": {f"cair.{payload.tahap}": True, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    # Notify Odoo (once per tahap)
+    sync_key = f"cair_{payload.tahap}"
+    if not (trip.get("odoo_synced") or {}).get(sync_key):
+        await db.trips.update_one({"trip_id": trip_id}, {"$set": {f"odoo_synced.{sync_key}": True}})
+        amount_field = {1: "t1", 2: "t2", 3: "t3"}[payload.tahap]
+        bonus = trip.get("bonus_kerajinan", 0) if payload.tahap == 3 else 0
+        await notify_odoo("trip.cair", {
+            "trip_id": trip_id,
+            "nopol": trip.get("nopol"),
+            "nama_driver": trip.get("nama_driver"),
+            "tahap": payload.tahap,
+            "amount": trip.get(amount_field, 0),
+            "bonus": bonus,
+            "total": trip.get(amount_field, 0) + bonus,
+        })
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
+
+
+# ---------- Xendit stub (legalitas dalam proses) ----------
+@api_router.post("/trips/{trip_id}/xendit/disburse")
+async def xendit_disburse(trip_id: str, payload: CairBody):
+    """MOCKED — Xendit belum aktif. Endpoint ini cuma persist mock disbursement record.
+    Saat legalitas Xendit selesai, ganti body fungsi ini dengan call ke Xendit SDK/REST API."""
+    if payload.tahap not in (1, 2, 3):
+        raise HTTPException(400, "Tahap harus 1, 2, atau 3")
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+    mock_id = f"xendit_mock_{uuid.uuid4().hex[:12]}"
+    update = {
+        f"xendit.t{payload.tahap}.id": mock_id,
+        f"xendit.t{payload.tahap}.status": "MOCKED_PENDING",
+        f"xendit.t{payload.tahap}.ts": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.trips.update_one({"trip_id": trip_id}, {"$set": update})
+    doc = await db.trips.find_one({"trip_id": trip_id})
+    return {
+        "mocked": True,
+        "disbursement_id": mock_id,
+        "tahap": payload.tahap,
+        "note": "Xendit belum aktif (legalitas dalam proses). Status: MOCKED_PENDING.",
+        "trip": trip_doc_to_public(doc),
+    }
 
 
 @api_router.delete("/trips/{trip_id}/daily/today")
@@ -249,7 +356,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

@@ -43,15 +43,24 @@ function todayIso() {
 function readURLParams() {
   const u = new URL(window.location.href);
   const q = u.searchParams;
+  let legs = [];
+  try {
+    const raw = q.get("legs");
+    if (raw) legs = JSON.parse(decodeURIComponent(raw));
+    if (!Array.isArray(legs)) legs = [];
+  } catch { legs = []; }
   return {
     trip:   q.get("trip")   || "",
     driver: q.get("driver") || "",
     route:  q.get("route")  || "",
     nopol:  q.get("nopol")  || "",
+    tipe:   q.get("tipe")   || "",
+    rangka: q.get("rangka") || "",
     uj:     parseInt(q.get("uj")  || "0") || 0,
     t1:     parseInt(q.get("t1")  || "0") || 0,
     t2:     parseInt(q.get("t2")  || "0") || 0,
     t3:     parseInt(q.get("t3")  || "0") || 0,
+    legs,
   };
 }
 
@@ -99,6 +108,9 @@ export default function DriverCheckpoint() {
           t1: params.t1,
           t2: params.t2,
           t3: params.t3,
+          tipe_kendaraan: params.tipe,
+          no_rangka: params.rangka,
+          legs: params.legs,
         });
         setTrip(res.data);
       } catch (e) {
@@ -293,6 +305,9 @@ export default function DriverCheckpoint() {
         <div className="drv-nopol-wrap">
           <div className="drv-nopol-lbl">Nomor Polisi</div>
           <div className="drv-nopol" data-testid="drv-nopol">{trip.nopol}</div>
+          {trip.tipe_kendaraan && (
+            <div className="drv-tipe" data-testid="drv-tipe">{trip.tipe_kendaraan}{trip.no_rangka ? <span className="drv-rangka"> · {trip.no_rangka}</span> : null}</div>
+          )}
           {trip.route && <div className="drv-route">📍 {trip.route}</div>}
         </div>
         <div className="drv-greet">
@@ -306,6 +321,33 @@ export default function DriverCheckpoint() {
           )}
         </div>
       </section>
+
+      {/* RUTE PENGIRIMAN (LEGS) */}
+      {trip.nama_driver && Array.isArray(trip.legs) && trip.legs.length > 0 && (
+        <section className="drv-card" data-testid="legs-card">
+          <div className="drv-card-head"><span>🛣️ Rute Pengiriman</span></div>
+          <div className="drv-card-body drv-legs">
+            {trip.legs.map((leg, i) => (
+              <div key={i} className="drv-leg-row" data-testid={`leg-${i}`}>
+                <div className="drv-leg-num">{i + 1}</div>
+                <div className="drv-leg-info">
+                  <div className="drv-leg-jalur">{leg.jalur || "—"}</div>
+                  <div className="drv-leg-route">
+                    <span>{leg.asal || "?"}</span>
+                    <span className="drv-leg-arrow">→</span>
+                    <span>{leg.tujuan || "?"}</span>
+                  </div>
+                  {leg.kapal && <div className="drv-leg-vendor">{leg.kapal}</div>}
+                </div>
+                <span className={`drv-leg-status drv-leg-status-${(leg.status||"menunggu").toLowerCase().replace(/\s+/g,"-")}`}>
+                  {leg.status || "Menunggu"}
+                </span>
+              </div>
+            ))}
+            <div className="drv-note">💡 Status leg di-update oleh admin saat unit jalan/tiba. Driver fokus upload foto & dokumen.</div>
+          </div>
+        </section>
+      )}
 
       {/* INPUT NAMA (kalau belum) */}
       {!trip.nama_driver && (

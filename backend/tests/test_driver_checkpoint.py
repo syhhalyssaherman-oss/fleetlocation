@@ -225,3 +225,135 @@ def test_18_cleanup(session, trip_id):
     # No delete endpoint - leave data behind but verify trip still readable
     r = session.get(f"{API}/trips/{trip_id}")
     assert r.status_code == 200
+
+
+# ---------- Iteration 3 tests: tipe/rangka/legs + xendit + odoo_synced ----------
+
+@pytest.fixture(scope="module")
+def trip_id_i3():
+    return f"TRIP-I3-{uuid.uuid4().hex[:8]}"
+
+
+def test_19_init_trip_with_tipe_rangka_legs(session, trip_id_i3):
+    legs = [
+        {"jalur": "Darat", "asal": "Surabaya", "tujuan": "Banyuwangi", "kapal": "", "status": "Menunggu"},
+        {"jalur": "Laut", "asal": "Banyuwangi", "tujuan": "Banjarmasin", "kapal": "KM Mutiara III", "status": "Menunggu"},
+        {"jalur": "Darat", "asal": "Banjarmasin", "tujuan": "Tujuan Akhir", "kapal": "", "status": "Delivered"},
+    ]
+    payload = {
+        "trip_id": trip_id_i3, "driver_id": "DRV-I3", "nopol": "S 8612 HM",
+        "route": "Surabaya - Banjarmasin", "uj": 3500000, "t1": 1750000, "t2": 1050000, "t3": 700000,
+        "tipe_kendaraan": "TRUK TRONTON", "no_rangka": "MFFCWM30GNK817426", "legs": legs,
+    }
+    r = session.post(f"{API}/trips/init", json=payload)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["tipe_kendaraan"] == "TRUK TRONTON"
+    assert d["no_rangka"] == "MFFCWM30GNK817426"
+    assert isinstance(d["legs"], list) and len(d["legs"]) == 3
+    assert d["legs"][1]["kapal"] == "KM Mutiara III"
+    # xendit default block
+    assert d["xendit"] == {
+        "t1": {"id": None, "status": None, "ts": None},
+        "t2": {"id": None, "status": None, "ts": None},
+        "t3": {"id": None, "status": None, "ts": None},
+    }
+    # odoo_synced default block
+    assert d["odoo_synced"] == {"handover": False, "cair_1": False, "cair_2": False, "cair_3": False}
+
+    # GET-verify persistence
+    g = session.get(f"{API}/trips/{trip_id_i3}").json()
+    assert g["tipe_kendaraan"] == "TRUK TRONTON"
+    assert g["no_rangka"] == "MFFCWM30GNK817426"
+    assert len(g["legs"]) == 3
+
+
+def test_20_xendit_disburse_mocked(session, trip_id_i3):
+    r = session.post(f"{API}/trips/{trip_id_i3}/xendit/disburse", json={"tahap": 1})
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["mocked"] is True
+    assert d["tahap"] == 1
+    assert d["disbursement_id"].startswith("xendit_mock_")
+    assert "MOCKED_PENDING" in d["note"]
+    # trip.xendit.t1 persisted
+    t1 = d["trip"]["xendit"]["t1"]
+    assert t1["id"] == d["disbursement_id"]
+    assert t1["status"] == "MOCKED_PENDING"
+    assert t1["ts"] is not None
+    # GET-verify
+    g = session.get(f"{API}/trips/{trip_id_i3}").json()
+    assert g["xendit"]["t1"]["id"] == d["disbursement_id"]
+    assert g["xendit"]["t1"]["status"] == "MOCKED_PENDING"
+
+
+def test_21_xendit_disburse_invalid_tahap(session, trip_id_i3):
+    r = session.post(f"{API}/trips/{trip_id_i3}/xendit/disburse", json={"tahap": 5})
+    assert r.status_code == 400
+    r2 = session.post(f"{API}/trips/{trip_id_i3}/xendit/disburse", json={"tahap": 0})
+    assert r2.status_code == 400
+
+
+def test_22_xendit_disburse_trip_not_found(session):
+    r = session.post(f"{API}/trips/NOPE-{uuid.uuid4().hex}/xendit/disburse", json={"tahap": 1})
+    assert r.status_code == 404
+
+
+def test_23_initial_complete_no_crash_without_webhook(session):
+    """6 initial uploads should auto-cair T1 without any error even when ODOO_WEBHOOK_URL is empty."""
+    tid = f"TRIP-NOHOOK-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 NW", "route": "x"})
+    slots = ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"]
+    last = None
+    for s in slots:
+        files = {"foto": (f"{s}.png", PNG, "image/png")}
+        r = session.post(f"{API}/trips/{tid}/photos/initial", data={"slot": s}, files=files)
+        assert r.status_code == 200, r.text
+        last = r.json()
+    assert last["cair"]["1"] is True
+
+
+def test_24_handover_complete_sets_odoo_synced_idempotent(session):
+    tid = f"TRIP-HOV-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 HV", "route": "x"})
+    # bastk first - should NOT flip handover sync yet
+    r = session.post(f"{API}/trips/{tid}/photos/handover-bastk",
+                     files={"foto": ("b.png", PNG, "image/png")})
+    assert r.status_code == 200
+    assert r.json()["odoo_synced"]["handover"] is False
+    # add resi - now both present, flag should flip
+    r = session.post(f"{API}/trips/{tid}/photos/handover-resi",
+                     files={"foto": ("r.png", PNG, "image/png")})
+    assert r.status_code == 200
+    assert r.json()["odoo_synced"]["handover"] is True
+    # upload another bastk - flag should stay True (idempotent), no crash
+    r2 = session.post(f"{API}/trips/{tid}/photos/handover-bastk",
+                      files={"foto": ("b2.png", PNG, "image/png")})
+    assert r2.status_code == 200
+    assert r2.json()["odoo_synced"]["handover"] is True
+
+
+def test_25_cair_sets_odoo_synced_cair_n(session):
+    tid = f"TRIP-CAIR-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 CR", "route": "x",
+                                            "t1": 100, "t2": 200, "t3": 300})
+    # upload 6 initial to satisfy cair 1 gate (also auto-flips cair.1)
+    for s in ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"]:
+        session.post(f"{API}/trips/{tid}/photos/initial",
+                     data={"slot": s}, files={"foto": (f"{s}.png", PNG, "image/png")})
+    # explicit cair 1 -> odoo_synced.cair_1 True
+    r1 = session.post(f"{API}/trips/{tid}/cair", json={"tahap": 1})
+    assert r1.status_code == 200
+    assert r1.json()["odoo_synced"]["cair_1"] is True
+    # cair 2 (no gate other than tahap in [1,2,3])
+    r2 = session.post(f"{API}/trips/{tid}/cair", json={"tahap": 2})
+    assert r2.status_code == 200
+    assert r2.json()["odoo_synced"]["cair_2"] is True
+    # cair 3 needs bastk+resi
+    session.post(f"{API}/trips/{tid}/photos/handover-bastk",
+                 files={"foto": ("b.png", PNG, "image/png")})
+    session.post(f"{API}/trips/{tid}/photos/handover-resi",
+                 files={"foto": ("r.png", PNG, "image/png")})
+    r3 = session.post(f"{API}/trips/{tid}/cair", json={"tahap": 3})
+    assert r3.status_code == 200
+    assert r3.json()["odoo_synced"]["cair_3"] is True
