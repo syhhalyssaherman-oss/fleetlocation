@@ -90,7 +90,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.4"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6a"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
@@ -364,6 +364,88 @@ async def xendit_disburse(trip_id: str, payload: CairBody):
     }
 
 
+# ---------- BASTK (Berita Acara Serah Terima Kendaraan) — v2.6a ADDITIVE ----------
+VALID_VEHICLE_TYPES = {
+    "Sedan", "MPV", "SUV", "Pickup", "Double Cabin", "CDD", "Truck Box",
+    "Dump Truck", "Tangki", "Tronton", "Box Besar", "Canter", "Canter Pemadam",
+    "Motor 2 Roda", "Motor 3 Roda", "Forklift", "Excavator", "Dozer",
+    "Grader", "Vibro Roller",
+}
+VALID_DAMAGE_CODES = {"RSK", "B", "P", "PC", "CL", "L"}
+
+
+class BASTKBody(BaseModel):
+    vehicle_type: Optional[str] = None
+    damage_marks: Optional[List[Dict[str, Any]]] = None
+    customer_data: Optional[Dict[str, Any]] = None
+    signatures: Optional[Dict[str, Any]] = None  # {driver: dataURL?, customer: dataURL?, admin: dataURL?, ts_driver/customer/admin}
+    catatan: Optional[str] = None
+
+
+@api_router.post("/trips/{trip_id}/bastk")
+async def upsert_bastk(trip_id: str, payload: BASTKBody):
+    """Save BASTK fields. Semua field optional — partial update friendly.
+    NO breaking change: existing trips tanpa field ini tetap valid."""
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+    update = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if payload.vehicle_type is not None:
+        vt = payload.vehicle_type.strip()
+        if vt and vt not in VALID_VEHICLE_TYPES:
+            raise HTTPException(400, f"vehicle_type tidak valid. Pilihan: {sorted(VALID_VEHICLE_TYPES)}")
+        update["vehicle_type"] = vt
+    if payload.damage_marks is not None:
+        # filter only valid codes; coerce x/y to float; truncate note to 120
+        clean = []
+        for m in payload.damage_marks[:80]:  # cap 80 marks
+            code = (m.get("code") or "").strip().upper()
+            if code not in VALID_DAMAGE_CODES:
+                continue
+            try:
+                x = float(m.get("x", 0)); y = float(m.get("y", 0))
+            except Exception:
+                continue
+            clean.append({
+                "id": m.get("id") or str(uuid.uuid4()),
+                "code": code,
+                "x": max(0.0, min(100.0, x)),  # percentage
+                "y": max(0.0, min(100.0, y)),
+                "note": (m.get("note") or "").strip()[:120],
+            })
+        update["damage_marks"] = clean
+    if payload.customer_data is not None:
+        # only whitelisted keys
+        cd = payload.customer_data or {}
+        update["customer_data"] = {
+            "nama":     (cd.get("nama") or "").strip()[:120],
+            "hp":       (cd.get("hp") or "").strip()[:30],
+            "alamat":   (cd.get("alamat") or "").strip()[:300],
+            "pic":      (cd.get("pic") or "").strip()[:120],
+            "warna":    (cd.get("warna") or "").strip()[:40],
+            "tahun":    (cd.get("tahun") or "").strip()[:6],
+            "km":       (cd.get("km") or "").strip()[:12],
+            "kondisi":  (cd.get("kondisi") or "").strip()[:20],
+        }
+    if payload.signatures is not None:
+        sigs = payload.signatures or {}
+        # store base64 dataURL strings — accept driver/customer/admin keys
+        clean_sigs = {}
+        for k in ("driver", "customer", "admin"):
+            v = sigs.get(k)
+            if isinstance(v, str) and v.startswith("data:image"):
+                clean_sigs[k] = v[:400_000]  # max ~400KB dataURL
+                clean_sigs[f"ts_{k}"] = datetime.now(timezone.utc).isoformat()
+        if clean_sigs:
+            update["signatures"] = {**(trip.get("signatures") or {}), **clean_sigs}
+    if payload.catatan is not None:
+        update["bastk_catatan"] = (payload.catatan or "").strip()[:500]
+
+    await db.trips.update_one({"trip_id": trip_id}, {"$set": update})
+    doc = await db.trips.find_one({"trip_id": trip_id})
+    return trip_doc_to_public(doc)
+
+
 @api_router.delete("/trips/{trip_id}/daily/today")
 async def reset_today_daily(trip_id: str):
     """Tester only — reset foto hari ini supaya bisa upload ulang."""
@@ -446,6 +528,12 @@ async def public_trip(trip_id: str):
         "daily_count": len(doc.get("daily_checkpoints", []) or []),
         "daily_checkpoints": doc.get("daily_checkpoints", []) or [],
         "initial_done": len(doc.get("initial_photos", {}) or {}),
+        # BASTK fields (v2.6a, optional)
+        "vehicle_type": doc.get("vehicle_type", ""),
+        "damage_marks": doc.get("damage_marks", []),
+        "customer_data": doc.get("customer_data", {}),
+        "signatures": doc.get("signatures", {}),
+        "bastk_catatan": doc.get("bastk_catatan", ""),
         "progress": {
             "initial_complete": len(doc.get("initial_photos", {}) or {}) >= 5,
             "handover_complete": bool(h.get("bastk")) and bool(h.get("resi")),
