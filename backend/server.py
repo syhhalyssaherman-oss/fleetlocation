@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Header, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
@@ -33,6 +33,17 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 logger = logging.getLogger(__name__)
+
+# ----- Admin PIN guard (simple, env-driven) -----
+def require_admin_pin(x_admin_pin: Optional[str] = Header(default=None, alias="X-Admin-Pin")) -> bool:
+    """Require X-Admin-Pin header matching ADMIN_PIN env var. Empty env disables admin endpoints."""
+    expected = (os.environ.get("ADMIN_PIN") or "").strip()
+    if not expected:
+        raise HTTPException(503, "Admin disabled (ADMIN_PIN env not set)")
+    if not x_admin_pin or x_admin_pin.strip() != expected:
+        raise HTTPException(401, "Invalid or missing admin PIN")
+    return True
+
 
 # WIB timezone helper (UTC+7) for daily checkpoint
 WIB = timezone(timedelta(hours=7))
@@ -91,7 +102,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6c"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6d"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
@@ -832,6 +843,115 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
             logger.warning(f"[odoo:sync_order:sale_fail] order_id={order_id}")
     except Exception as e:
         logger.warning(f"[odoo:sync_order:exception] order_id={order_id}: {e}")
+
+
+# ---------- Admin Mini-Dashboard (v2.6d, PIN-gated) ----------
+VALID_ORDER_STATUS = {"NEW", "DISPATCHED", "ON_TRIP", "DELIVERED", "CANCELLED"}
+
+
+class AdminAuthBody(BaseModel):
+    pin: str
+
+
+@api_router.post("/admin/auth")
+async def admin_auth(body: AdminAuthBody):
+    """Validate PIN. Returns 200 if valid. Frontend stores PIN client-side."""
+    expected = (os.environ.get("ADMIN_PIN") or "").strip()
+    if not expected:
+        raise HTTPException(503, "Admin disabled (ADMIN_PIN env not set)")
+    if not body.pin or body.pin.strip() != expected:
+        raise HTTPException(401, "Invalid PIN")
+    return {"ok": True}
+
+
+@api_router.get("/admin/stats", dependencies=[Depends(require_admin_pin)])
+async def admin_stats():
+    """Counts by status. Used for dashboard chip badges."""
+    counts = {s: 0 for s in VALID_ORDER_STATUS}
+    pipeline = [{"$group": {"_id": "$status", "n": {"$sum": 1}}}]
+    async for d in db.orders.aggregate(pipeline):
+        s = (d.get("_id") or "").upper()
+        if s in counts:
+            counts[s] = d["n"]
+    total = sum(counts.values())
+    trips_total = await db.trips.count_documents({})
+    return {"total": total, "by_status": counts, "trips_total": trips_total}
+
+
+@api_router.get("/admin/orders", dependencies=[Depends(require_admin_pin)])
+async def admin_list_orders(
+    limit: int = 100,
+    status: Optional[str] = None,
+    q: Optional[str] = None,
+):
+    """Search + filter list for admin dashboard.
+    - status: filter by single status (or empty = all)
+    - q: case-insensitive search in customer_nama, customer_hp, asal_kota, tujuan_kota, nopol, order_id
+    Returns newest-first up to limit (clamped 1..500)."""
+    filt: dict = {}
+    if status:
+        s = status.strip().upper()
+        if s and s in VALID_ORDER_STATUS:
+            filt["status"] = s
+    if q:
+        qs = q.strip()
+        if qs:
+            import re as _re
+            rx = _re.compile(_re.escape(qs), _re.IGNORECASE)
+            filt["$or"] = [
+                {"customer_nama": rx},
+                {"customer_hp": rx},
+                {"asal_kota": rx},
+                {"tujuan_kota": rx},
+                {"nopol": rx},
+                {"order_id": rx},
+            ]
+    cur = db.orders.find(filt).sort("created_at", -1).limit(max(1, min(500, limit)))
+    items = []
+    async for d in cur:
+        d.pop("_id", None)
+        items.append(d)
+    return {"count": len(items), "items": items}
+
+
+class OrderPatchBody(BaseModel):
+    status: Optional[str] = None
+    driver_id: Optional[str] = None
+    catatan: Optional[str] = None
+
+
+@api_router.patch("/admin/orders/{order_id}", dependencies=[Depends(require_admin_pin)])
+async def admin_patch_order(order_id: str, payload: OrderPatchBody):
+    """Update order status and/or driver_id. Mirrors to linked trip when driver_id changes."""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    upd: dict = {"updated_at": datetime.now(timezone.utc).isoformat()}
+    if payload.status is not None:
+        s = payload.status.strip().upper()
+        if s not in VALID_ORDER_STATUS:
+            raise HTTPException(400, f"Invalid status. Valid: {sorted(VALID_ORDER_STATUS)}")
+        upd["status"] = s
+    if payload.driver_id is not None:
+        upd["driver_id"] = payload.driver_id.strip()[:60]
+    if payload.catatan is not None:
+        upd["catatan"] = payload.catatan.strip()[:500]
+    if len(upd) == 1:
+        raise HTTPException(400, "No fields to update")
+    await db.orders.update_one({"order_id": order_id}, {"$set": upd})
+
+    # Mirror driver_id to linked trip
+    tid = order.get("trip_id")
+    if tid and "driver_id" in upd:
+        await db.trips.update_one({"trip_id": tid}, {"$set": {"driver_id": upd["driver_id"], "updated_at": upd["updated_at"]}})
+
+    # Reload
+    fresh = await db.orders.find_one({"order_id": order_id})
+    fresh.pop("_id", None)
+    # Fire status event
+    if "status" in upd:
+        await notify_odoo("order.status_changed", {"order_id": order_id, "status": upd["status"], "trip_id": tid})
+    return fresh
 
 
 # ---------- Static file serving for uploads ----------
