@@ -1,25 +1,35 @@
-# PRD — Alyssa Driver Checkpoint (v1.0 — PRODUCTION RELEASE)
+# PRD — Alyssa Driver Checkpoint (v1.0.1 — Tutorial Operasional)
 
 ## Current Status
-**v1.0 SHIPPED — PRODUCTION READY · FEATURE FREEZE.** 143/143 backend pytest pass, frontend 100% verified across 5 routes (driver/track/bastk/order/admin). Mobile responsive ✓, empty/error states ✓, CSV export with date range filter ✓, 0 critical/UI/design issues. See `/app/RELEASE_v1.0.md` for full release notes.
+**v1.0.1 SHIPPED — PRODUCTION READY.** 143/143 backend pytest pass, frontend 100% verified across **6 routes** (driver/track/bastk/order/admin/guide). Tutorial Operasional onboarding cards live untuk adopsi lapangan (driver/admin/customer yang gaptek). Mobile + print PDF A4 verified. See `/app/RELEASE_v1.0.md` for full release notes.
 
 ## Tech Stack
 - React + Tailwind (custom theme Navy `#0A1628` + Gold `#D4A847`)
 - FastAPI + Motor (Async MongoDB)
 - Libraries: react-leaflet, jspdf, html2canvas, axios (frontend); xmlrpc.client stdlib (Odoo)
 
-## App Structure (5 routes)
+## App Structure (6 routes)
 ```
-/?trip=<trip_id>[&driver=<id>]  → DriverCheckpoint   (driver-side)
-/?track=<trip_id>               → CustomerTracking   (read-only PoD)
-/?bastk=<trip_id>               → BASTKPage          (premium A4 PDF + QR)
-/?order=1                       → CustomerOrderForm  (4-step wizard, public)
-/?admin=1                       → AdminDashboard     (PIN-gated, internal)
+/?trip=<trip_id>[&driver=<id>][&nopol=<nopol>]  → DriverCheckpoint
+/?track=<trip_id>                               → CustomerTracking
+/?bastk=<trip_id>                               → BASTKPage (+ QR)
+/?order=1                                       → CustomerOrderForm
+/?admin=1                                       → AdminDashboard (PIN-gated)
+/?guide=1                                       → OperationGuide (Tutorial)
 ```
 
 ## Feature Matrix
 
-### v2.6d.1 (NEW — CSV Export)
+### v1.0.1 (NEW — Tutorial Operasional Cards)
+- **`/?guide=1`** — onboarding card UI premium navy+gold untuk Driver/Admin/Customer yang gaptek.
+- **3 kategori, 19 cards total**: Driver (6), Admin (8), Customer (5).
+- Setiap card: icon emoji, nomor besar gradient gold, judul, 4-6 langkah bernomor, tip dengan 💡 icon.
+- **Onboarding nav**: Sebelumnya/Berikutnya, dots indicator clickable, progress bar gradient.
+- **Print PDF A4**: tombol "⬇ PDF A4" → multi-page PDF semua 19 cards layout 2-col grid + page-break-inside avoid. Filename `Tutorial-Operasional-Alyssa-v1.0.pdf`.
+- **Admin shortcut**: tombol "📘 Tutorial" di Admin Dashboard topbar.
+- Mobile responsive (390×844 verified).
+
+### v2.6d.1 (CSV Export)
 - **"📥 Export CSV"** button in Admin topbar.
 - Endpoint `GET /api/admin/orders/export.csv?status=&q=&limit=` — UTF-8 BOM (Excel-compatible), 11 columns, filter-aware.
 - Harga (UJ) auto-pulled from linked trip; batch-loaded for performance.

@@ -4,14 +4,15 @@ Premium logistics ops platform untuk **PT Alyssa Auto Logistik** — designed fo
 
 ## Quick Start
 
-### 5 Routes
-| URL                          | Audience          | Auth         |
-|------------------------------|-------------------|--------------|
-| `/?order=1`                  | Customer (public) | None         |
-| `/?trip=<id>&driver=<id>&nopol=<nopol>` | Driver         | URL is key   |
-| `/?track=<id>`               | Customer          | URL is key   |
-| `/?bastk=<id>`               | Admin / Customer  | URL is key   |
-| `/?admin=1`                  | Internal admin    | `ADMIN_PIN`  |
+### 6 Routes
+| URL                                     | Audience          | Auth         |
+|-----------------------------------------|-------------------|--------------|
+| `/?order=1`                             | Customer (public) | None         |
+| `/?trip=<id>&driver=<id>&nopol=<nopol>` | Driver            | URL is key   |
+| `/?track=<id>`                          | Customer          | URL is key   |
+| `/?bastk=<id>`                          | Admin / Customer  | URL is key   |
+| `/?admin=1`                             | Internal admin    | `ADMIN_PIN`  |
+| `/?guide=1`                             | Tutorial onboarding | None       |
 
 ### Admin Login
 - URL: `/?admin=1`

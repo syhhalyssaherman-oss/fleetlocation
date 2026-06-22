@@ -190,6 +190,9 @@ function Dashboard({ pin, onLogout }) {
           <div className="adm-topbar-sub">PT Alyssa Auto Logistik</div>
         </div>
         <div className="adm-topbar-actions">
+          <a href="?guide=1" target="_blank" rel="noreferrer" className="adm-btn adm-btn-ghost adm-btn-sm" data-testid="adm-tutorial-link">
+            📘 Tutorial
+          </a>
           <button className="adm-btn adm-btn-gold adm-btn-sm" onClick={exportCsv} data-testid="adm-export-csv">
             📥 Export CSV
           </button>

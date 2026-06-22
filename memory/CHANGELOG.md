@@ -1,5 +1,23 @@
 # CHANGELOG — Alyssa Driver Checkpoint
 
+## [v1.0.1] — Feb 2026 (Tutorial Operasional)
+### Added
+- **`OperationGuide.jsx` + `Guide.css`** — new route `/?guide=1` with onboarding card UI.
+- **19 cards** total across 3 categories (Driver 6, Admin 8, Customer 5).
+- Premium navy+gold theme: gold gradient big number, emoji icon, numbered step bullets, italic tip with 💡 lightbulb.
+- Stepper navigation (Sebelumnya / Berikutnya), clickable dots indicator, animated progress bar.
+- **PDF A4 print**: offscreen multi-page generation via jsPDF + html2canvas; filename `Tutorial-Operasional-Alyssa-v1.0.pdf`.
+- **Admin shortcut**: "📘 Tutorial" link added to Admin Dashboard topbar.
+- Mobile-first responsive (390×844 verified).
+
+### Notes
+- Zero backend changes (pure frontend feature).
+- No schema impact.
+- All 143 backend pytest still pass.
+- Bahasa Indonesia language throughout for non-technical user onboarding.
+
+---
+
 ## [v1.0] — Feb 2026 (PRODUCTION RELEASE) 🚀
 ### Added
 - **Date range filter** in Admin Dashboard (DARI/SAMPAI inputs + Reset filter button) — integrates with both list view + CSV export.
