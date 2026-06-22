@@ -102,7 +102,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6d"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "1.0"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}

@@ -181,8 +181,8 @@ class TestVersion:
         """v2.6c or later (current production)."""
         r = s.get(f"{API}/")
         v = r.json().get("v", "")
-        # accept v2.6c and any subsequent v2.6x version (additive iterations)
-        assert v.startswith("2.6"), f"unexpected version: {v}"
+        # accept v2.6c, v2.6d, v1.0+ etc.
+        assert v.startswith(("2.6", "1.")), f"unexpected version: {v}"
 
 
 # ---------- Regression: existing flows still work ----------

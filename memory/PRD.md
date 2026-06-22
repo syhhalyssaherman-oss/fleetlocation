@@ -1,7 +1,7 @@
-# PRD — Alyssa Driver Checkpoint (v2.6d.1)
+# PRD — Alyssa Driver Checkpoint (v1.0 — PRODUCTION RELEASE)
 
 ## Current Status
-**v2.6d.1 SHIPPED — PRODUCTION READY.** 137/137 backend pytest pass, frontend 100% verified across 5 routes (driver/track/bastk/order/admin). Mobile responsive confirmed. Admin Dashboard with CSV Export ready for daily ops.
+**v1.0 SHIPPED — PRODUCTION READY · FEATURE FREEZE.** 143/143 backend pytest pass, frontend 100% verified across 5 routes (driver/track/bastk/order/admin). Mobile responsive ✓, empty/error states ✓, CSV export with date range filter ✓, 0 critical/UI/design issues. See `/app/RELEASE_v1.0.md` for full release notes.
 
 ## Tech Stack
 - React + Tailwind (custom theme Navy `#0A1628` + Gold `#D4A847`)

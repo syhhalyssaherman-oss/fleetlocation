@@ -1,5 +1,25 @@
 # CHANGELOG — Alyssa Driver Checkpoint
 
+## [v1.0] — Feb 2026 (PRODUCTION RELEASE) 🚀
+### Added
+- **Date range filter** in Admin Dashboard (DARI/SAMPAI inputs + Reset filter button) — integrates with both list view + CSV export.
+- Backend `_admin_orders_filter()` extended with `date_from` / `date_to` params (ISO lexicographic compare on `created_at`, inclusive end-of-day on date_to).
+- HTML5 date input min/max attrs prevent invalid date combos at UI level.
+- Reset filter button appears when any of (search, status, dateFrom, dateTo) is set; clears all 4 simultaneously.
+
+### Production Hardening
+- `/app/PRODUCTION_DEPLOY.md` — full env vars table, DB index commands, backup runbook, operational runbook.
+- `/app/RELEASE_v1.0.md` — release notes + deploy checklist.
+
+### Tests
+- 6 new date-filter tests in `test_admin_v26d.py::TestAdminDateFilter`.
+- Full suite **143/143 pass**.
+
+### Feature Freeze
+Per user direction. Remaining backlog deferred to v1.1+.
+
+---
+
 ## [v2.6d.1] — Feb 2026 (CSV Export)
 ### Added
 - **`GET /api/admin/orders/export.csv`** (PIN-gated) — filter-aware (status + q) UTF-8 BOM CSV export, Excel-compatible.
