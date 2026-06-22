@@ -1,58 +1,89 @@
-# PRD — Alyssa Driver Checkpoint (v2.5)
+# PRD — Alyssa Driver Checkpoint (v2.6a complete)
 
-## v2.5 Focus: Driver Checkpoint Status + Reminder + PoD PDF Download
+## Current Status (Feb-2026)
+**v2.6a SHIPPED**: BASTK (Berita Acara Serah Terima Kendaraan) Premium PDF Generator.
+**Next**: v2.6b — Customer Order Form + Odoo SDK stub.
 
-## What's New in v2.5
-- **Status enum** di daily upload: Berangkat / Checkpoint 1 / Checkpoint 2 / Checkpoint 3 / Tiba Tujuan
-- **Keterangan** optional (max 300 char) — context catatan dari driver
-- **Reminder banner** otomatis di driver dashboard:
-  - `<06:00 WIB` → gold "Reminder Besok Pagi"
-  - `06–12 WIB` → green "WAKTUNYA FOTO CHECKPOINT" + countdown sisa jam
-  - `≥12 WIB` → red "TERLAMBAT! Foto deadline lewat"
-- **PoD PDF Download** premium per checkpoint: header navy + brand AAL + foto besar + map + info lengkap, A4 portrait, filename `PoD-{nopol}-CP{n}.pdf`
-- **Status chip** berwarna di PoD card (biru=Berangkat, green=CP1-3, gold=Tiba Tujuan)
-- **Keterangan box** di PoD card kalau driver kasih catatan
+## Tech Stack
+- React + Tailwind (custom theme Navy + Gold)
+- FastAPI + Motor (Async MongoDB)
+- Libraries: react-leaflet, jspdf, html2canvas, axios
 
-## Deferred ke v2.6 (transparency)
-Karena scope user expand besar di pesan terakhir, item berikut **belum** di-implement di v2.5 — fokus stabil dulu:
-- BASTK PDF template generator (A4 portrait premium)
-- 20 sketsa kendaraan (Sedan/MPV/SUV/Pickup/Double Cabin/CDD/Truck Box/Dump Truck/Tangki/Tronton/Box Besar/Canter/Canter Pemadam/Motor 2 Roda/Motor 3 Roda/Forklift/Excavator/Dozer/Grader/Vibro Roller)
-- Damage checklist hotspot (RSK/B/P/PC/CL/L) di atas sketsa
-- Customer order form 4-step (Kendaraan/Asal/Tujuan/Konfirmasi)
-- Real Odoo SDK integration (webhook stub tetap aktif)
-- Real Xendit (legalitas pending)
-
-## DB Schema (additive only)
-`daily_checkpoints` entry sekarang punya optional `status` + `keterangan`:
-```js
-daily_checkpoints: [
-  { id, date, url, ts, lat?, lng?, status?, keterangan? }
-]
+## App Structure (3 routes)
+```
+/?trip=<trip_id>   → DriverCheckpoint  (driver-side, full lifecycle)
+/?track=<trip_id>  → CustomerTracking  (read-only PoD)
+/?bastk=<trip_id>  → BASTKPage         (premium PDF generator)
 ```
 
-## Testing
-- Backend: **60/60 pytest pass** (49 regression + 10 v2.5 + seed-fix verified)
-- Frontend: **100%** verified (form, reminder banner, status chip, PDF button)
-- Seed TRIP-POD-DEMO sudah di-reseed dengan v2.5 fields untuk demo
-- Mock APIs: 1 (Xendit MOCKED)
+## v2.6a Features (NEW)
+- **20 SVG vehicle sketches**: Sedan / MPV / SUV / Pickup / Double Cabin / CDD / Truck Box / Dump Truck / Tangki / Tronton / Box Besar / Canter / Canter Pemadam / Motor 2 Roda / Motor 3 Roda / Forklift / Excavator / Dozer / Grader / Vibro Roller.
+- **Damage checklist hotspot**: 6 codes — RSK / B / P / PC / CL / L — click to add markers on sketch, click marker to remove.
+- **Dual signature pad**: Driver + Customer, base64 PNG persisted in MongoDB (capped 400KB).
+- **A4 print-ready PDF**: html2canvas → jsPDF, multi-page split, 2.5x scale for crisp print, filename `BASTK-<nopol>.pdf`.
+- **Customer data form**: nama/HP/PIC/alamat/warna/tahun/km/kondisi, all whitelisted + truncated server-side.
+- **Premium UI**: Navy + Gold print area with double-line gold border header, two-column data tables, embedded sketch panel, signature tri-grid, footer.
 
-## Integration ke PO Admin PHP (existing)
-File `/app/INTEGRATION_PO_ADMIN_PHP.md` masih valid — snippet untuk:
-1. URL constant
-2. Replace `kirimLinkCheckpoint()` (link ke React + push tipe/rangka/legs)
-3. **Baru** `copyLinkTracking()` tombol untuk pelanggan
-4. Odoo webhook env
-5. Xendit drop-in saat legalitas done
+## v2.5 Features (DONE)
+- Status enum on daily upload (Berangkat / CP1 / CP2 / CP3 / Tiba Tujuan)
+- Keterangan optional (300 char)
+- Reminder banner (06:00 WIB)
+- PoD PDF download per checkpoint
+- Status chip + keterangan box in PoD card
 
-## Next Iteration (v2.6) Roadmap
-1. **VehicleSketches.jsx** — 20 SVG sketches library
-2. **BASTK PDF generator page** `/?bastk=<trip_id>` — A4 premium dengan sketsa + checklist hotspot
-3. **CustomerOrderForm.jsx** — 4-step wizard di `/?order=1`
-4. **`POST /api/orders`** backend endpoint + Odoo webhook event `order.created`
-5. **Damage checklist** UI dengan codes RSK/B/P/PC/CL/L (clickable hotspot di atas sketsa)
-6. **Digital signature** canvas
+## DB Schema (additive, backward-compatible)
+```js
+trips: {
+  trip_id, driver_id, nopol, route, uj, t1, t2, t3, bonus_daily, bonus_kerajinan,
+  tipe_kendaraan, no_rangka, legs,
+  nama_driver, sop_read,
+  initial_photos: { ... },
+  daily_checkpoints: [{ id, date, url, ts, lat?, lng?, status?, keterangan? }],
+  album: { asal:[], kapal:[], tujuan:[], dokumen:[] },
+  handover: { bastk:[], resi:null },
+  cair: { 1, 2, 3 },
+  xendit: { t1, t2, t3 },           // MOCKED
+  odoo_synced: { handover, cair_1, cair_2, cair_3 },
+  // v2.6a additive:
+  vehicle_type?,                     // enum: 20 types
+  damage_marks?: [{ id, code, x%, y%, note? }],
+  customer_data?: { nama, hp, alamat, pic, warna, tahun, km, kondisi },
+  signatures?: { driver?, customer?, admin?, ts_* },
+  bastk_catatan?,
+  created_at, updated_at,
+}
+```
 
-## Next Action Items (User)
-- Deploy v2.5 ke production (stabil, no breaking changes)
-- Integrate snippet PHP ke PO Admin existing
-- Lanjut iterasi v2.6 untuk BASTK + sketches + form (bisa di-iterasi terpisah)
+## Testing Status
+- **Backend**: **74/74 pytest pass** (49 base + 10 v2.5 + 14 v2.6a BASTK + 1 seed self-heal).
+- **Frontend**: 100% — BASTK lifecycle (load → edit → save → reload persistence → PDF), regression on `/?trip=` and `/?track=` unbroken.
+- **Mocked APIs**: Xendit (legalitas pending), Odoo webhook (no-op when ODOO_WEBHOOK_URL empty).
+
+## Integration ke PO Admin PHP
+File `/app/INTEGRATION_PO_ADMIN_PHP.md` valid — snippet untuk URL constant, `kirimLinkCheckpoint()`, `copyLinkTracking()`, Odoo webhook env, Xendit drop-in.
+
+## Env (backend/.env)
+```
+MONGO_URL, DB_NAME, CORS_ORIGINS
+ODOO_WEBHOOK_URL  # optional generic webhook (no-op when empty)
+ODOO_URL, ODOO_DB, ODOO_USER, ODOO_KEY  # placeholders for v2.6b real SDK
+```
+
+## Pending v2.6b Roadmap (NEXT)
+- **CustomerOrderForm.jsx** 4-step wizard di `/?order=1` (Kendaraan → Asal → Tujuan → Konfirmasi).
+- **POST /api/orders** backend endpoint dengan validasi + Odoo webhook event `order.created`.
+- **Odoo XML-RPC client** real (stub-ready) — pakai env `ODOO_URL/DB/USER/KEY`. Saat env empty → fallback ke notify_odoo no-op.
+- **Auto-create BASTK** dari order pelanggan (bridge order → trip).
+
+## Future / Backlog (P2)
+- Real Xendit (legalitas done)
+- Admin dashboard lokal (kalau perlu)
+- "Clear all marks" button di BASTK editor (UX nice-to-have)
+- Watermark logo di PDF
+- Sketch zoom + pan untuk marker presisi
+- BASTK email/WhatsApp share otomatis ke pelanggan
+
+## Demo URLs (TRIP-POD-DEMO)
+- Driver: `/?trip=TRIP-POD-DEMO`
+- Customer: `/?track=TRIP-POD-DEMO`
+- BASTK: `/?bastk=TRIP-POD-DEMO` (sudah seeded: Truck Box + 3 marks + customer Logistik Jaya)

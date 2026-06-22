@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Any, Dict
 from datetime import datetime, timezone, timedelta
+from odoo_client import OdooClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -90,7 +91,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6a"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.6b"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
@@ -541,6 +542,126 @@ async def public_trip(trip_id: str):
         "created_at": doc.get("created_at"),
         "updated_at": doc.get("updated_at"),
     }
+
+
+@api_router.get("/odoo/ping")
+async def odoo_ping():
+    """Diagnostic: report Odoo client status. Safe to call always.
+    When env empty → enabled=false. When set → tries server.version() (no auth).
+    """
+    return OdooClient().ping()
+
+
+# ---------- Customer Order Form (v2.6b) ----------
+class OrderBody(BaseModel):
+    # Kendaraan
+    vehicle_type: str
+    nopol: str = ""
+    no_rangka: str = ""
+    warna: str = ""
+    tahun: str = ""
+    km: str = ""
+    kondisi: str = "Bekas"
+    # Asal
+    asal_kota: str
+    asal_alamat: str = ""
+    pickup_date: str = ""        # ISO "YYYY-MM-DD"
+    pickup_time: str = ""        # "HH:MM"
+    pickup_pic: str = ""
+    pickup_hp: str = ""
+    # Tujuan
+    tujuan_kota: str
+    tujuan_alamat: str = ""
+    delivery_pic: str = ""
+    delivery_hp: str = ""
+    # Customer
+    customer_nama: str
+    customer_hp: str
+    customer_email: str = ""
+    catatan: str = ""
+
+
+@api_router.post("/orders")
+async def create_order(payload: OrderBody):
+    """Create a customer order (v2.6b). Validates + persists + fires Odoo webhook.
+    Compatibility layer: returns order_id; does NOT auto-create trip yet (admin still triggers via PO).
+    """
+    vt = (payload.vehicle_type or "").strip()
+    if vt and vt not in VALID_VEHICLE_TYPES:
+        raise HTTPException(400, f"vehicle_type tidak valid. Pilihan: {sorted(VALID_VEHICLE_TYPES)}")
+    if not (payload.asal_kota or "").strip():
+        raise HTTPException(400, "asal_kota wajib diisi")
+    if not (payload.tujuan_kota or "").strip():
+        raise HTTPException(400, "tujuan_kota wajib diisi")
+    if not (payload.customer_nama or "").strip():
+        raise HTTPException(400, "customer_nama wajib diisi")
+    if not (payload.customer_hp or "").strip():
+        raise HTTPException(400, "customer_hp wajib diisi")
+
+    order_id = f"ORD-{uuid.uuid4().hex[:10].upper()}"
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "order_id": order_id,
+        "status": "NEW",                # NEW → CONFIRMED → DISPATCHED → COMPLETED → CANCELLED
+        "vehicle_type": vt,
+        "nopol": (payload.nopol or "").strip()[:20],
+        "no_rangka": (payload.no_rangka or "").strip()[:40],
+        "warna": (payload.warna or "").strip()[:40],
+        "tahun": (payload.tahun or "").strip()[:6],
+        "km": (payload.km or "").strip()[:12],
+        "kondisi": (payload.kondisi or "Bekas").strip()[:20],
+        "asal_kota": payload.asal_kota.strip()[:80],
+        "asal_alamat": (payload.asal_alamat or "").strip()[:300],
+        "pickup_date": (payload.pickup_date or "").strip()[:10],
+        "pickup_time": (payload.pickup_time or "").strip()[:5],
+        "pickup_pic": (payload.pickup_pic or "").strip()[:120],
+        "pickup_hp": (payload.pickup_hp or "").strip()[:30],
+        "tujuan_kota": payload.tujuan_kota.strip()[:80],
+        "tujuan_alamat": (payload.tujuan_alamat or "").strip()[:300],
+        "delivery_pic": (payload.delivery_pic or "").strip()[:120],
+        "delivery_hp": (payload.delivery_hp or "").strip()[:30],
+        "customer_nama": payload.customer_nama.strip()[:120],
+        "customer_hp": payload.customer_hp.strip()[:30],
+        "customer_email": (payload.customer_email or "").strip()[:120],
+        "catatan": (payload.catatan or "").strip()[:500],
+        "trip_id": None,                 # filled when admin converts order → trip
+        "created_at": now,
+        "updated_at": now,
+    }
+    await db.orders.insert_one(doc)
+    # Fire Odoo webhook (no-op when ODOO_WEBHOOK_URL empty — see notify_odoo)
+    await notify_odoo("order.created", {
+        "order_id": order_id,
+        "customer": {"nama": doc["customer_nama"], "hp": doc["customer_hp"], "email": doc["customer_email"]},
+        "vehicle": {"type": doc["vehicle_type"], "nopol": doc["nopol"]},
+        "route": f'{doc["asal_kota"]} → {doc["tujuan_kota"]}',
+        "pickup": {"date": doc["pickup_date"], "time": doc["pickup_time"]},
+    })
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/orders/{order_id}")
+async def get_order(order_id: str):
+    doc = await db.orders.find_one({"order_id": order_id})
+    if not doc:
+        raise HTTPException(404, "Order not found")
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/orders")
+async def list_orders(limit: int = 50, status: Optional[str] = None):
+    """Admin-friendly listing. Last 50 orders newest-first."""
+    q = {}
+    if status:
+        q["status"] = status.strip().upper()[:20]
+    cur = db.orders.find(q).sort("created_at", -1).limit(max(1, min(200, limit)))
+    items = []
+    async for d in cur:
+        d.pop("_id", None)
+        items.append(d)
+    return {"count": len(items), "items": items}
 
 
 # ---------- Static file serving for uploads ----------

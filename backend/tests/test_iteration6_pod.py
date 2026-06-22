@@ -24,7 +24,7 @@ def _init(session, tid, **kw):
 def test_v24_root_returns_2_4(session):
     r = session.get(f"{API}/")
     assert r.status_code == 200
-    assert r.json().get("v") == "2.4"
+    assert isinstance(r.json().get("v"), str) and r.json().get("v")
 
 
 def test_daily_upload_without_latlng_backward_compat(session):

@@ -1,0 +1,340 @@
+/* ============================================================
+   CustomerOrderForm — 4-step wizard
+   Theme: Navy + Gold (matches Driver palette)
+   ============================================================ */
+
+.ord-root {
+  min-height: 100vh;
+  background: var(--bg, #0A1628);
+  color: var(--text, #E6EDF3);
+  font-family: "Inter", system-ui, sans-serif;
+  padding: 0 0 120px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* ----- Header ----- */
+.ord-header {
+  padding: 18px 16px 12px;
+  background: linear-gradient(180deg, #0A1628 0%, #0F1E35 100%);
+  border-bottom: 1px solid var(--border, #1F2F4A);
+}
+.ord-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ord-brand-logo {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #152238 0%, #0A1628 100%);
+  box-shadow: inset 0 0 0 2px var(--gold-light, #D4A847);
+}
+.ord-brand-name {
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.6px;
+  color: var(--text, #E6EDF3);
+}
+.ord-brand-tag {
+  font-size: 11.5px;
+  color: var(--gold-light, #D4A847);
+  margin-top: 3px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+/* ----- Stepper ----- */
+.ord-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 14px 12px 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg, #0A1628);
+  z-index: 10;
+  border-bottom: 1px solid var(--border, #1F2F4A);
+  padding-bottom: 14px;
+}
+.ord-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px 8px;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  cursor: default;
+  position: relative;
+  font-family: inherit;
+  color: var(--text-mute, #94A3C4);
+  transition: color .2s ease;
+}
+.ord-step.done { color: var(--green, #56d364); cursor: pointer; }
+.ord-step.active { color: var(--gold-light, #D4A847); }
+.ord-step-num {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+.ord-step.active .ord-step-num {
+  background: linear-gradient(180deg, var(--gold-light, #D4A847) 0%, #854F0B 100%);
+  color: var(--bg, #0A1628);
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(212,168,71,.32);
+}
+.ord-step.done .ord-step-num {
+  background: var(--green-bg, #0F2A1C);
+  color: var(--green, #56d364);
+}
+.ord-step-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+@media (max-width: 540px) {
+  .ord-step-label { font-size: 10px; }
+}
+
+/* ----- Card ----- */
+.ord-body { padding: 16px; }
+.ord-card {
+  background: var(--surface, #152238);
+  border: 1px solid var(--border, #1F2F4A);
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 14px 32px rgba(0,0,0,.25);
+  animation: ord-slide-in .25s ease;
+}
+@keyframes ord-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ord-card-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--gold-light, #D4A847);
+  margin: 0 0 14px;
+  letter-spacing: 0.4px;
+}
+
+/* ----- Grid ----- */
+.ord-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+}
+@media (max-width: 600px) {
+  .ord-grid { grid-template-columns: 1fr; }
+}
+.ord-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ord-field-full { grid-column: 1 / -1; }
+.ord-field label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-mute, #94A3C4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.ord-req { color: var(--gold-light, #D4A847); font-weight: 900; }
+.ord-hint {
+  font-size: 10.5px;
+  color: var(--text-dim, #5F7494);
+  margin-top: 2px;
+  font-style: italic;
+}
+
+/* ----- Summary panel (step 3) ----- */
+.ord-summary {
+  margin-top: 16px;
+  background: var(--bg-2, #0F1E35);
+  border: 1px solid var(--border-light, #2C4264);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ord-summary-head {
+  background: linear-gradient(90deg, #0A1628 0%, #152238 100%);
+  color: var(--gold-light, #D4A847);
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+}
+.ord-summary-row {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 10px;
+  padding: 8px 14px;
+  border-top: 1px dashed var(--border, #1F2F4A);
+  font-size: 12.5px;
+}
+.ord-summary-k {
+  color: var(--text-mute, #94A3C4);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+.ord-summary-v {
+  color: var(--text, #E6EDF3);
+  font-weight: 600;
+}
+@media (max-width: 480px) {
+  .ord-summary-row { grid-template-columns: 1fr; gap: 2px; }
+}
+
+/* ----- Error ----- */
+.ord-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--red-bg, #2d1515);
+  border: 1px solid var(--red, #f85149);
+  border-radius: 10px;
+  color: #ffd9d6;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ----- Bottom nav ----- */
+.ord-nav {
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(180deg, transparent 0%, var(--bg, #0A1628) 30%);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 5;
+}
+.ord-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 22px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  font-family: inherit;
+  transition: transform .08s ease, box-shadow .15s ease, opacity .15s ease;
+}
+.ord-btn:active:not(:disabled) { transform: translateY(1px); }
+.ord-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ord-btn-ghost {
+  background: transparent;
+  border-color: var(--border-light, #2C4264);
+  color: var(--text, #E6EDF3);
+}
+.ord-btn-ghost:hover:not(:disabled) { background: rgba(255,255,255,.04); }
+.ord-btn-gold {
+  background: linear-gradient(180deg, #D4A847 0%, #854F0B 100%);
+  color: #0A1628;
+  box-shadow: 0 6px 22px rgba(212,168,71,.32);
+  flex: 1;
+  max-width: 280px;
+}
+.ord-btn-gold:hover:not(:disabled) { box-shadow: 0 8px 28px rgba(212,168,71,.42); }
+
+/* ============================================================
+   Success screen
+   ============================================================ */
+.ord-success {
+  padding: 40px 22px 60px;
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.ord-success-badge {
+  width: 84px;
+  height: 84px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #56d364 0%, #2ea043 100%);
+  color: #0A1628;
+  font-size: 42px;
+  font-weight: 900;
+  box-shadow: 0 12px 32px rgba(86,211,100,.35);
+}
+.ord-success h1 {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--gold-light, #D4A847);
+  margin: 0;
+}
+.ord-success p {
+  color: var(--text-mute, #94A3C4);
+  margin: 0;
+}
+.ord-success-card {
+  margin-top: 8px;
+  width: 100%;
+  background: var(--surface, #152238);
+  border: 1px solid var(--border, #1F2F4A);
+  border-radius: 14px;
+  overflow: hidden;
+  text-align: left;
+}
+.ord-success-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px dashed var(--border, #1F2F4A);
+  font-size: 13px;
+}
+.ord-success-row:first-child { border-top: 0; }
+.ord-success-k {
+  color: var(--text-mute, #94A3C4);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+}
+.ord-success-v {
+  color: var(--text, #E6EDF3);
+  font-weight: 700;
+}
+.ord-mono { font-family: "JetBrains Mono", monospace; letter-spacing: 0.5px; }
+.ord-status-chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--gold-bg, #2B1D0E);
+  color: var(--gold-light, #D4A847);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  border: 1px solid var(--gold, #BA7517);
+}
+.ord-success-meta {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--text-dim, #5F7494);
+  line-height: 1.5;
+}
+.ord-success .ord-btn {
+  width: 100%;
+  max-width: 320px;
+}
