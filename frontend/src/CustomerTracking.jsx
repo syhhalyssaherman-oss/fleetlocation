@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import "@/App.css";
 import "@/Driver.css";
+import PoDCard from "@/PoDCard";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -110,7 +111,7 @@ export default function CustomerTracking() {
         <div className="drv-card-head"><span>📊 Status Pengiriman</span></div>
         <div className="drv-card-body">
           <div className="trk-progress-grid">
-            <ProgressTile lbl="Foto Awal" val={`${data.initial_done}/6`} ok={progress.initial_complete} />
+            <ProgressTile lbl="Foto Awal" val={`${data.initial_done}/5`} ok={progress.initial_complete} />
             <ProgressTile lbl="Checkpoint Harian" val={`${data.daily_count}`} ok={data.daily_count > 0} />
             <ProgressTile lbl="BASTK + Resi" val={progress.handover_complete ? "Lengkap" : "Belum"} ok={progress.handover_complete} />
           </div>
@@ -138,6 +139,28 @@ export default function CustomerTracking() {
                   {leg.status || "Menunggu"}
                 </span>
               </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Proof of Delivery (daily checkpoint cards) */}
+      {(data.daily_checkpoints || []).length > 0 && (
+        <section className="drv-card" data-testid="trk-pod-list">
+          <div className="drv-card-head">
+            <span>📋 Proof of Delivery</span>
+            <span className="drv-pill drv-pill-ok">{(data.daily_checkpoints || []).length} checkpoint</span>
+          </div>
+          <div className="drv-card-body drv-pod-list">
+            {[...(data.daily_checkpoints || [])].slice().reverse().map((cp, i, arr) => (
+              <PoDCard
+                key={cp.id}
+                photo={cp}
+                backendUrl={BACKEND_URL}
+                namaDriver={data.nama_driver}
+                nopol={data.nopol}
+                dayIndex={arr.length - 1 - i}
+              />
             ))}
           </div>
         </section>

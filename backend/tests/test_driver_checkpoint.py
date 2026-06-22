@@ -72,7 +72,7 @@ def test_01_root(session):
     assert r.status_code == 200
     data = r.json()
     assert data.get("message") == "Alyssa Driver Checkpoint API"
-    assert data.get("v") == "2.2"
+    assert data.get("v") == "2.4"
 
 
 def test_02_init_trip_new(session, trip_id):

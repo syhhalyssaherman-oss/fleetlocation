@@ -90,7 +90,7 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.2"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.4"}
 
 
 VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
@@ -208,7 +208,12 @@ async def upload_initial_photo(trip_id: str, slot: str = Form(...), foto: Upload
 
 
 @api_router.post("/trips/{trip_id}/photos/daily")
-async def upload_daily_photo(trip_id: str, foto: UploadFile = File(...)):
+async def upload_daily_photo(
+    trip_id: str,
+    foto: UploadFile = File(...),
+    lat: Optional[float] = Form(None),
+    lng: Optional[float] = Form(None),
+):
     trip = await db.trips.find_one({"trip_id": trip_id})
     if not trip:
         raise HTTPException(404, "Trip not found")
@@ -218,7 +223,15 @@ async def upload_daily_photo(trip_id: str, foto: UploadFile = File(...)):
     if any(cp.get("date") == today for cp in daily):
         raise HTTPException(409, "Foto hari ini sudah terkirim")
     url = _save_upload(trip_id, "daily", foto, ALLOWED_IMG)
-    entry = {"id": str(uuid.uuid4()), "date": today, "url": url, "ts": datetime.now(timezone.utc).isoformat()}
+    entry = {
+        "id": str(uuid.uuid4()),
+        "date": today,
+        "url": url,
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    if lat is not None and lng is not None:
+        entry["lat"] = float(lat)
+        entry["lng"] = float(lng)
     await db.trips.update_one(
         {"trip_id": trip_id},
         {"$push": {"daily_checkpoints": entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
@@ -425,6 +438,7 @@ async def public_trip(trip_id: str):
             "resi": h.get("resi"),
         },
         "daily_count": len(doc.get("daily_checkpoints", []) or []),
+        "daily_checkpoints": doc.get("daily_checkpoints", []) or [],
         "initial_done": len(doc.get("initial_photos", {}) or {}),
         "progress": {
             "initial_complete": len(doc.get("initial_photos", {}) or {}) >= 5,

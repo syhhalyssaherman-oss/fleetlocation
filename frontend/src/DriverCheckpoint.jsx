@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import axios from "axios";
 import "@/App.css";
 import "@/Driver.css";
+import PoDCard from "@/PoDCard";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -210,12 +211,28 @@ export default function DriverCheckpoint() {
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) { showToast("Foto terlalu besar (max 8MB)", "err"); return; }
     setUploadingDaily(true);
+    // Best-effort GPS capture (5s timeout). Kalau gagal/denied, lanjut tanpa GPS.
+    const getGPS = () => new Promise((resolve) => {
+      if (!("geolocation" in navigator)) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
+      );
+    });
     try {
+      const gps = await getGPS();
       const fd = new FormData();
       fd.append("foto", file);
+      if (gps) {
+        fd.append("lat", String(gps.lat));
+        fd.append("lng", String(gps.lng));
+      }
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/daily`, fd);
       setTrip(r.data);
-      showToast("Checkpoint hari ini terkirim! Bonus Rp 30.000 diproses.");
+      showToast(gps
+        ? "Checkpoint + lokasi terkirim! Bonus Rp 30.000 diproses."
+        : "Checkpoint terkirim (tanpa GPS). Bonus Rp 30.000 diproses.");
     } catch (e) {
       const msg = e?.response?.data?.detail || "Upload gagal";
       showToast(msg, "err");
@@ -691,6 +708,28 @@ export default function DriverCheckpoint() {
         </section>
       )}
 
+      {/* PROOF OF DELIVERY (Daily checkpoint list with map+info) */}
+      {trip.nama_driver && daily.length > 0 && (
+        <section className="drv-card" data-testid="pod-card-list">
+          <div className="drv-card-head">
+            <span>📋 Proof of Delivery</span>
+            <span className="drv-pill drv-pill-ok">{daily.length} checkpoint</span>
+          </div>
+          <div className="drv-card-body drv-pod-list">
+            {[...daily].slice().reverse().map((cp, i) => (
+              <PoDCard
+                key={cp.id}
+                photo={cp}
+                backendUrl={BACKEND_URL}
+                namaDriver={trip.nama_driver}
+                nopol={trip.nopol}
+                dayIndex={daily.length - 1 - i}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* PENCAIRAN UANG JALAN */}
       {trip.nama_driver && (
         <section className="drv-card" data-testid="cair-card">
@@ -803,7 +842,7 @@ export default function DriverCheckpoint() {
 
       <footer className="drv-footer">
         PT Alyssa Auto Logistik · 0818 631 135<br/>
-        <span style={{ opacity: 0.55 }}>v2.2 Driver Checkpoint</span>
+        <span style={{ opacity: 0.55 }}>v2.4 Driver Checkpoint</span>
       </footer>
 
       {/* SOP MODAL — Premium full-screen design */}

@@ -2,25 +2,26 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap");
 
 :root {
-  --bg: #0d1117;
-  --bg-2: #0a0f1a;
-  --surface: #161b22;
-  --surface-2: #1c2128;
-  --border: #21262d;
-  --border-light: #30363d;
-  --text: #e6edf3;
-  --text-mute: #8b949e;
-  --text-dim: #484f58;
+  /* === Navy + Gold premium palette === */
+  --bg: #0A1628;          /* deep navy */
+  --bg-2: #0F1E35;        /* navy darker */
+  --surface: #152238;     /* navy slate */
+  --surface-2: #1B2C46;
+  --border: #1F2F4A;
+  --border-light: #2C4264;
+  --text: #E6EDF3;
+  --text-mute: #94A3C4;
+  --text-dim: #5F7494;
   --gold: #BA7517;
   --gold-light: #D4A847;
   --gold-soft: #EF9F27;
-  --gold-bg: #2b1d0e;
+  --gold-bg: #2B1D0E;
   --green: #56d364;
   --green-dark: #2ea043;
-  --green-bg: #14291c;
-  --blue: #38bdf8;
-  --blue-dark: #0ea5e9;
-  --blue-bg: #0c2d3a;
+  --green-bg: #0F2A1C;
+  --blue: #60A5FA;
+  --blue-dark: #2563EB;
+  --blue-bg: #0C2D52;
   --red: #f85149;
   --red-bg: #2d1515;
   --wa: #25d366;
@@ -48,6 +49,154 @@
   background: var(--bg);
 }
 .drv-error { color: var(--red); font-weight: 600; }
+
+/* ============== PROOF OF DELIVERY CARD ============== */
+.drv-pod-list {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+.pod-card {
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--surface) 100%);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  position: relative;
+}
+.pod-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-light), var(--gold), transparent);
+  z-index: 2;
+}
+.pod-photo-wrap {
+  position: relative;
+  background: #000;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+}
+.pod-photo-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.pod-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 240ms;
+}
+.pod-photo:hover { transform: scale(1.02); }
+.pod-photo-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-light));
+  color: #fff;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 5px 10px;
+  border-radius: 100px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.pod-map-wrap {
+  height: 160px;
+  position: relative;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.pod-map-wrap .leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+.pod-map-no-gps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--bg-2);
+  color: var(--text-mute);
+  font-size: 12px;
+  gap: 4px;
+}
+.pod-map-no-gps-icon { font-size: 26px; opacity: 0.5; }
+.pod-info {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pod-info-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pod-info-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  min-width: 0;
+}
+.pod-info-ico { font-size: 14px; flex-shrink: 0; }
+.pod-info-val {
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  word-break: break-word;
+}
+.pod-info-mono {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.pod-coord {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pod-coord-link {
+  color: var(--blue);
+  text-decoration: none;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  font-size: 11.5px;
+}
+.pod-coord-link:hover { color: var(--gold-light); text-decoration: underline; }
+
+/* Map pin (Leaflet divIcon) */
+.pod-pin { position: relative; }
+.pod-pin .pod-pin-dot {
+  position: absolute; inset: 0; margin: auto;
+  width: 12px; height: 12px;
+  background: var(--red);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+}
+.pod-pin .pod-pin-ring {
+  position: absolute; inset: -8px; margin: auto;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(248, 81, 73, 0.3);
+  animation: podPulse 1.8s ease-out infinite;
+}
+@keyframes podPulse {
+  0% { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
 
 /* ============== STEP SCREENS (NAME / SOP) ============== */
 .drv-step-screen {
