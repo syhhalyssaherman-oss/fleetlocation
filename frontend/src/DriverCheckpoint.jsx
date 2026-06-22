@@ -14,22 +14,18 @@ const SLOT_LABELS = {
   belakang: "Tampak Belakang",
   kiri: "Sisi Kiri",
   kanan: "Sisi Kanan",
-  spidometer: "Spidometer",
-  bbm: "Jarum BBM",
+  spidometer: "Dashboard / Spidometer",
 };
-const SLOT_ORDER = ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"];
+const SLOT_ORDER = ["depan", "belakang", "kiri", "kanan", "spidometer"];
 
-const SOP_TEXT = [
-  "1. Periksa kondisi kendaraan SEBELUM berangkat: ban, oli, air radiator, BBM, rem.",
-  "2. Bawa STNK, SIM, dan dokumen serah terima. Jangan tinggalkan di mobil saat ditinggal.",
-  "3. Patuhi rambu lalu lintas. JANGAN ngebut. Maksimal 80 km/jam di jalan tol.",
-  "4. Wajib upload 6 foto awal: 4 sisi mobil + spidometer + jarum BBM SEBELUM jalan.",
-  "5. Setiap hari jam 06.00–12.00 WIB upload 1 foto depan kendaraan (NoPol kelihatan). Bonus Rp 30.000/hari.",
-  "6. Kalau rajin foto tiap hari sampai tiba, dapat BONUS KERAJINAN Rp 150.000.",
-  "7. JANGAN bawa penumpang lain selain crew yang ditugaskan.",
-  "8. JANGAN merokok di dalam kendaraan. Pelanggaran = potong uang jalan.",
-  "9. Saat tiba: upload BASTK (max 6 lembar) + foto Resi pengiriman dokumen.",
-  "10. Hubungi admin via WA kalau ada kendala: 0818-631-135.",
+const SOP_POINTS = [
+  { title: "CEK FISIK", body: "Cek oli, air radiator, lampu, dan ban (termasuk ban serep) sebelum berangkat." },
+  { title: "FOTO UNIT", body: "Wajib upload foto 4 sisi mobil + foto dashboard bensin sebelum gas." },
+  { title: "UPDATE FOTO JALUR", body: "Klik tombol hijau setiap hari antara jam 06.00 – 12.00 siang. Foto lokasi wajib terkirim dalam window waktu tersebut. Dapat Rp 30.000 per foto!" },
+  { title: "ATURAN KABIN", body: "Dilarang merokok di dalam mobil. Dilarang beri tumpangan orang asing. Kecepatan tol max 80–100 km/jam." },
+  { title: "PENAMPILAN", body: "Wajib berpakaian rapi dan sopan saat bertemu pelanggan di tujuan." },
+  { title: "ATURAN FINISH", body: "Mobil WAJIB DICUCI BERSIH dan bensin/solar minimal sisa 1 BAR sebelum serah terima ke konsumen." },
+  { title: "DOKUMEN AMAN", body: "Foto BASTK yang ditandatangani konsumen + foto resi ekspedisi asli agar sisa uang jalan langsung cair via Xendit." },
 ];
 
 function pad(n) { return String(n).padStart(2, "0"); }
@@ -41,6 +37,32 @@ function albumStageIcon(s) {
   return { asal: "🏁", kapal: "⛴️", tujuan: "📍", dokumen: "📄" }[s] || "📷";
 }
 const ALBUM_STAGES = ["asal", "kapal", "tujuan", "dokumen"];
+
+function AAlyssaLogo({ size = 96 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="Alyssa Logistik">
+      <defs>
+        <linearGradient id="aalGold" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#D4A847" />
+          <stop offset="100%" stopColor="#854F0B" />
+        </linearGradient>
+        <radialGradient id="aalGreen" cx="50%" cy="60%" r="55%">
+          <stop offset="0%" stopColor="#3CB371" />
+          <stop offset="100%" stopColor="#0F5132" />
+        </radialGradient>
+      </defs>
+      {/* grass mound */}
+      <ellipse cx="60" cy="92" rx="40" ry="10" fill="url(#aalGreen)" />
+      <path d="M22,88 Q60,72 98,88 L98,96 Q60,82 22,96 Z" fill="url(#aalGreen)" opacity="0.85" />
+      {/* pole */}
+      <rect x="58.5" y="30" width="3" height="58" fill="url(#aalGold)" />
+      {/* flag */}
+      <path d="M61.5,28 L92,38 L61.5,52 Z" fill="#E11D48" stroke="#7F1D1D" strokeWidth="1" />
+      {/* hole shadow */}
+      <ellipse cx="60" cy="90" rx="6" ry="2" fill="#000" opacity="0.35" />
+    </svg>
+  );
+}
 function todayIso() {
   // Tampilan tanggal lokal browser (WIB di mobile user)
   const d = new Date();
@@ -302,12 +324,99 @@ export default function DriverCheckpoint() {
     return <div className="drv-error">Trip tidak ditemukan.</div>;
   }
 
+  // ===== STEP 1: NAMA (full-screen, premium) =====
+  if (!trip.nama_driver) {
+    return (
+      <div className="drv-root drv-step-screen" data-testid="drv-name-screen">
+        <div className="drv-step-card" data-testid="name-card">
+          <AAlyssaLogo size={120} />
+          <div className="drv-step-brand">ALYSSA LOGISTIK</div>
+          <div className="drv-step-form">
+            <div className="drv-step-greet">Halo Driver! <span className="drv-step-wave">👋</span></div>
+            <div className="drv-step-greet-sub">Masukkan nama lengkap sesuai KTP</div>
+            <label className="drv-step-label" htmlFor="drv-nama-input">NAMA LENGKAP</label>
+            <input
+              id="drv-nama-input"
+              type="text"
+              placeholder="Nama sesuai KTP"
+              value={namaInput}
+              onChange={(e) => setNamaInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") submitNama(); }}
+              className="drv-step-input"
+              autoComplete="name"
+              autoFocus
+              data-testid="input-nama"
+            />
+            <button
+              className="drv-step-cta"
+              onClick={submitNama}
+              disabled={savingName}
+              data-testid="btn-save-nama"
+            >
+              {savingName ? "Menyimpan..." : "Lanjut →"}
+            </button>
+            <div className="drv-step-footnote">Data rekening akan diisi oleh admin</div>
+          </div>
+          {trip.nopol && (
+            <div className="drv-step-trip-pill" data-testid="drv-step-nopol">
+              <span>UNIT</span><b>{trip.nopol}</b>
+            </div>
+          )}
+        </div>
+        {toast && (
+          <div className={`drv-toast ${toast.type === "err" ? "drv-toast-err" : "drv-toast-ok"}`} data-testid="toast">
+            {toast.msg}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ===== STEP 2: SOP (full-screen, forced) =====
+  if (!trip.sop_read) {
+    return (
+      <div className="drv-root drv-step-screen drv-step-sop" data-testid="drv-sop-screen">
+        <div className="drv-sop-banner">
+          <div className="drv-sop-warn">⚠️</div>
+          <div className="drv-sop-banner-title">WAJIB BACA SEBELUM JALAN!</div>
+          <div className="drv-sop-banner-sub">7 PERINTAH DRIVER ALYSSA</div>
+        </div>
+        <ol className="drv-sop-points">
+          {SOP_POINTS.map((p, i) => (
+            <li key={i} className="drv-sop-point">
+              <div className="drv-sop-num">{i + 1}</div>
+              <div className="drv-sop-body"><b>{p.title}:</b> {p.body}</div>
+            </li>
+          ))}
+        </ol>
+        <div className="drv-sop-emergency">
+          <div className="drv-sop-emergency-icon">🚨</div>
+          <div className="drv-sop-emergency-text">
+            <b>DARURAT:</b> Jika mobil mogok atau ada kendala berat, <b>DILARANG</b> bongkar/perbaiki sendiri tanpa izin kantor! Hubungi admin: <b>0818 631 135</b>
+          </div>
+        </div>
+        <button className="drv-sop-accept" onClick={markSOP} data-testid="btn-sop-ok">
+          <span className="drv-sop-accept-emoji">🤚</span>
+          <div className="drv-sop-accept-text">
+            <div className="drv-sop-accept-main">Saya Sudah Baca &amp; Setuju</div>
+            <div className="drv-sop-accept-sub">Tap tombol ini untuk lanjut</div>
+          </div>
+        </button>
+        {toast && (
+          <div className={`drv-toast ${toast.type === "err" ? "drv-toast-err" : "drv-toast-ok"}`} data-testid="toast">
+            {toast.msg}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const hh = pad(now.getHours()), mm = pad(now.getMinutes()), ss = pad(now.getSeconds());
   const dayName = ID_DAYS[now.getDay()];
 
   const initial = trip.initial_photos || {};
   const initialDone = SLOT_ORDER.filter((s) => initial[s]).length;
-  const allInitialDone = initialDone === 6;
+  const allInitialDone = initialDone === 5;
 
   const daily = trip.daily_checkpoints || [];
   const todayStr = (() => {
@@ -353,14 +462,8 @@ export default function DriverCheckpoint() {
           {trip.route && <div className="drv-route">📍 {trip.route}</div>}
         </div>
         <div className="drv-greet">
-          {trip.nama_driver ? (
-            <>
-              <div className="drv-greet-lbl">Halo,</div>
-              <div className="drv-greet-name" data-testid="drv-greet-name">{trip.nama_driver}</div>
-            </>
-          ) : (
-            <div className="drv-greet-empty">Isi nama dulu yuk</div>
-          )}
+          <div className="drv-greet-lbl">Halo,</div>
+          <div className="drv-greet-name" data-testid="drv-greet-name">{trip.nama_driver}</div>
         </div>
       </section>
 
@@ -391,46 +494,24 @@ export default function DriverCheckpoint() {
         </section>
       )}
 
-      {/* INPUT NAMA (kalau belum) */}
-      {!trip.nama_driver && (
-        <section className="drv-card drv-card-input" data-testid="name-card">
-          <div className="drv-card-head">Tulis Nama Anda</div>
-          <div className="drv-card-body">
-            <input
-              type="text"
-              placeholder="Contoh: Hermansyah"
-              value={namaInput}
-              onChange={(e) => setNamaInput(e.target.value)}
-              className="drv-input"
-              data-testid="input-nama"
-            />
-            <button className="drv-btn drv-btn-gold" onClick={submitNama} disabled={savingName} data-testid="btn-save-nama">
-              {savingName ? "Menyimpan..." : "Simpan & Mulai"}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* BACA SOP */}
-      {trip.nama_driver && (
-        <section className="drv-card" data-testid="sop-card">
-          <div className="drv-card-head">
-            <span>📖 Standar Operasi (SOP)</span>
-            {trip.sop_read && <span className="drv-pill drv-pill-ok">✓ Sudah Dibaca</span>}
-          </div>
-          <div className="drv-card-body">
-            <button className={`drv-btn ${trip.sop_read ? "drv-btn-ghost" : "drv-btn-gold"}`} onClick={() => setShowSOP(true)} data-testid="btn-baca-sop">
-              {trip.sop_read ? "Baca Ulang SOP" : "Baca SOP Dulu"}
-            </button>
-          </div>
-        </section>
-      )}
+      {/* BACA ULANG SOP (kecil, opsional) */}
+      <section className="drv-card" data-testid="sop-card">
+        <div className="drv-card-head">
+          <span>📖 SOP Driver</span>
+          <span className="drv-pill drv-pill-ok">✓ Sudah Dibaca</span>
+        </div>
+        <div className="drv-card-body">
+          <button className="drv-btn drv-btn-ghost" onClick={() => setShowSOP(true)} data-testid="btn-baca-sop">
+            Baca Ulang SOP
+          </button>
+        </div>
+      </section>
 
       {/* INITIAL PHOTOS (6 foto wajib) */}
       {trip.nama_driver && (
         <section className="drv-card" data-testid="initial-card">
           <div className="drv-card-head">
-            <span>📸 Foto Awal Wajib ({initialDone}/6)</span>
+            <span>📸 Foto Awal Wajib ({initialDone}/5)</span>
             {allInitialDone && <span className="drv-pill drv-pill-ok">✓ Lengkap</span>}
           </div>
           <div className="drv-card-body">
@@ -725,19 +806,37 @@ export default function DriverCheckpoint() {
         <span style={{ opacity: 0.55 }}>v2.2 Driver Checkpoint</span>
       </footer>
 
-      {/* SOP MODAL */}
+      {/* SOP MODAL — Premium full-screen design */}
       {showSOP && (
-        <div className="drv-modal-wrap" onClick={() => setShowSOP(false)} data-testid="sop-modal">
-          <div className="drv-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="drv-modal-head">
-              <span>📖 Baca SOP</span>
-              <button className="drv-modal-x" onClick={() => setShowSOP(false)}>×</button>
+        <div className="drv-sop-overlay" data-testid="sop-modal">
+          <div className="drv-sop-screen">
+            <div className="drv-sop-banner">
+              <div className="drv-sop-warn">⚠️</div>
+              <div className="drv-sop-banner-title">WAJIB BACA SEBELUM JALAN!</div>
+              <div className="drv-sop-banner-sub">7 PERINTAH DRIVER ALYSSA</div>
             </div>
-            <ol className="drv-sop-list">
-              {SOP_TEXT.map((s, i) => <li key={i}>{s}</li>)}
+            <ol className="drv-sop-points">
+              {SOP_POINTS.map((p, i) => (
+                <li key={i} className="drv-sop-point">
+                  <div className="drv-sop-num">{i + 1}</div>
+                  <div className="drv-sop-body">
+                    <b>{p.title}:</b> {p.body}
+                  </div>
+                </li>
+              ))}
             </ol>
-            <button className="drv-btn drv-btn-gold drv-btn-block" onClick={markSOP} data-testid="btn-sop-ok">
-              Saya Mengerti & Setuju
+            <div className="drv-sop-emergency">
+              <div className="drv-sop-emergency-icon">🚨</div>
+              <div className="drv-sop-emergency-text">
+                <b>DARURAT:</b> Jika mobil mogok atau ada kendala berat, <b>DILARANG</b> bongkar/perbaiki sendiri tanpa izin kantor! Hubungi admin: <b>0818 631 135</b>
+              </div>
+            </div>
+            <button className="drv-sop-accept" onClick={markSOP} data-testid="btn-sop-ok">
+              <span className="drv-sop-accept-emoji">🤚</span>
+              <div className="drv-sop-accept-text">
+                <div className="drv-sop-accept-main">Saya Sudah Baca &amp; Setuju</div>
+                <div className="drv-sop-accept-sub">Tap tombol ini untuk lanjut</div>
+              </div>
             </button>
           </div>
         </div>

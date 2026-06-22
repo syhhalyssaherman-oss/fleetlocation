@@ -177,8 +177,8 @@ def _save_upload(trip_id: str, sub: str, file: UploadFile, allowed: set) -> str:
 
 @api_router.post("/trips/{trip_id}/photos/initial")
 async def upload_initial_photo(trip_id: str, slot: str = Form(...), foto: UploadFile = File(...)):
-    """slot in: depan, belakang, kiri, kanan, spidometer, bbm"""
-    valid_slots = {"depan", "belakang", "kiri", "kanan", "spidometer", "bbm"}
+    """slot in: depan, belakang, kiri, kanan, spidometer (5 wajib)"""
+    valid_slots = {"depan", "belakang", "kiri", "kanan", "spidometer"}
     if slot not in valid_slots:
         raise HTTPException(400, f"Slot tidak valid. Pilihan: {valid_slots}")
     trip = await db.trips.find_one({"trip_id": trip_id})
@@ -291,8 +291,8 @@ async def request_cair(trip_id: str, payload: CairBody):
         raise HTTPException(404, "Trip not found")
     # Aturan minimal — gate sederhana
     if payload.tahap == 1:
-        if len(trip.get("initial_photos") or {}) < 6:
-            raise HTTPException(400, "Lengkapi 6 foto awal dulu")
+        if len(trip.get("initial_photos") or {}) < 5:
+            raise HTTPException(400, "Lengkapi 5 foto awal dulu")
     elif payload.tahap == 3:
         h = trip.get("handover") or {}
         if not h.get("bastk") or not h.get("resi"):
@@ -427,7 +427,7 @@ async def public_trip(trip_id: str):
         "daily_count": len(doc.get("daily_checkpoints", []) or []),
         "initial_done": len(doc.get("initial_photos", {}) or {}),
         "progress": {
-            "initial_complete": len(doc.get("initial_photos", {}) or {}) >= 6,
+            "initial_complete": len(doc.get("initial_photos", {}) or {}) >= 5,
             "handover_complete": bool(h.get("bastk")) and bool(h.get("resi")),
         },
         "created_at": doc.get("created_at"),

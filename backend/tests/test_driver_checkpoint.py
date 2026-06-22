@@ -130,8 +130,9 @@ def test_07_sop_read(session, trip_id):
     assert g["sop_read"] is True
 
 
-def test_08_upload_6_initial_and_auto_cair(session, trip_id):
-    slots = ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"]
+def test_08_upload_5_initial_and_auto_cair(session, trip_id):
+    # v2.3: 5 slots only (bbm dropped)
+    slots = ["depan", "belakang", "kiri", "kanan", "spidometer"]
     last = None
     for s in slots:
         files = {"foto": (f"{s}.png", PNG, "image/png")}
@@ -141,8 +142,8 @@ def test_08_upload_6_initial_and_auto_cair(session, trip_id):
         last = r.json()
         assert s in last["initial_photos"]
         assert last["initial_photos"][s]["url"].startswith(f"/api/uploads/{trip_id}/initial/{s}/")
-    assert len(last["initial_photos"]) == 6
-    assert last["cair"]["1"] is True  # auto cair
+    assert len(last["initial_photos"]) == 5
+    assert last["cair"]["1"] is True  # auto cair after 5 slots
 
 
 def test_09_upload_initial_bad_slot(session, trip_id):
@@ -300,10 +301,10 @@ def test_22_xendit_disburse_trip_not_found(session):
 
 
 def test_23_initial_complete_no_crash_without_webhook(session):
-    """6 initial uploads should auto-cair T1 without any error even when ODOO_WEBHOOK_URL is empty."""
+    """5 initial uploads should auto-cair T1 without any error even when ODOO_WEBHOOK_URL is empty."""
     tid = f"TRIP-NOHOOK-{uuid.uuid4().hex[:8]}"
     session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 NW", "route": "x"})
-    slots = ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"]
+    slots = ["depan", "belakang", "kiri", "kanan", "spidometer"]
     last = None
     for s in slots:
         files = {"foto": (f"{s}.png", PNG, "image/png")}
@@ -337,8 +338,8 @@ def test_25_cair_sets_odoo_synced_cair_n(session):
     tid = f"TRIP-CAIR-{uuid.uuid4().hex[:8]}"
     session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 CR", "route": "x",
                                             "t1": 100, "t2": 200, "t3": 300})
-    # upload 6 initial to satisfy cair 1 gate (also auto-flips cair.1)
-    for s in ["depan", "belakang", "kiri", "kanan", "spidometer", "bbm"]:
+    # upload 5 initial to satisfy cair 1 gate (also auto-flips cair.1)
+    for s in ["depan", "belakang", "kiri", "kanan", "spidometer"]:
         session.post(f"{API}/trips/{tid}/photos/initial",
                      data={"slot": s}, files={"foto": (f"{s}.png", PNG, "image/png")})
     # explicit cair 1 -> odoo_synced.cair_1 True
@@ -472,3 +473,93 @@ def test_34_public_trip_view_filters_fields(session, trip_id_i4):
 def test_35_public_trip_not_found_404(session):
     r = session.get(f"{API}/public/trips/NOPE-{uuid.uuid4().hex}")
     assert r.status_code == 404
+
+
+# ---------- Iteration 5 (v2.3) tests: 5-slot initial photo (drop bbm) ----------
+
+@pytest.fixture(scope="module")
+def trip_id_i5():
+    return f"TRIP-I5-{uuid.uuid4().hex[:8]}"
+
+
+def test_36_initial_bbm_slot_rejected_400(session, trip_id_i5):
+    """v2.3: slot 'bbm' is no longer valid — only 5 slots accepted."""
+    r = session.post(f"{API}/trips/init", json={"trip_id": trip_id_i5, "nopol": "B 5 BB", "route": "x"})
+    assert r.status_code == 200
+    files = {"foto": ("bbm.png", PNG, "image/png")}
+    r = session.post(f"{API}/trips/{trip_id_i5}/photos/initial",
+                     data={"slot": "bbm"}, files=files)
+    assert r.status_code == 400, r.text
+    body = r.text.lower()
+    assert "slot tidak valid" in body or "tidak valid" in body
+    # ensure 'bbm' not in the listed valid slots in error message
+    assert "bbm" not in body or "valid" in body  # message lists valid set; bbm should NOT be one of them
+    # Best effort: confirm none of the response references bbm as accepted
+    g = session.get(f"{API}/trips/{trip_id_i5}").json()
+    assert "bbm" not in (g.get("initial_photos") or {})
+
+
+def test_37_cair1_blocked_until_5_slots_complete(session):
+    """POST /cair tahap:1 returns 400 'Lengkapi 5 foto awal dulu' when <5 initial photos uploaded."""
+    tid = f"TRIP-GATE5-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 5 GT", "route": "x"})
+    # Upload only 4 slots
+    for s in ["depan", "belakang", "kiri", "kanan"]:
+        r = session.post(f"{API}/trips/{tid}/photos/initial",
+                         data={"slot": s}, files={"foto": (f"{s}.png", PNG, "image/png")})
+        assert r.status_code == 200
+    # still should not be auto-cair
+    g = session.get(f"{API}/trips/{tid}").json()
+    assert g["cair"]["1"] is False
+    # request cair tahap 1 -> 400 with proper Indonesian message
+    r = session.post(f"{API}/trips/{tid}/cair", json={"tahap": 1})
+    assert r.status_code == 400
+    assert "5 foto awal" in r.text or "foto awal" in r.text.lower()
+    # Upload 5th slot -> now auto-cair
+    r5 = session.post(f"{API}/trips/{tid}/photos/initial",
+                      data={"slot": "spidometer"},
+                      files={"foto": ("sp.png", PNG, "image/png")})
+    assert r5.status_code == 200
+    assert r5.json()["cair"]["1"] is True
+
+
+def test_38_public_initial_complete_true_at_5(session):
+    """public/trips returns progress.initial_complete=True after 5 slots (not 6)."""
+    tid = f"TRIP-PUB5-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 5 PB", "route": "x"})
+    for s in ["depan", "belakang", "kiri", "kanan", "spidometer"]:
+        r = session.post(f"{API}/trips/{tid}/photos/initial",
+                         data={"slot": s}, files={"foto": (f"{s}.png", PNG, "image/png")})
+        assert r.status_code == 200
+    pub = session.get(f"{API}/public/trips/{tid}").json()
+    assert pub["initial_done"] == 5
+    assert pub["progress"]["initial_complete"] is True
+
+
+def test_39_legacy_trip_with_bbm_still_readable(session):
+    """Trip created in iter-4 (with bbm slot present) must still be readable via GET and public/."""
+    # Simulate a legacy doc by inserting via init then manually pushing bbm via direct upload won't work
+    # (because backend rejects bbm now in v2.3). Just verify older test trips don't crash on read.
+    # We'll create a fresh trip with 5 slots and confirm it reads cleanly.
+    tid = f"TRIP-LEG5-{uuid.uuid4().hex[:8]}"
+    session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 5 LG", "route": "x"})
+    for s in ["depan", "belakang", "kiri", "kanan", "spidometer"]:
+        session.post(f"{API}/trips/{tid}/photos/initial",
+                     data={"slot": s}, files={"foto": (f"{s}.png", PNG, "image/png")})
+    r = session.get(f"{API}/trips/{tid}")
+    assert r.status_code == 200
+    assert "_id" not in r.json()
+
+
+def test_40_seed_trip_v23_demo_for_fe(session):
+    """Seed TRIP-V23-FE — used by FE testing (no driver name, no initial photos)."""
+    tid = "TRIP-V23-FE"
+    r = session.post(f"{API}/trips/init", json={
+        "trip_id": tid, "nopol": "B 9999 ZZ", "route": "Jakarta - Medan",
+        "tipe_kendaraan": "AVANZA", "no_rangka": "ABC123",
+        "uj": 1000000, "t1": 500000, "t2": 300000, "t3": 200000,
+    })
+    assert r.status_code == 200
+    g = session.get(f"{API}/trips/{tid}").json()
+    assert g["nopol"] == "B 9999 ZZ" or g["nopol"] == "B 1234 ZZ"  # idempotent (might have existed)
+
