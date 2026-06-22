@@ -1,9 +1,6 @@
-/* === Alyssa Driver Checkpoint — SF Pro font === */
-/* Light mode default — dark via [data-theme="dark"] */
+/* === Alyssa Driver Checkpoint — always dark (operator tool) === */
 
-[data-theme="dark"] .drv-root,
-[data-theme="dark"] .drv-loading,
-[data-theme="dark"] .drv-error {
+.drv-root, .drv-loading, .drv-error {
   --bg: #0A1628;
   --bg-2: #0F1E35;
   --bg-3: #152238;

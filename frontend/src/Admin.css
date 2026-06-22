@@ -1,10 +1,8 @@
 /* ============================================================
-   Admin Mini-Dashboard — SF Pro font
-   Light mode default — dark via [data-theme="dark"]
+   Admin Mini-Dashboard — always dark (internal tool)
    ============================================================ */
 
-[data-theme="dark"] .adm-root,
-[data-theme="dark"] .adm-pin-wrap {
+.adm-root, .adm-pin-wrap {
   --bg: #0A1628;
   --bg-2: #0F1E35;
   --bg-3: #152238;
