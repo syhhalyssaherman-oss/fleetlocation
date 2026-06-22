@@ -216,13 +216,16 @@ export default function BASTKPage() {
     <div className="bk-root" data-testid="bk-root">
       {/* Toolbar atas (di luar print area) */}
       <div className="bk-toolbar">
-        <div className="bk-toolbar-title">📋 BASTK — Berita Acara Serah Terima</div>
+        <div className="bk-toolbar-brand">
+          <img src="/logo.png" alt="AAL" width={32} height={32} style={{ objectFit: "contain" }} />
+          <div className="bk-toolbar-title">BASTK — Berita Acara Serah Terima</div>
+        </div>
         <div className="bk-toolbar-actions">
           <button className="bk-btn bk-btn-ghost" onClick={saveBASTK} disabled={saving} data-testid="btn-save-bastk">
-            {saving ? "Simpan..." : "💾 Simpan"}
+            {saving ? "Simpan..." : "Simpan"}
           </button>
           <button className="bk-btn bk-btn-gold" onClick={downloadPDF} disabled={gen} data-testid="btn-download-bastk">
-            {gen ? "Membuat PDF..." : "⬇ Download PDF A4"}
+            {gen ? "Membuat PDF..." : "Download PDF A4"}
           </button>
         </div>
       </div>
@@ -233,16 +236,7 @@ export default function BASTKPage() {
         <div className="bk-header">
           <div className="bk-header-left">
             <div className="bk-logo-box">
-              <svg viewBox="0 0 80 80" width="56" height="56" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="bkGold" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#D4A847"/><stop offset="100%" stopColor="#854F0B"/>
-                  </linearGradient>
-                </defs>
-                <ellipse cx="40" cy="62" rx="22" ry="6" fill="#0F5132"/>
-                <rect x="39" y="20" width="2" height="42" fill="url(#bkGold)"/>
-                <path d="M41,18 L62,25 L41,34 Z" fill="#DC2626"/>
-              </svg>
+              <img src="/logo.png" alt="PT Alyssa Auto Logistik" width={56} height={56} style={{ objectFit: "contain" }} />
             </div>
             <div>
               <div className="bk-brand-name">PT ALYSSA AUTO LOGISTIK</div>
@@ -261,7 +255,7 @@ export default function BASTKPage() {
         {/* DATA KENDARAAN + PELANGGAN */}
         <div className="bk-grid-2">
           <section className="bk-panel">
-            <div className="bk-panel-head">🚗 DATA KENDARAAN</div>
+            <div className="bk-panel-head">DATA KENDARAAN</div>
             <table className="bk-table">
               <tbody>
                 <tr><th>No. Polisi</th><td className="bk-mono">{data.nopol || "—"}</td></tr>
@@ -276,7 +270,7 @@ export default function BASTKPage() {
             </table>
           </section>
           <section className="bk-panel">
-            <div className="bk-panel-head">👤 DATA PELANGGAN</div>
+            <div className="bk-panel-head">DATA PELANGGAN</div>
             <table className="bk-table">
               <tbody>
                 <tr><th>Nama / PT</th><td>{customer.nama || "—"}</td></tr>
@@ -291,7 +285,7 @@ export default function BASTKPage() {
 
         {/* SKETSA + DAMAGE CHECKLIST */}
         <section className="bk-panel">
-          <div className="bk-panel-head">📐 SKETSA KENDARAAN &amp; CHECKLIST KERUSAKAN</div>
+          <div className="bk-panel-head">SKETSA KENDARAAN &amp; CHECKLIST KERUSAKAN</div>
           <div className="bk-sketch-meta">
             <div className="bk-sketch-meta-item"><b>Tipe:</b> {vehicleType || "—"}</div>
             <div className="bk-sketch-meta-item"><b>Total tanda:</b> {marks.length}</div>
@@ -349,13 +343,13 @@ export default function BASTKPage() {
 
         {/* CATATAN */}
         <section className="bk-panel">
-          <div className="bk-panel-head">📝 CATATAN TAMBAHAN</div>
+          <div className="bk-panel-head">CATATAN TAMBAHAN</div>
           <div className="bk-catatan-display">{catatan || "—"}</div>
         </section>
 
         {/* QR VERIFIKASI + TRACKING */}
         <section className="bk-panel bk-qr-panel" data-testid="bk-qr-panel">
-          <div className="bk-panel-head">🔐 VERIFIKASI &amp; TRACKING REAL-TIME</div>
+          <div className="bk-panel-head">VERIFIKASI &amp; TRACKING REAL-TIME</div>
           <div className="bk-qr-body">
             <div className="bk-qr-box">
               <div className="bk-qr-svg">
@@ -415,7 +409,7 @@ export default function BASTKPage() {
 
         {/* TANDA TANGAN */}
         <section className="bk-panel">
-          <div className="bk-panel-head">✍ TANDA TANGAN</div>
+          <div className="bk-panel-head">TANDA TANGAN</div>
           <div className="bk-sig-grid">
             <div className="bk-sig-box">
               <div className="bk-sig-box-label">Driver</div>

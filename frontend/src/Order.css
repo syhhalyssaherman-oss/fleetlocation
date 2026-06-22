@@ -417,6 +417,14 @@
   box-shadow: 0 4px 20px rgba(37,99,235,0.38);
   transform: translateY(-1px);
 }
+.of-btn--secondary {
+  background: transparent;
+  color: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+}
+.of-btn--secondary:hover:not(:disabled) {
+  background: #eff6ff;
+}
 .of-btn--ghost {
   background: transparent;
   color: var(--text-mute, #52525b);

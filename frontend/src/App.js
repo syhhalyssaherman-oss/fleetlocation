@@ -4,6 +4,7 @@ import DriverCheckpoint from "@/DriverCheckpoint";
 import CustomerTracking from "@/CustomerTracking";
 import BASTKPage from "@/BASTKPage";
 import CustomerOrderForm from "@/CustomerOrderForm";
+import CustomerOrderStatus from "@/CustomerOrderStatus";
 import AdminDashboard from "@/AdminDashboard";
 import OperationGuide from "@/OperationGuide";
 import Homepage from "@/Homepage";
@@ -27,6 +28,7 @@ function App() {
     if (p.startsWith("/track/"))    return { route: "track" };
     if (p.startsWith("/trip/"))     return { route: "driver" };
     if (p.startsWith("/bastk/"))    return { route: "bastk" };
+    if (p.startsWith("/status/"))   return { route: "status" };
 
     // ── Legacy query-param redirect to new paths ────────────────────
     if (sp.get("guide") !== null)   return { redirect: "/guide" };
@@ -67,6 +69,7 @@ function App() {
   if (route === "guide")  return <OperationGuide />;
   if (route === "admin")  return <AdminDashboard />;
   if (route === "order")  return <CustomerOrderForm />;
+  if (route === "status") return <CustomerOrderStatus />;
   if (route === "bastk")  return <BASTKPage />;
   if (route === "track")  return <CustomerTracking />;
   if (route === "driver") return <DriverCheckpoint />;

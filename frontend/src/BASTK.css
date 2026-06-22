@@ -9,7 +9,7 @@
   min-height: 100vh;
   background: var(--bg, #0A1628);
   color: var(--text, #E6EDF3);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-feature-settings: "tnum" 1;
   padding: 0 0 120px;
   max-width: 920px;
@@ -30,11 +30,16 @@
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
 }
+.bk-toolbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .bk-toolbar-title {
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--gold-light, #D4A847);
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 }
 .bk-toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 

@@ -459,9 +459,12 @@ function SuccessScreen({ order }) {
           <SRow k="Kontak"     v={`${order.customer_nama} · ${order.customer_hp}`} />
         </div>
         <div className="of-success-actions">
+          <a className="of-btn of-btn--primary" href={`/status/${order.order_id}`} data-testid="ord-success-status">
+            Cek Status Pesanan <IcoArrow />
+          </a>
           {trackUrl && (
-            <a className="of-btn of-btn--primary" href={trackUrl} data-testid="ord-success-track">
-              Lacak Pesanan <IcoArrow />
+            <a className="of-btn of-btn--secondary" href={trackUrl} data-testid="ord-success-track">
+              Lacak Perjalanan <IcoArrow />
             </a>
           )}
           <a className="of-btn of-btn--ghost" href="?order=1" data-testid="ord-success-new">

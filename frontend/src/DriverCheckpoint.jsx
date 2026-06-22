@@ -34,35 +34,11 @@ function fmtIDR(n) { return "Rp " + (Number(n)||0).toLocaleString("id-ID"); }
 function albumStageLabel(s) {
   return { asal: "Asal", kapal: "Dalam Kapal", tujuan: "Tujuan", dokumen: "Dokumen" }[s] || s;
 }
-function albumStageIcon(s) {
-  return { asal: "🏁", kapal: "⛴️", tujuan: "📍", dokumen: "📄" }[s] || "📷";
-}
+function albumStageIcon(_s) { return null; }
 const ALBUM_STAGES = ["asal", "kapal", "tujuan", "dokumen"];
 
-function AAlyssaLogo({ size = 96 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="Alyssa Logistik">
-      <defs>
-        <linearGradient id="aalGold" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#D4A847" />
-          <stop offset="100%" stopColor="#854F0B" />
-        </linearGradient>
-        <radialGradient id="aalGreen" cx="50%" cy="60%" r="55%">
-          <stop offset="0%" stopColor="#3CB371" />
-          <stop offset="100%" stopColor="#0F5132" />
-        </radialGradient>
-      </defs>
-      {/* grass mound */}
-      <ellipse cx="60" cy="92" rx="40" ry="10" fill="url(#aalGreen)" />
-      <path d="M22,88 Q60,72 98,88 L98,96 Q60,82 22,96 Z" fill="url(#aalGreen)" opacity="0.85" />
-      {/* pole */}
-      <rect x="58.5" y="30" width="3" height="58" fill="url(#aalGold)" />
-      {/* flag */}
-      <path d="M61.5,28 L92,38 L61.5,52 Z" fill="#E11D48" stroke="#7F1D1D" strokeWidth="1" />
-      {/* hole shadow */}
-      <ellipse cx="60" cy="90" rx="6" ry="2" fill="#000" opacity="0.35" />
-    </svg>
-  );
+function Logo({ size = 96 }) {
+  return <img src="/logo.png" alt="PT Alyssa Auto Logistik" width={size} height={size} style={{ objectFit: "contain" }} />;
 }
 function todayIso() {
   // Tampilan tanggal lokal browser (WIB di mobile user)
@@ -346,7 +322,7 @@ export default function DriverCheckpoint() {
       <div className="drv-root">
         <header className="drv-header">
           <div className="drv-brand">
-            <div className="drv-brand-mark">AAL</div>
+            <Logo size={36} />
             <div>
               <div className="drv-brand-name">Driver Checkpoint</div>
               <div className="drv-brand-sub">Alyssa Auto Logistik</div>
@@ -354,7 +330,9 @@ export default function DriverCheckpoint() {
           </div>
         </header>
         <div style={{ textAlign:"center", padding:"48px 24px" }} data-testid="drv-error">
-          <div style={{ fontSize:48, marginBottom:16 }}>⚠️</div>
+          <div style={{ marginBottom:16 }}>
+            <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><circle cx="28" cy="28" r="26" stroke="#D4A847" strokeWidth="2"/><path d="M28 17v14M28 37h.01" stroke="#D4A847" strokeWidth="2.5" strokeLinecap="round"/></svg>
+          </div>
           <h2 style={{ color:"#D4A847", marginBottom:8 }}>Link Tidak Valid</h2>
           <p style={{ color:"#8aa3c4", marginBottom:4 }}>{error}</p>
           <p style={{ color:"#8aa3c4", marginBottom:24 }}>Minta link yang benar dari admin PT Alyssa Auto Logistik.</p>
@@ -376,10 +354,10 @@ export default function DriverCheckpoint() {
     return (
       <div className="drv-root drv-step-screen" data-testid="drv-name-screen">
         <div className="drv-step-card" data-testid="name-card">
-          <AAlyssaLogo size={120} />
+          <Logo size={100} />
           <div className="drv-step-brand">ALYSSA LOGISTIK</div>
           <div className="drv-step-form">
-            <div className="drv-step-greet">Halo Driver! <span className="drv-step-wave">👋</span></div>
+            <div className="drv-step-greet">Halo Driver!</div>
             <div className="drv-step-greet-sub">Masukkan nama lengkap sesuai KTP</div>
             <label className="drv-step-label" htmlFor="drv-nama-input">NAMA LENGKAP</label>
             <input
@@ -424,7 +402,7 @@ export default function DriverCheckpoint() {
     return (
       <div className="drv-root drv-step-screen drv-step-sop" data-testid="drv-sop-screen">
         <div className="drv-sop-banner">
-          <div className="drv-sop-warn">⚠️</div>
+          <div className="drv-sop-warn">!</div>
           <div className="drv-sop-banner-title">WAJIB BACA SEBELUM JALAN!</div>
           <div className="drv-sop-banner-sub">7 PERINTAH DRIVER ALYSSA</div>
         </div>
@@ -437,13 +415,13 @@ export default function DriverCheckpoint() {
           ))}
         </ol>
         <div className="drv-sop-emergency">
-          <div className="drv-sop-emergency-icon">🚨</div>
+          <div className="drv-sop-emergency-icon">!</div>
           <div className="drv-sop-emergency-text">
             <b>DARURAT:</b> Jika mobil mogok atau ada kendala berat, <b>DILARANG</b> bongkar/perbaiki sendiri tanpa izin kantor! Hubungi admin: <b>0818 631 135</b>
           </div>
         </div>
         <button className="drv-sop-accept" onClick={markSOP} data-testid="btn-sop-ok">
-          <span className="drv-sop-accept-emoji">🤚</span>
+          <span className="drv-sop-accept-emoji">✓</span>
           <div className="drv-sop-accept-text">
             <div className="drv-sop-accept-main">Saya Sudah Baca &amp; Setuju</div>
             <div className="drv-sop-accept-sub">Tap tombol ini untuk lanjut</div>
@@ -486,7 +464,7 @@ export default function DriverCheckpoint() {
       {/* HEADER */}
       <header className="drv-header" data-testid="drv-header">
         <div className="drv-brand">
-          <div className="drv-brand-mark">AAL</div>
+          <Logo size={36} />
           <div>
             <div className="drv-brand-name">Alyssa Logistik</div>
             <div className="drv-brand-sub">Driver Checkpoint</div>
@@ -506,7 +484,7 @@ export default function DriverCheckpoint() {
           {trip.tipe_kendaraan && (
             <div className="drv-tipe" data-testid="drv-tipe">{trip.tipe_kendaraan}{trip.no_rangka ? <span className="drv-rangka"> · {trip.no_rangka}</span> : null}</div>
           )}
-          {trip.route && <div className="drv-route">📍 {trip.route}</div>}
+          {trip.route && <div className="drv-route">{trip.route}</div>}
         </div>
         <div className="drv-greet">
           <div className="drv-greet-lbl">Halo,</div>
@@ -517,7 +495,7 @@ export default function DriverCheckpoint() {
       {/* RUTE PENGIRIMAN (LEGS) */}
       {trip.nama_driver && Array.isArray(trip.legs) && trip.legs.length > 0 && (
         <section className="drv-card" data-testid="legs-card">
-          <div className="drv-card-head"><span>🛣️ Rute Pengiriman</span></div>
+          <div className="drv-card-head"><span>Rute Pengiriman</span></div>
           <div className="drv-card-body drv-legs">
             {trip.legs.map((leg, i) => (
               <div key={i} className="drv-leg-row" data-testid={`leg-${i}`}>
@@ -536,7 +514,7 @@ export default function DriverCheckpoint() {
                 </span>
               </div>
             ))}
-            <div className="drv-note">💡 Status leg di-update oleh admin saat unit jalan/tiba. Driver fokus upload foto & dokumen.</div>
+            <div className="drv-note">Status leg di-update oleh admin saat unit jalan/tiba. Driver fokus upload foto &amp; dokumen.</div>
           </div>
         </section>
       )}
@@ -544,8 +522,8 @@ export default function DriverCheckpoint() {
       {/* BACA ULANG SOP (kecil, opsional) */}
       <section className="drv-card" data-testid="sop-card">
         <div className="drv-card-head">
-          <span>📖 SOP Driver</span>
-          <span className="drv-pill drv-pill-ok">✓ Sudah Dibaca</span>
+          <span>SOP Driver</span>
+          <span className="drv-pill drv-pill-ok">Sudah Dibaca</span>
         </div>
         <div className="drv-card-body">
           <button className="drv-btn drv-btn-ghost" onClick={() => setShowSOP(true)} data-testid="btn-baca-sop">
@@ -558,8 +536,8 @@ export default function DriverCheckpoint() {
       {trip.nama_driver && (
         <section className="drv-card" data-testid="initial-card">
           <div className="drv-card-head">
-            <span>📸 Foto Awal Wajib ({initialDone}/5)</span>
-            {allInitialDone && <span className="drv-pill drv-pill-ok">✓ Lengkap</span>}
+            <span>Foto Awal Wajib ({initialDone}/5)</span>
+            {allInitialDone && <span className="drv-pill drv-pill-ok">Lengkap</span>}
           </div>
           <div className="drv-card-body">
             <div className="drv-slot-grid">
@@ -600,7 +578,7 @@ export default function DriverCheckpoint() {
               })}
             </div>
             {!allInitialDone && (
-              <div className="drv-note">💡 Lengkapi 5 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
+              <div className="drv-note">Lengkapi 5 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
             )}
           </div>
         </section>
@@ -610,7 +588,7 @@ export default function DriverCheckpoint() {
       {trip.nama_driver && (
         <section className="drv-card" data-testid="album-card">
           <div className="drv-card-head">
-            <span>🗂️ Album Perjalanan</span>
+            <span>Album Perjalanan</span>
             <span className="drv-pill drv-pill-ready">{(trip.album?.[albumStage] || []).length} foto</span>
           </div>
           <div className="drv-album-tabs" role="tablist">
@@ -622,7 +600,6 @@ export default function DriverCheckpoint() {
                 onClick={() => setAlbumStage(s)}
                 data-testid={`album-tab-${s}`}
               >
-                <span className="drv-album-tab-ico">{albumStageIcon(s)}</span>
                 <span>{albumStageLabel(s)}</span>
                 <span className="drv-album-tab-count">{(trip.album?.[s] || []).length}</span>
               </button>
@@ -639,7 +616,6 @@ export default function DriverCheckpoint() {
             />
             {(trip.album?.[albumStage] || []).length === 0 ? (
               <div className="drv-album-empty">
-                <div style={{ fontSize: 38, opacity: 0.5 }}>{albumStageIcon(albumStage)}</div>
                 <div>Belum ada foto {albumStageLabel(albumStage)}.</div>
               </div>
             ) : (
@@ -673,11 +649,11 @@ export default function DriverCheckpoint() {
               {albumUploading
                 ? "Mengupload..."
                 : (albumStage === "dokumen"
-                    ? "📎 Tambah Foto / PDF Dokumen"
-                    : `📷 Tambah Foto ${albumStageLabel(albumStage)}`)}
+                    ? "Tambah Foto / PDF Dokumen"
+                    : `Tambah Foto ${albumStageLabel(albumStage)}`)}
             </button>
             <div className="drv-note">
-              💡 {albumStage === "dokumen"
+              {albumStage === "dokumen"
                 ? "Upload foto/PDF dokumen seperti surat jalan, BAST, copy STNK, dll. Admin & pelanggan akan lihat di sini."
                 : "Foto di tahap ini langsung muncul di PO Admin & dilihat pelanggan via link tracking."}
             </div>
@@ -693,7 +669,7 @@ export default function DriverCheckpoint() {
         const isLate = wibHour >= 12;
         return (
           <section className={`drv-reminder ${isLate ? "drv-reminder-late" : (isWindow ? "drv-reminder-now" : "drv-reminder-soon")}`} data-testid="daily-reminder">
-            <div className="drv-reminder-icon">{isLate ? "🚨" : (isWindow ? "📷" : "⏰")}</div>
+            <div className="drv-reminder-icon">{isLate ? "!" : (isWindow ? "CAM" : "~")}</div>
             <div className="drv-reminder-text">
               <b>
                 {isLate ? "TERLAMBAT! Foto deadline lewat" : (isWindow ? "WAKTUNYA FOTO CHECKPOINT" : "Reminder Besok Pagi")}
@@ -738,11 +714,11 @@ export default function DriverCheckpoint() {
                 onChange={(e) => setDailyStatus(e.target.value)}
                 data-testid="select-daily-status"
               >
-                <option value="Berangkat">🚦 Berangkat</option>
-                <option value="Checkpoint 1">📍 Checkpoint 1</option>
-                <option value="Checkpoint 2">📍 Checkpoint 2</option>
-                <option value="Checkpoint 3">📍 Checkpoint 3</option>
-                <option value="Tiba Tujuan">🏁 Tiba Tujuan</option>
+                <option value="Berangkat">Berangkat</option>
+                <option value="Checkpoint 1">Checkpoint 1</option>
+                <option value="Checkpoint 2">Checkpoint 2</option>
+                <option value="Checkpoint 3">Checkpoint 3</option>
+                <option value="Tiba Tujuan">Tiba Tujuan</option>
               </select>
               <label className="drv-step-label" style={{ marginTop: 8 }}>KETERANGAN (OPSIONAL)</label>
               <input
@@ -763,7 +739,9 @@ export default function DriverCheckpoint() {
             disabled={uploadingDaily || todayDone}
             data-testid="btn-daily"
           >
-            <div className="drv-daily-icon">{todayDone ? "📸" : "📷"}</div>
+            <div className="drv-daily-icon">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden><path d="M4 10.5c0-1.1.9-2 2-2h1.5l1.5-2.5h10L20.5 8.5H22c1.1 0 2 .9 2 2V21c0 1.1-.9 2-2 2H6c-1.1 0-2-.9-2-2V10.5z" stroke="currentColor" strokeWidth="1.8"/><circle cx="14" cy="15" r="3.5" stroke="currentColor" strokeWidth="1.8"/></svg>
+            </div>
             <div className="drv-daily-text">
               {uploadingDaily ? "Mengupload..." : (todayDone ? "SUDAH HARI INI ✅" : "BELUM HARI INI")}
             </div>
@@ -781,13 +759,13 @@ export default function DriverCheckpoint() {
             </div>
           )}
 
-          <button className="drv-btn drv-btn-wa" onClick={shareWA} data-testid="btn-wa">📍 Kirim Lokasi ke Admin via WA</button>
+          <button className="drv-btn drv-btn-wa" onClick={shareWA} data-testid="btn-wa">Kirim Lokasi ke Admin via WA</button>
           <button className="drv-btn drv-btn-tester" onClick={resetToday} data-testid="btn-reset-today">↺ Reset Foto Hari Ini (tester)</button>
 
           <div className="drv-bonus-kerajinan">
             <div className="drv-bonus-lbl">BONUS KERAJINAN</div>
             <div className="drv-bonus-amt">+{fmtIDR(trip.bonus_kerajinan || 150000)}</div>
-            <div className="drv-bonus-note">Kalau rajin foto tiap hari sampai tiba 💪</div>
+            <div className="drv-bonus-note">Kalau rajin foto tiap hari sampai tiba</div>
           </div>
         </section>
       )}
@@ -796,7 +774,7 @@ export default function DriverCheckpoint() {
       {trip.nama_driver && daily.length > 0 && (
         <section className="drv-card" data-testid="pod-card-list">
           <div className="drv-card-head">
-            <span>📋 Proof of Delivery</span>
+            <span>Proof of Delivery</span>
             <span className="drv-pill drv-pill-ok">{daily.length} checkpoint</span>
           </div>
           <div className="drv-card-body drv-pod-list">
@@ -817,7 +795,7 @@ export default function DriverCheckpoint() {
       {/* PENCAIRAN UANG JALAN */}
       {trip.nama_driver && (
         <section className="drv-card" data-testid="cair-card">
-          <div className="drv-card-head"><span>💰 PENCAIRAN UANG JALAN</span></div>
+          <div className="drv-card-head"><span>Pencairan Uang Jalan</span></div>
           <div className="drv-card-body drv-cair-list">
             <TahapCard
               num={1}
@@ -864,8 +842,8 @@ export default function DriverCheckpoint() {
       {trip.nama_driver && (
         <section className="drv-card" data-testid="handover-card">
           <div className="drv-card-head">
-            <span>📄 Serah Terima Akhir</span>
-            {handoverDone && <span className="drv-pill drv-pill-ok">✓ Lengkap</span>}
+            <span>Serah Terima Akhir</span>
+            {handoverDone && <span className="drv-pill drv-pill-ok">Lengkap</span>}
           </div>
           <div className="drv-card-body">
             <div className="drv-handover-block">
@@ -916,7 +894,7 @@ export default function DriverCheckpoint() {
                 </div>
               ) : (
                 <button className="drv-btn drv-btn-blue" onClick={() => triggerFile("resi")} disabled={uploadingResi} data-testid="btn-upload-resi">
-                  {uploadingResi ? "Upload..." : "📎 Upload Foto Resi"}
+                  {uploadingResi ? "Upload..." : "Upload Foto Resi"}
                 </button>
               )}
             </div>
@@ -934,7 +912,7 @@ export default function DriverCheckpoint() {
         <div className="drv-sop-overlay" data-testid="sop-modal">
           <div className="drv-sop-screen">
             <div className="drv-sop-banner">
-              <div className="drv-sop-warn">⚠️</div>
+              <div className="drv-sop-warn">!</div>
               <div className="drv-sop-banner-title">WAJIB BACA SEBELUM JALAN!</div>
               <div className="drv-sop-banner-sub">7 PERINTAH DRIVER ALYSSA</div>
             </div>
@@ -949,13 +927,13 @@ export default function DriverCheckpoint() {
               ))}
             </ol>
             <div className="drv-sop-emergency">
-              <div className="drv-sop-emergency-icon">🚨</div>
+              <div className="drv-sop-emergency-icon">!</div>
               <div className="drv-sop-emergency-text">
                 <b>DARURAT:</b> Jika mobil mogok atau ada kendala berat, <b>DILARANG</b> bongkar/perbaiki sendiri tanpa izin kantor! Hubungi admin: <b>0818 631 135</b>
               </div>
             </div>
             <button className="drv-sop-accept" onClick={markSOP} data-testid="btn-sop-ok">
-              <span className="drv-sop-accept-emoji">🤚</span>
+              <span className="drv-sop-accept-emoji">✓</span>
               <div className="drv-sop-accept-text">
                 <div className="drv-sop-accept-main">Saya Sudah Baca &amp; Setuju</div>
                 <div className="drv-sop-accept-sub">Tap tombol ini untuk lanjut</div>

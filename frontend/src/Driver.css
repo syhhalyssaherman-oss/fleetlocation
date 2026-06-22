@@ -33,7 +33,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   font-feature-settings: "tnum" 1, "cv11" 1;
   padding: 0 0 90px;
   max-width: 560px;
@@ -181,7 +181,14 @@
   border-color: var(--gold-soft);
   color: var(--gold-light);
 }
-.drv-reminder-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.drv-reminder-icon {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 900; letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
 .drv-reminder-text b { font-size: 13px; display: block; margin-bottom: 2px; color: #fff; letter-spacing: 0.02em; }
 .drv-reminder-text div { font-size: 12px; line-height: 1.5; opacity: 0.9; }
 
@@ -450,7 +457,15 @@
   background: repeating-linear-gradient(45deg, transparent 0 12px, rgba(0,0,0,0.08) 12px 24px);
   pointer-events: none;
 }
-.drv-sop-warn { font-size: 30px; line-height: 1; margin-bottom: 4px; }
+.drv-sop-warn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 900; color: #fff;
+  margin: 0 auto 8px;
+}
 .drv-sop-banner-title {
   font-family: "Inter", sans-serif;
   font-weight: 900;
@@ -519,7 +534,15 @@
   gap: 10px;
   align-items: start;
 }
-.drv-sop-emergency-icon { font-size: 22px; line-height: 1; }
+.drv-sop-emergency-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(239,68,68,0.2);
+  border: 1.5px solid rgba(239,68,68,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 900; color: #FCA5A5;
+  flex-shrink: 0;
+}
 .drv-sop-emergency-text {
   font-size: 12px;
   line-height: 1.55;
