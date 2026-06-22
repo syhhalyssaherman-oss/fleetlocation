@@ -1,75 +1,165 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import axios from "axios";
-import "@/App.css";
-import "@/Driver.css";
-import "@/Order.css";
-import { VEHICLE_TYPE_LIST } from "@/VehicleSketches";
+import "./Order.css";
+import { VEHICLE_TYPE_LIST } from "./VehicleSketches";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const STEPS = [
-  { key: "kendaraan", label: "Kendaraan", icon: "🚗" },
-  { key: "asal",      label: "Asal",      icon: "📍" },
-  { key: "tujuan",    label: "Tujuan",    icon: "🏁" },
-  { key: "konfirmasi",label: "Konfirmasi",icon: "✅" },
+  { key: "kendaraan", label: "Kendaraan" },
+  { key: "asal",      label: "Penjemputan" },
+  { key: "tujuan",    label: "Tujuan" },
+  { key: "konfirmasi",label: "Konfirmasi" },
 ];
 
-const KONDISI_OPTIONS = ["Baru", "Bekas"];
+const KONDISI_OPTIONS = ["Bekas", "Baru"];
 
+/* ── Dark mode ── */
+function useDarkMode() {
+  const [dark, setDark] = useState(
+    () => document.documentElement.getAttribute("data-theme") === "dark"
+  );
+  const toggle = useCallback(() => {
+    const next = !dark;
+    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
+    try { localStorage.setItem("aal-theme", next ? "dark" : "light"); } catch (_) {}
+    setDark(next);
+  }, [dark]);
+  return [dark, toggle];
+}
+
+/* ── Icons ── */
+const IcoSun = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+);
+const IcoMoon = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+);
+const IcoCheck = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+const IcoArrow = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+  </svg>
+);
+const IcoBack = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+  </svg>
+);
+const IcoTruck = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/>
+    <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+  </svg>
+);
+const IcoPin = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+    <circle cx="12" cy="10" r="3"/>
+  </svg>
+);
+const IcoFlag = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+  </svg>
+);
+const IcoDoc = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+);
+const IcoSend = () => (
+  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+const IcoCircleCheck = () => (
+  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/>
+  </svg>
+);
+
+const STEP_ICONS = [<IcoTruck />, <IcoPin />, <IcoFlag />, <IcoDoc />];
+
+/* ── Logo SVG (inline, transparent) ── */
+const Logo = ({ size = 56 }) => (
+  <svg viewBox="0 0 500 540" width={size} height={Math.round(size * 1.08)} xmlns="http://www.w3.org/2000/svg" aria-label="PT Alyssa Auto Logistik">
+    <defs>
+      <radialGradient id="ord-cg" cx="40%" cy="22%" r="78%" gradientUnits="objectBoundingBox">
+        <stop offset="0%"   stopColor="#1EC8EE"/>
+        <stop offset="42%"  stopColor="#1880CC"/>
+        <stop offset="78%"  stopColor="#1040A8"/>
+        <stop offset="100%" stopColor="#0A1B6E"/>
+      </radialGradient>
+      <linearGradient id="ord-ag" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%"   stopColor="#0A1B6E"/>
+        <stop offset="100%" stopColor="#112BB0"/>
+      </linearGradient>
+      <path id="ord-arc" d="M 70,410 A 186,186 0 0,0 430,410"/>
+      <clipPath id="ord-clip">
+        <circle cx="250" cy="216" r="184"/>
+      </clipPath>
+    </defs>
+    <circle cx="250" cy="216" r="184" fill="url(#ord-cg)"/>
+    <g clipPath="url(#ord-clip)">
+      <path d="M 60,298 Q 150,278 250,282 Q 350,278 440,298 L 440,340 Q 350,320 250,324 Q 150,320 60,340 Z" fill="#0A1B6E" opacity="0.85"/>
+      <rect x="247.5" y="58" width="5" height="228" fill="white" rx="2"/>
+      <path d="M 250,62 C 220,100 200,165 208,280 L 250,280 Z" fill="white"/>
+      <path d="M 250,62 C 280,100 300,165 292,280 L 250,280 Z" fill="white"/>
+      <path d="M 247,148 C 205,165 148,190 115,255 L 205,268 Z" fill="white" opacity="0.92"/>
+      <path d="M 253,148 C 295,160 328,178 344,220 L 292,258 Z" fill="white" opacity="0.88"/>
+      <path d="M 175,282 Q 250,270 325,282 L 315,304 Q 250,294 185,304 Z" fill="#08175A" opacity="0.9"/>
+    </g>
+    <path d="M 112,365 Q 195,332 295,340 Q 360,344 412,368 L 420,354 Q 365,326 292,322 Q 185,314 98,352 Z" fill="url(#ord-ag)"/>
+    <path d="M 412,368 L 428,354 L 440,371 L 424,383 Z" fill="#0A1B6E"/>
+    <text fontFamily="'Arial Black','Arial','Helvetica Neue',sans-serif" fontWeight="900" fontSize="28.5" fill="#0A1B6E" letterSpacing="1.8">
+      <textPath href="#ord-arc" startOffset="50%" textAnchor="middle">PT. ALYSSA AUTO LOGISTIK</textPath>
+    </text>
+  </svg>
+);
+
+/* ── Field wrapper ── */
 function Field({ label, children, required, hint, full }) {
   return (
-    <div className={`ord-field ${full ? "ord-field-full" : ""}`}>
-      <label>
-        {label}{required && <span className="ord-req"> *</span>}
+    <div className={`of-field${full ? " of-field--full" : ""}`}>
+      <label className="of-label">
+        {label}{required && <span className="of-req"> *</span>}
       </label>
       {children}
-      {hint && <div className="ord-hint">{hint}</div>}
+      {hint && <div className="of-hint">{hint}</div>}
     </div>
   );
 }
 
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
-  try { localStorage.setItem("aal-theme", isDark ? "light" : "dark"); } catch (_) {}
-}
-
+/* ── Main component ── */
 export default function CustomerOrderForm() {
+  const [dark, toggleDark] = useDarkMode();
   const [step, setStep] = useState(0);
-  const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const [data, setData] = useState({
-    // kendaraan
-    vehicle_type: "",
-    nopol: "",
-    warna: "",
-    tahun: "",
-    km: "",
-    kondisi: "Bekas",
-    no_rangka: "",
-    // asal
-    asal_kota: "",
-    asal_alamat: "",
-    pickup_date: "",
-    pickup_time: "",
-    pickup_pic: "",
-    pickup_hp: "",
-    // tujuan
-    tujuan_kota: "",
-    tujuan_alamat: "",
-    delivery_pic: "",
-    delivery_hp: "",
-    // customer
-    customer_nama: "",
-    customer_hp: "",
-    customer_email: "",
-    catatan: "",
+    vehicle_type: "", nopol: "", warna: "", tahun: "", km: "", kondisi: "Bekas", no_rangka: "",
+    asal_kota: "", asal_alamat: "", pickup_date: "", pickup_time: "", pickup_pic: "", pickup_hp: "",
+    tujuan_kota: "", tujuan_alamat: "", delivery_pic: "", delivery_hp: "",
+    customer_nama: "", customer_hp: "", customer_email: "", catatan: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  const setF = (k, v) => setData((d) => ({ ...d, [k]: v }));
+  const set = (k, v) => setData((d) => ({ ...d, [k]: v }));
 
   const stepValid = useMemo(() => {
     if (step === 0) return !!data.vehicle_type;
@@ -83,8 +173,7 @@ export default function CustomerOrderForm() {
   const goPrev = () => { if (step > 0) setStep(step - 1); };
 
   const submit = async () => {
-    setError("");
-    setSubmitting(true);
+    setError(""); setSubmitting(true);
     try {
       const r = await axios.post(`${API}/orders`, data);
       setResult(r.data);
@@ -96,249 +185,280 @@ export default function CustomerOrderForm() {
   if (result) return <SuccessScreen order={result} />;
 
   return (
-    <div className="ord-root" data-testid="ord-root">
-      <header className="ord-header">
-        <div className="ord-brand">
-          <div className="ord-brand-logo">
-            <svg viewBox="0 0 80 80" width="44" height="44" xmlns="http://www.w3.org/2000/svg">
-              <ellipse cx="40" cy="62" rx="22" ry="6" fill="#0F5132"/>
-              <rect x="39" y="20" width="2" height="42" fill="#D4A847"/>
-              <path d="M41,18 L62,25 L41,34 Z" fill="#DC2626"/>
-            </svg>
-          </div>
-          <div>
-            <div className="ord-brand-name">PT ALYSSA AUTO LOGISTIK</div>
-            <div className="ord-brand-tag">Form Pemesanan Pengiriman Kendaraan</div>
-          </div>
+    <div className="of-root" data-testid="ord-root">
+
+      {/* ── Header ── */}
+      <header className="of-hdr">
+        <div className="of-hdr-inner">
+          <a href="/" className="of-brand">
+            <Logo size={48} />
+            <div className="of-brand-text">
+              <div className="of-brand-name">PT Alyssa Auto Logistik</div>
+              <div className="of-brand-sub">Form Pemesanan Pengiriman Kendaraan</div>
+            </div>
+          </a>
+          <button className="of-theme" onClick={toggleDark} aria-label="Ganti tema">
+            {dark ? <IcoSun /> : <IcoMoon />}
+          </button>
         </div>
-        <button className="theme-toggle" onClick={() => { toggleTheme(); setDark(d => !d); }}
-          aria-label="Toggle dark mode" title={dark ? "Mode terang" : "Mode gelap"}>
-          {dark
-            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          }
-        </button>
       </header>
 
-      {/* Stepper */}
-      <div className="ord-stepper" data-testid="ord-stepper">
-        {STEPS.map((s, i) => (
-          <button
-            key={s.key}
-            type="button"
-            className={`ord-step ${i === step ? "active" : ""} ${i < step ? "done" : ""}`}
-            onClick={() => { if (i < step) setStep(i); }}
-            data-testid={`ord-step-${s.key}`}
-          >
-            <span className="ord-step-num">{i < step ? "✓" : i + 1}</span>
-            <span className="ord-step-label">{s.icon} {s.label}</span>
-          </button>
-        ))}
+      {/* ── Stepper ── */}
+      <div className="of-stepper" data-testid="ord-stepper">
+        <div className="of-stepper-inner">
+          {STEPS.map((s, i) => (
+            <button
+              key={s.key}
+              type="button"
+              className={`of-step${i === step ? " of-step--active" : ""}${i < step ? " of-step--done" : ""}`}
+              onClick={() => { if (i < step) setStep(i); }}
+              data-testid={`ord-step-${s.key}`}
+            >
+              <span className="of-step-num">
+                {i < step ? <IcoCheck /> : STEP_ICONS[i]}
+              </span>
+              <span className="of-step-label">{s.label}</span>
+              {i < STEPS.length - 1 && <span className="of-step-line" />}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Step body */}
-      <div className="ord-body">
-        {step === 0 && (
-          <section className="ord-card" data-testid="ord-card-kendaraan">
-            <h2 className="ord-card-title">🚗 Data Kendaraan</h2>
-            <div className="ord-grid">
-              <Field label="Tipe Kendaraan" required full>
-                <select
-                  className="drv-step-input"
-                  value={data.vehicle_type}
-                  onChange={(e) => setF("vehicle_type", e.target.value)}
-                  data-testid="ord-vehicle-type"
-                >
-                  <option value="">— Pilih tipe —</option>
-                  {VEHICLE_TYPE_LIST.map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
-              </Field>
-              <Field label="No. Polisi">
-                <input type="text" className="drv-step-input" value={data.nopol}
-                       onChange={(e) => setF("nopol", e.target.value.toUpperCase())}
-                       placeholder="B 1234 ABC" data-testid="ord-nopol" />
-              </Field>
-              <Field label="No. Rangka">
-                <input type="text" className="drv-step-input" value={data.no_rangka}
-                       onChange={(e) => setF("no_rangka", e.target.value)}
-                       placeholder="MHFE1CD1XXXXX" data-testid="ord-rangka" />
-              </Field>
-              <Field label="Warna">
-                <input type="text" className="drv-step-input" value={data.warna}
-                       onChange={(e) => setF("warna", e.target.value)} placeholder="Hitam"
-                       data-testid="ord-warna" />
-              </Field>
-              <Field label="Tahun">
-                <input type="text" className="drv-step-input" value={data.tahun} maxLength={4}
-                       onChange={(e) => setF("tahun", e.target.value.replace(/\D/g, ""))}
-                       placeholder="2024" data-testid="ord-tahun" />
-              </Field>
-              <Field label="Kilometer">
-                <input type="text" className="drv-step-input" value={data.km}
-                       onChange={(e) => setF("km", e.target.value)} placeholder="15000"
-                       data-testid="ord-km" />
-              </Field>
-              <Field label="Kondisi">
-                <select className="drv-step-input" value={data.kondisi}
-                        onChange={(e) => setF("kondisi", e.target.value)}
-                        data-testid="ord-kondisi">
-                  {KONDISI_OPTIONS.map((o) => <option key={o}>{o}</option>)}
-                </select>
-              </Field>
-            </div>
-          </section>
-        )}
+      {/* ── Body ── */}
+      <div className="of-body">
+        <div className="of-body-inner">
 
-        {step === 1 && (
-          <section className="ord-card" data-testid="ord-card-asal">
-            <h2 className="ord-card-title">📍 Lokasi Penjemputan (Asal)</h2>
-            <div className="ord-grid">
-              <Field label="Kota Asal" required>
-                <input type="text" className="drv-step-input" value={data.asal_kota}
-                       onChange={(e) => setF("asal_kota", e.target.value)} placeholder="Jakarta"
-                       data-testid="ord-asal-kota" />
-              </Field>
-              <Field label="Alamat Lengkap" full>
-                <textarea className="drv-step-input" rows={2} value={data.asal_alamat} maxLength={300}
-                          onChange={(e) => setF("asal_alamat", e.target.value)}
-                          placeholder="Jl. Sudirman No. 123, Jakarta Selatan"
-                          data-testid="ord-asal-alamat" />
-              </Field>
-              <Field label="Tanggal Pickup">
-                <input type="date" className="drv-step-input" value={data.pickup_date}
-                       onChange={(e) => setF("pickup_date", e.target.value)}
-                       data-testid="ord-pickup-date" />
-              </Field>
-              <Field label="Jam Pickup">
-                <input type="time" className="drv-step-input" value={data.pickup_time}
-                       onChange={(e) => setF("pickup_time", e.target.value)}
-                       data-testid="ord-pickup-time" />
-              </Field>
-              <Field label="PIC Penjemputan">
-                <input type="text" className="drv-step-input" value={data.pickup_pic}
-                       onChange={(e) => setF("pickup_pic", e.target.value)} placeholder="Bpk. Andi"
-                       data-testid="ord-pickup-pic" />
-              </Field>
-              <Field label="No. HP PIC">
-                <input type="tel" className="drv-step-input" value={data.pickup_hp}
-                       onChange={(e) => setF("pickup_hp", e.target.value)} placeholder="0818-1234"
-                       data-testid="ord-pickup-hp" />
-              </Field>
+          {/* Step 0 — Kendaraan */}
+          {step === 0 && (
+            <div className="of-card" key="kendaraan" data-testid="ord-card-kendaraan">
+              <div className="of-card-hd">
+                <span className="of-card-ico"><IcoTruck /></span>
+                <div>
+                  <div className="of-card-title">Data Kendaraan</div>
+                  <div className="of-card-sub">Lengkapi informasi kendaraan yang akan dikirim</div>
+                </div>
+              </div>
+              <div className="of-grid">
+                <Field label="Tipe Kendaraan" required full>
+                  <select className="of-inp" value={data.vehicle_type}
+                    onChange={(e) => set("vehicle_type", e.target.value)}
+                    data-testid="ord-vehicle-type">
+                    <option value="">— Pilih tipe kendaraan —</option>
+                    {VEHICLE_TYPE_LIST.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </Field>
+                <Field label="No. Polisi">
+                  <input type="text" className="of-inp" value={data.nopol}
+                    onChange={(e) => set("nopol", e.target.value.toUpperCase())}
+                    placeholder="B 1234 ABC" data-testid="ord-nopol" />
+                </Field>
+                <Field label="No. Rangka">
+                  <input type="text" className="of-inp" value={data.no_rangka}
+                    onChange={(e) => set("no_rangka", e.target.value)}
+                    placeholder="MHFE1CD1XXXXX" data-testid="ord-rangka" />
+                </Field>
+                <Field label="Warna">
+                  <input type="text" className="of-inp" value={data.warna}
+                    onChange={(e) => set("warna", e.target.value)}
+                    placeholder="Hitam" data-testid="ord-warna" />
+                </Field>
+                <Field label="Tahun">
+                  <input type="text" className="of-inp" value={data.tahun} maxLength={4}
+                    onChange={(e) => set("tahun", e.target.value.replace(/\D/g, ""))}
+                    placeholder="2024" data-testid="ord-tahun" />
+                </Field>
+                <Field label="Kilometer">
+                  <input type="text" className="of-inp" value={data.km}
+                    onChange={(e) => set("km", e.target.value)}
+                    placeholder="15000" data-testid="ord-km" />
+                </Field>
+                <Field label="Kondisi">
+                  <select className="of-inp" value={data.kondisi}
+                    onChange={(e) => set("kondisi", e.target.value)}
+                    data-testid="ord-kondisi">
+                    {KONDISI_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                  </select>
+                </Field>
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {step === 2 && (
-          <section className="ord-card" data-testid="ord-card-tujuan">
-            <h2 className="ord-card-title">🏁 Lokasi Pengiriman (Tujuan)</h2>
-            <div className="ord-grid">
-              <Field label="Kota Tujuan" required>
-                <input type="text" className="drv-step-input" value={data.tujuan_kota}
-                       onChange={(e) => setF("tujuan_kota", e.target.value)} placeholder="Surabaya"
-                       data-testid="ord-tujuan-kota" />
-              </Field>
-              <Field label="Alamat Lengkap" full>
-                <textarea className="drv-step-input" rows={2} value={data.tujuan_alamat} maxLength={300}
-                          onChange={(e) => setF("tujuan_alamat", e.target.value)}
-                          placeholder="Jl. Pemuda No. 45, Surabaya"
-                          data-testid="ord-tujuan-alamat" />
-              </Field>
-              <Field label="PIC Penerima">
-                <input type="text" className="drv-step-input" value={data.delivery_pic}
-                       onChange={(e) => setF("delivery_pic", e.target.value)}
-                       placeholder="Ibu Siti" data-testid="ord-delivery-pic" />
-              </Field>
-              <Field label="No. HP Penerima">
-                <input type="tel" className="drv-step-input" value={data.delivery_hp}
-                       onChange={(e) => setF("delivery_hp", e.target.value)}
-                       placeholder="0818-5678" data-testid="ord-delivery-hp" />
-              </Field>
+          {/* Step 1 — Asal */}
+          {step === 1 && (
+            <div className="of-card" key="asal" data-testid="ord-card-asal">
+              <div className="of-card-hd">
+                <span className="of-card-ico"><IcoPin /></span>
+                <div>
+                  <div className="of-card-title">Lokasi Penjemputan</div>
+                  <div className="of-card-sub">Dari mana kendaraan akan dijemput?</div>
+                </div>
+              </div>
+              <div className="of-grid">
+                <Field label="Kota Asal" required>
+                  <input type="text" className="of-inp" value={data.asal_kota}
+                    onChange={(e) => set("asal_kota", e.target.value)}
+                    placeholder="Jakarta" data-testid="ord-asal-kota" />
+                </Field>
+                <Field label="Alamat Lengkap" full>
+                  <textarea className="of-inp of-textarea" rows={3} value={data.asal_alamat} maxLength={300}
+                    onChange={(e) => set("asal_alamat", e.target.value)}
+                    placeholder="Jl. Sudirman No. 123, Jakarta Selatan"
+                    data-testid="ord-asal-alamat" />
+                </Field>
+                <Field label="Tanggal Pickup">
+                  <input type="date" className="of-inp" value={data.pickup_date}
+                    onChange={(e) => set("pickup_date", e.target.value)}
+                    data-testid="ord-pickup-date" />
+                </Field>
+                <Field label="Jam Pickup">
+                  <input type="time" className="of-inp" value={data.pickup_time}
+                    onChange={(e) => set("pickup_time", e.target.value)}
+                    data-testid="ord-pickup-time" />
+                </Field>
+                <Field label="PIC Penjemputan">
+                  <input type="text" className="of-inp" value={data.pickup_pic}
+                    onChange={(e) => set("pickup_pic", e.target.value)}
+                    placeholder="Bpk. Andi" data-testid="ord-pickup-pic" />
+                </Field>
+                <Field label="No. HP PIC">
+                  <input type="tel" className="of-inp" value={data.pickup_hp}
+                    onChange={(e) => set("pickup_hp", e.target.value)}
+                    placeholder="0818-1234" data-testid="ord-pickup-hp" />
+                </Field>
+              </div>
             </div>
-          </section>
-        )}
+          )}
 
-        {step === 3 && (
-          <section className="ord-card" data-testid="ord-card-konfirmasi">
-            <h2 className="ord-card-title">✅ Konfirmasi & Data Pemesan</h2>
-            <div className="ord-grid">
-              <Field label="Nama / PT" required>
-                <input type="text" className="drv-step-input" value={data.customer_nama}
-                       onChange={(e) => setF("customer_nama", e.target.value)}
-                       placeholder="PT Logistik Jaya" data-testid="ord-customer-nama" />
-              </Field>
-              <Field label="No. HP / WA" required>
-                <input type="tel" className="drv-step-input" value={data.customer_hp}
-                       onChange={(e) => setF("customer_hp", e.target.value)}
-                       placeholder="0818-9876" data-testid="ord-customer-hp" />
-              </Field>
-              <Field label="Email" full>
-                <input type="email" className="drv-step-input" value={data.customer_email}
-                       onChange={(e) => setF("customer_email", e.target.value)}
-                       placeholder="purchasing@perusahaan.com"
-                       data-testid="ord-customer-email" />
-              </Field>
-              <Field label="Catatan Tambahan" full hint="Maks 500 karakter">
-                <textarea className="drv-step-input" rows={3} value={data.catatan} maxLength={500}
-                          onChange={(e) => setF("catatan", e.target.value)}
-                          placeholder="Cth: tolong dijemput sore, kunci ada di security."
-                          data-testid="ord-catatan" />
-              </Field>
+          {/* Step 2 — Tujuan */}
+          {step === 2 && (
+            <div className="of-card" key="tujuan" data-testid="ord-card-tujuan">
+              <div className="of-card-hd">
+                <span className="of-card-ico"><IcoFlag /></span>
+                <div>
+                  <div className="of-card-title">Lokasi Pengiriman</div>
+                  <div className="of-card-sub">Ke mana kendaraan akan dikirimkan?</div>
+                </div>
+              </div>
+              <div className="of-grid">
+                <Field label="Kota Tujuan" required>
+                  <input type="text" className="of-inp" value={data.tujuan_kota}
+                    onChange={(e) => set("tujuan_kota", e.target.value)}
+                    placeholder="Surabaya" data-testid="ord-tujuan-kota" />
+                </Field>
+                <Field label="Alamat Lengkap" full>
+                  <textarea className="of-inp of-textarea" rows={3} value={data.tujuan_alamat} maxLength={300}
+                    onChange={(e) => set("tujuan_alamat", e.target.value)}
+                    placeholder="Jl. Pemuda No. 45, Surabaya"
+                    data-testid="ord-tujuan-alamat" />
+                </Field>
+                <Field label="PIC Penerima">
+                  <input type="text" className="of-inp" value={data.delivery_pic}
+                    onChange={(e) => set("delivery_pic", e.target.value)}
+                    placeholder="Ibu Siti" data-testid="ord-delivery-pic" />
+                </Field>
+                <Field label="No. HP Penerima">
+                  <input type="tel" className="of-inp" value={data.delivery_hp}
+                    onChange={(e) => set("delivery_hp", e.target.value)}
+                    placeholder="0818-5678" data-testid="ord-delivery-hp" />
+                </Field>
+              </div>
             </div>
+          )}
 
-            <div className="ord-summary">
-              <div className="ord-summary-head">RINGKASAN PESANAN</div>
-              <SummaryRow k="Kendaraan" v={`${data.vehicle_type || "—"} ${data.nopol ? `(${data.nopol})` : ""}`} />
-              <SummaryRow k="Warna / Tahun" v={`${data.warna || "—"} / ${data.tahun || "—"}`} />
-              <SummaryRow k="Asal"  v={`${data.asal_kota}${data.asal_alamat ? ` — ${data.asal_alamat}` : ""}`} />
-              <SummaryRow k="Pickup" v={`${data.pickup_date || "—"} ${data.pickup_time || ""}`} />
-              <SummaryRow k="Tujuan" v={`${data.tujuan_kota}${data.tujuan_alamat ? ` — ${data.tujuan_alamat}` : ""}`} />
-              <SummaryRow k="PIC Penerima" v={`${data.delivery_pic || "—"} ${data.delivery_hp ? `(${data.delivery_hp})` : ""}`} />
+          {/* Step 3 — Konfirmasi */}
+          {step === 3 && (
+            <div className="of-card" key="konfirmasi" data-testid="ord-card-konfirmasi">
+              <div className="of-card-hd">
+                <span className="of-card-ico"><IcoDoc /></span>
+                <div>
+                  <div className="of-card-title">Konfirmasi Pesanan</div>
+                  <div className="of-card-sub">Isi data pemesan dan cek ringkasan</div>
+                </div>
+              </div>
+              <div className="of-grid">
+                <Field label="Nama / PT" required>
+                  <input type="text" className="of-inp" value={data.customer_nama}
+                    onChange={(e) => set("customer_nama", e.target.value)}
+                    placeholder="PT Logistik Jaya" data-testid="ord-customer-nama" />
+                </Field>
+                <Field label="No. HP / WhatsApp" required>
+                  <input type="tel" className="of-inp" value={data.customer_hp}
+                    onChange={(e) => set("customer_hp", e.target.value)}
+                    placeholder="0818-9876" data-testid="ord-customer-hp" />
+                </Field>
+                <Field label="Email" full>
+                  <input type="email" className="of-inp" value={data.customer_email}
+                    onChange={(e) => set("customer_email", e.target.value)}
+                    placeholder="purchasing@perusahaan.com" data-testid="ord-customer-email" />
+                </Field>
+                <Field label="Catatan Tambahan" full hint="Maks. 500 karakter">
+                  <textarea className="of-inp of-textarea" rows={3} value={data.catatan} maxLength={500}
+                    onChange={(e) => set("catatan", e.target.value)}
+                    placeholder="Cth: tolong dijemput sore, kunci ada di security."
+                    data-testid="ord-catatan" />
+                </Field>
+              </div>
+
+              {/* Summary */}
+              <div className="of-summary">
+                <div className="of-summary-hd">Ringkasan Pesanan</div>
+                <div className="of-summary-body">
+                  <SRow k="Kendaraan"    v={`${data.vehicle_type || "—"} ${data.nopol ? `· ${data.nopol}` : ""}`} />
+                  <SRow k="Warna / Tahun" v={`${data.warna || "—"} / ${data.tahun || "—"}`} />
+                  <SRow k="Asal"         v={`${data.asal_kota}${data.asal_alamat ? ` — ${data.asal_alamat}` : ""}`} />
+                  <SRow k="Jadwal"       v={`${data.pickup_date || "—"} ${data.pickup_time || ""}`.trim()} />
+                  <SRow k="Tujuan"       v={`${data.tujuan_kota}${data.tujuan_alamat ? ` — ${data.tujuan_alamat}` : ""}`} />
+                  <SRow k="PIC Penerima" v={`${data.delivery_pic || "—"} ${data.delivery_hp ? `· ${data.delivery_hp}` : ""}`.trim()} />
+                </div>
+              </div>
+
+              {error && (
+                <div className="of-error" data-testid="ord-error">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  {error}
+                </div>
+              )}
             </div>
-
-            {error && <div className="ord-error" data-testid="ord-error">⚠ {error}</div>}
-          </section>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* Bottom nav */}
-      <div className="ord-nav">
-        <button
-          type="button"
-          className="ord-btn ord-btn-ghost"
-          onClick={goPrev}
-          disabled={step === 0 || submitting}
-          data-testid="ord-btn-prev"
-        >← Kembali</button>
-
-        {step < STEPS.length - 1 ? (
-          <button
-            type="button"
-            className="ord-btn ord-btn-gold"
-            onClick={goNext}
-            disabled={!stepValid}
-            data-testid="ord-btn-next"
-          >Lanjut →</button>
-        ) : (
-          <button
-            type="button"
-            className="ord-btn ord-btn-gold"
-            onClick={submit}
-            disabled={!stepValid || submitting}
-            data-testid="ord-btn-submit"
-          >
-            {submitting ? "Mengirim..." : "🚀 Kirim Pesanan"}
+      {/* ── Bottom nav ── */}
+      <div className="of-nav">
+        <div className="of-nav-inner">
+          <button type="button" className="of-btn of-btn--ghost"
+            onClick={goPrev} disabled={step === 0 || submitting}
+            data-testid="ord-btn-prev">
+            <IcoBack /> Kembali
           </button>
-        )}
+
+          {step < STEPS.length - 1 ? (
+            <button type="button" className="of-btn of-btn--primary"
+              onClick={goNext} disabled={!stepValid}
+              data-testid="ord-btn-next">
+              Lanjut <IcoArrow />
+            </button>
+          ) : (
+            <button type="button" className="of-btn of-btn--primary"
+              onClick={submit} disabled={!stepValid || submitting}
+              data-testid="ord-btn-submit">
+              {submitting
+                ? <><span className="of-spinner" /> Mengirim...</>
+                : <><IcoSend /> Kirim Pesanan</>
+              }
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function SummaryRow({ k, v }) {
+function SRow({ k, v }) {
   return (
-    <div className="ord-summary-row">
-      <div className="ord-summary-k">{k}</div>
-      <div className="ord-summary-v">{v || "—"}</div>
+    <div className="of-srow">
+      <div className="of-sk">{k}</div>
+      <div className="of-sv">{v || "—"}</div>
     </div>
   );
 }
@@ -346,45 +466,43 @@ function SummaryRow({ k, v }) {
 function SuccessScreen({ order }) {
   const trackUrl = order.trip_id ? `${window.location.origin}/track/${order.trip_id}` : "";
   return (
-    <div className="ord-root">
-      <div className="ord-success" data-testid="ord-success">
-        <div className="ord-success-badge">✓</div>
-        <h1>Pesanan Terkirim!</h1>
-        <p>Tim Alyssa akan menghubungi Anda dalam 1×24 jam.</p>
-
-        <div className="ord-success-card">
-          <div className="ord-success-row">
-            <div className="ord-success-k">ID Pesanan</div>
-            <div className="ord-success-v ord-mono" data-testid="ord-success-id">{order.order_id}</div>
-          </div>
-          <div className="ord-success-row">
-            <div className="ord-success-k">Status</div>
-            <div className="ord-success-v">
-              <span className="ord-status-chip">{order.status}</span>
+    <div className="of-root">
+      <header className="of-hdr">
+        <div className="of-hdr-inner">
+          <a href="/" className="of-brand">
+            <Logo size={44} />
+            <div className="of-brand-text">
+              <div className="of-brand-name">PT Alyssa Auto Logistik</div>
             </div>
-          </div>
-          <div className="ord-success-row">
-            <div className="ord-success-k">Rute</div>
-            <div className="ord-success-v">{order.asal_kota} → {order.tujuan_kota}</div>
-          </div>
-          <div className="ord-success-row">
-            <div className="ord-success-k">Kontak</div>
-            <div className="ord-success-v">{order.customer_nama} · {order.customer_hp}</div>
-          </div>
-        </div>
-
-        {trackUrl && (
-          <a className="ord-btn ord-btn-gold" href={trackUrl} data-testid="ord-success-track">
-            Lacak Pesanan →
           </a>
-        )}
-        <a className="ord-btn ord-btn-ghost" href="?order=1" data-testid="ord-success-new">
-          Buat Pesanan Lagi
-        </a>
-
-        <div className="ord-success-meta">
-          Simpan ID pesanan untuk referensi. Hubungi <b>0818 631 135</b> untuk pertanyaan.
         </div>
+      </header>
+      <div className="of-success" data-testid="ord-success">
+        <div className="of-success-ico"><IcoCircleCheck /></div>
+        <h1 className="of-success-title">Pesanan Berhasil Dikirim</h1>
+        <p className="of-success-sub">
+          Tim Alyssa Auto Logistik akan menghubungi Anda dalam 1×24 jam untuk konfirmasi jadwal penjemputan.
+        </p>
+        <div className="of-success-card">
+          <div className="of-success-card-hd">Detail Pesanan</div>
+          <SRow k="ID Pesanan" v={<span className="of-mono" data-testid="ord-success-id">{order.order_id}</span>} />
+          <SRow k="Status"     v={<span className="of-chip">{order.status}</span>} />
+          <SRow k="Rute"       v={`${order.asal_kota} → ${order.tujuan_kota}`} />
+          <SRow k="Kontak"     v={`${order.customer_nama} · ${order.customer_hp}`} />
+        </div>
+        <div className="of-success-actions">
+          {trackUrl && (
+            <a className="of-btn of-btn--primary" href={trackUrl} data-testid="ord-success-track">
+              Lacak Pesanan <IcoArrow />
+            </a>
+          )}
+          <a className="of-btn of-btn--ghost" href="?order=1" data-testid="ord-success-new">
+            Buat Pesanan Baru
+          </a>
+        </div>
+        <p className="of-success-meta">
+          Simpan ID pesanan untuk referensi. Hubungi <strong>0818 631 135</strong> untuk bantuan.
+        </p>
       </div>
     </div>
   );
