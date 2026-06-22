@@ -1,0 +1,497 @@
+/* ============================================================
+   BASTK (Berita Acara Serah Terima Kendaraan) — Premium A4
+   Theme: Navy (#0A1628) + Gold (#D4A847)
+   Print-area uses LIGHT background for clean PDF.
+   Editor below uses dark theme matching Driver UI.
+   ============================================================ */
+
+.bk-root {
+  min-height: 100vh;
+  background: var(--bg, #0A1628);
+  color: var(--text, #E6EDF3);
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-feature-settings: "tnum" 1;
+  padding: 0 0 120px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+/* ----- Toolbar (outside print area) ----- */
+.bk-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, #0A1628 0%, #0F1E35 100%);
+  border-bottom: 1px solid var(--border, #1F2F4A);
+  backdrop-filter: blur(8px);
+}
+.bk-toolbar-title {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--gold-light, #D4A847);
+  letter-spacing: 0.4px;
+}
+.bk-toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.bk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .08s ease, opacity .15s ease, box-shadow .15s ease;
+  white-space: nowrap;
+}
+.bk-btn:active:not(:disabled) { transform: translateY(1px); }
+.bk-btn:disabled { opacity: .55; cursor: not-allowed; }
+.bk-btn-ghost {
+  background: transparent;
+  border-color: var(--border-light, #2C4264);
+  color: var(--text, #E6EDF3);
+}
+.bk-btn-ghost:hover:not(:disabled) { background: rgba(212,168,71,.08); }
+.bk-btn-gold {
+  background: linear-gradient(180deg, #D4A847 0%, #854F0B 100%);
+  color: #0A1628;
+  box-shadow: 0 4px 14px rgba(212,168,71,.28);
+}
+.bk-btn-gold:hover:not(:disabled) { box-shadow: 0 6px 20px rgba(212,168,71,.4); }
+
+/* ============================================================
+   PRINT AREA — light background for clean A4 PDF output
+   ============================================================ */
+.bk-print {
+  background: #ffffff;
+  color: #0A1628;
+  margin: 18px;
+  padding: 22px 26px;
+  border-radius: 14px;
+  border: 1px solid #d9dce3;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+/* ----- Header ----- */
+.bk-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 3px double #854F0B;
+  margin-bottom: 14px;
+}
+.bk-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bk-logo-box {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #0A1628 0%, #152238 100%);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 2px #D4A847;
+  flex-shrink: 0;
+}
+.bk-brand-name {
+  font-weight: 900;
+  font-size: 18px;
+  letter-spacing: 1px;
+  color: #0A1628;
+}
+.bk-brand-tag {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #854F0B;
+  margin-top: 2px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.bk-brand-meta {
+  font-size: 11px;
+  color: #5F7494;
+  margin-top: 4px;
+  font-family: "JetBrains Mono", monospace;
+}
+.bk-header-right {
+  text-align: right;
+}
+.bk-doc-no { font-size: 10px; color: #5F7494; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+.bk-doc-no-val {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #0A1628;
+  margin: 2px 0 4px;
+  word-break: break-all;
+}
+.bk-doc-date {
+  font-size: 11.5px;
+  color: #854F0B;
+  font-weight: 700;
+}
+
+/* ----- Grid 2 kolom ----- */
+.bk-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+@media (max-width: 720px) {
+  .bk-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ----- Panel (block dengan head) ----- */
+.bk-panel {
+  border: 1px solid #d9dce3;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 10px;
+}
+.bk-panel-head {
+  background: linear-gradient(90deg, #0A1628 0%, #152238 100%);
+  color: #D4A847;
+  font-weight: 800;
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  padding: 8px 12px;
+  text-transform: uppercase;
+}
+
+/* ----- Table info kendaraan / pelanggan ----- */
+.bk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.bk-table th, .bk-table td {
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px dashed #e4e7ee;
+}
+.bk-table th {
+  width: 38%;
+  color: #5F7494;
+  font-weight: 600;
+  background: #f8f9fb;
+}
+.bk-table td { color: #0A1628; font-weight: 600; }
+.bk-mono { font-family: "JetBrains Mono", monospace; letter-spacing: .5px; }
+.bk-wrap { white-space: pre-line; line-height: 1.4; }
+
+/* ----- Sketsa area + damage marks ----- */
+.bk-sketch-meta {
+  padding: 8px 12px;
+  background: #f8f9fb;
+  border-bottom: 1px solid #e4e7ee;
+  font-size: 11.5px;
+  color: #0A1628;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.bk-sketch-meta-item {
+  background: #fff;
+  border: 1px solid #d9dce3;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-weight: 600;
+}
+.bk-codes-row { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.bk-code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d9dce3;
+  border-radius: 999px;
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.bk-code-pill b { font-weight: 800; letter-spacing: 0.5px; }
+
+.bk-sketch-area {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  background:
+    linear-gradient(to bottom, #fbfcfe 0%, #f4f6fa 100%);
+  cursor: crosshair;
+  overflow: hidden;
+  border-bottom: 1px solid #e4e7ee;
+}
+.bk-sketch {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.bk-sketch svg { width: 100%; height: 100%; display: block; }
+.bk-sketch-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #5F7494;
+  font-style: italic;
+  font-size: 12px;
+  pointer-events: none;
+}
+.bk-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  font-weight: 800;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  letter-spacing: 0.4px;
+}
+.bk-mark:hover { transform: translate(-50%, -50%) scale(1.05); }
+.bk-marks-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #f8f9fb;
+  font-size: 11px;
+}
+
+/* ----- Catatan box ----- */
+.bk-catatan-display {
+  padding: 10px 12px;
+  min-height: 40px;
+  font-size: 12.5px;
+  color: #0A1628;
+  white-space: pre-line;
+  line-height: 1.5;
+}
+
+/* ----- Tanda tangan grid ----- */
+.bk-sig-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 10px;
+}
+@media (max-width: 720px) {
+  .bk-sig-grid { grid-template-columns: 1fr; }
+}
+.bk-sig-box {
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfcfe;
+  text-align: center;
+}
+.bk-sig-box-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #5F7494;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+.bk-sig-img {
+  width: 100%;
+  max-height: 90px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 4px;
+}
+.bk-sig-empty {
+  height: 70px;
+  display: grid;
+  place-items: center;
+  color: #5F7494;
+  font-size: 11px;
+  font-style: italic;
+}
+.bk-sig-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #0A1628;
+  border-top: 1px dashed #d9dce3;
+  padding-top: 6px;
+  margin-top: 6px;
+}
+
+/* ----- Footer ----- */
+.bk-footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed #d9dce3;
+  font-size: 10.5px;
+  color: #5F7494;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+/* ============================================================
+   EDITOR (di luar print area, dark theme)
+   ============================================================ */
+.bk-editor {
+  padding: 14px 16px;
+  display: grid;
+  gap: 12px;
+}
+.bk-edit-card {
+  background: var(--surface, #152238);
+  border: 1px solid var(--border, #1F2F4A);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.bk-edit-head {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--gold-light, #D4A847);
+  margin-bottom: 8px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+/* Damage code grid */
+.bk-code-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+  gap: 6px;
+}
+.bk-code-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background: rgba(255,255,255,.04);
+  color: var(--text, #E6EDF3);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.bk-code-btn b {
+  font-weight: 900;
+  font-size: 14px;
+  letter-spacing: 0.6px;
+}
+.bk-code-btn:hover { transform: translateY(-1px); }
+.bk-code-btn.active {
+  box-shadow: 0 0 0 2px var(--gold-light, #D4A847) inset, 0 4px 14px rgba(212,168,71,.25);
+  transform: translateY(-1px);
+}
+.bk-hint {
+  font-size: 11px;
+  color: var(--text-mute, #94A3C4);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Form grid */
+.bk-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 10px;
+}
+@media (max-width: 600px) {
+  .bk-form-grid { grid-template-columns: 1fr; }
+}
+.bk-field { display: flex; flex-direction: column; gap: 4px; }
+.bk-field-full { grid-column: 1 / -1; }
+.bk-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-mute, #94A3C4);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* Signature pad (editor) */
+.bk-sig {
+  background: var(--bg-2, #0F1E35);
+  border: 1px solid var(--border, #1F2F4A);
+  border-radius: 10px;
+  padding: 10px;
+}
+.bk-sig-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--gold-light, #D4A847);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.bk-sig-canvas {
+  width: 100%;
+  height: 140px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px dashed #5F7494;
+  touch-action: none;
+  cursor: crosshair;
+  display: block;
+}
+.bk-sig-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+.bk-sig-hint {
+  font-size: 11px;
+  color: var(--text-mute, #94A3C4);
+}
+.bk-sig-clear {
+  background: transparent;
+  border: 1px solid var(--border-light, #2C4264);
+  color: var(--text, #E6EDF3);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bk-sig-clear:hover { background: rgba(255,255,255,.05); }
+
+/* Toast already styled in Driver.css (.drv-toast) */
+
+/* ============================================================
+   PRINT MEDIA — Native browser print fallback (optional)
+   ============================================================ */
+@media print {
+  .bk-toolbar, .bk-editor { display: none !important; }
+  .bk-root { background: #fff; padding: 0; }
+  .bk-print {
+    margin: 0;
+    box-shadow: none;
+    border: 0;
+    border-radius: 0;
+  }
+}
