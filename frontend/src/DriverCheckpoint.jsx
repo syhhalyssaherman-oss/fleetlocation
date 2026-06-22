@@ -34,6 +34,13 @@ const SOP_TEXT = [
 
 function pad(n) { return String(n).padStart(2, "0"); }
 function fmtIDR(n) { return "Rp " + (Number(n)||0).toLocaleString("id-ID"); }
+function albumStageLabel(s) {
+  return { asal: "Asal", kapal: "Dalam Kapal", tujuan: "Tujuan", dokumen: "Dokumen" }[s] || s;
+}
+function albumStageIcon(s) {
+  return { asal: "🏁", kapal: "⛴️", tujuan: "📍", dokumen: "📄" }[s] || "📷";
+}
+const ALBUM_STAGES = ["asal", "kapal", "tujuan", "dokumen"];
 function todayIso() {
   // Tampilan tanggal lokal browser (WIB di mobile user)
   const d = new Date();
@@ -235,6 +242,41 @@ export default function DriverCheckpoint() {
     } finally { setCairingTahap(0); }
   };
 
+  const [albumStage, setAlbumStage] = useState("asal");
+  const [albumUploading, setAlbumUploading] = useState(false);
+  const uploadAlbum = async (file) => {
+    if (!file) return;
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    if (albumStage !== "dokumen" && isPdf) {
+      showToast("PDF cuma boleh di tab Dokumen", "err");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) { showToast("File terlalu besar (max 15MB)", "err"); return; }
+    setAlbumUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("stage", albumStage);
+      fd.append("foto", file);
+      fd.append("uploaded_by", "driver");
+      const r = await axios.post(`${API}/trips/${trip.trip_id}/album`, fd);
+      setTrip(r.data);
+      showToast("Foto " + albumStageLabel(albumStage) + " terupload");
+    } catch (e) {
+      const msg = e?.response?.data?.detail || "Upload gagal";
+      showToast(msg, "err");
+    } finally { setAlbumUploading(false); }
+  };
+  const deleteAlbum = async (stage, photoId) => {
+    if (!window.confirm("Hapus foto ini?")) return;
+    try {
+      const r = await axios.delete(`${API}/trips/${trip.trip_id}/album/${stage}/${photoId}`);
+      setTrip(r.data);
+      showToast("Foto dihapus");
+    } catch {
+      showToast("Gagal hapus", "err");
+    }
+  };
+
   const resetToday = async () => {
     if (!window.confirm("Reset foto hari ini? (testing only)")) return;
     try {
@@ -432,6 +474,85 @@ export default function DriverCheckpoint() {
             {!allInitialDone && (
               <div className="drv-note">💡 Lengkapi 6 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ALBUM PERJALANAN (Asal / Dalam Kapal / Tujuan / Dokumen) */}
+      {trip.nama_driver && (
+        <section className="drv-card" data-testid="album-card">
+          <div className="drv-card-head">
+            <span>🗂️ Album Perjalanan</span>
+            <span className="drv-pill drv-pill-ready">{(trip.album?.[albumStage] || []).length} foto</span>
+          </div>
+          <div className="drv-album-tabs" role="tablist">
+            {ALBUM_STAGES.map((s) => (
+              <button
+                key={s}
+                role="tab"
+                className={`drv-album-tab ${albumStage === s ? "active" : ""}`}
+                onClick={() => setAlbumStage(s)}
+                data-testid={`album-tab-${s}`}
+              >
+                <span className="drv-album-tab-ico">{albumStageIcon(s)}</span>
+                <span>{albumStageLabel(s)}</span>
+                <span className="drv-album-tab-count">{(trip.album?.[s] || []).length}</span>
+              </button>
+            ))}
+          </div>
+          <div className="drv-card-body">
+            <input
+              ref={(el) => fileRefs.current["album"] = el}
+              type="file"
+              accept={albumStage === "dokumen" ? "image/*,application/pdf" : "image/*"}
+              capture={albumStage !== "dokumen" ? "environment" : undefined}
+              onChange={(e) => uploadAlbum(e.target.files?.[0])}
+              style={{ display: "none" }}
+            />
+            {(trip.album?.[albumStage] || []).length === 0 ? (
+              <div className="drv-album-empty">
+                <div style={{ fontSize: 38, opacity: 0.5 }}>{albumStageIcon(albumStage)}</div>
+                <div>Belum ada foto {albumStageLabel(albumStage)}.</div>
+              </div>
+            ) : (
+              <div className="drv-album-grid" data-testid={`album-grid-${albumStage}`}>
+                {(trip.album[albumStage] || []).map((p) => {
+                  const isPdf = (p.url || "").toLowerCase().endsWith(".pdf");
+                  return (
+                    <div key={p.id} className="drv-album-item" data-testid={`album-item-${p.id}`}>
+                      <a href={`${BACKEND_URL}${p.url}`} target="_blank" rel="noreferrer">
+                        {isPdf
+                          ? <div className="drv-doc-pdf">PDF</div>
+                          : <img src={`${BACKEND_URL}${p.url}`} alt={albumStage} />}
+                      </a>
+                      <button
+                        className="drv-album-del"
+                        onClick={() => deleteAlbum(albumStage, p.id)}
+                        data-testid={`btn-del-${p.id}`}
+                        title="Hapus foto"
+                      >×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              className="drv-btn drv-btn-blue drv-btn-block"
+              onClick={() => triggerFile("album")}
+              disabled={albumUploading}
+              data-testid={`btn-album-upload-${albumStage}`}
+            >
+              {albumUploading
+                ? "Mengupload..."
+                : (albumStage === "dokumen"
+                    ? "📎 Tambah Foto / PDF Dokumen"
+                    : `📷 Tambah Foto ${albumStageLabel(albumStage)}`)}
+            </button>
+            <div className="drv-note">
+              💡 {albumStage === "dokumen"
+                ? "Upload foto/PDF dokumen seperti surat jalan, BAST, copy STNK, dll. Admin & pelanggan akan lihat di sini."
+                : "Foto di tahap ini langsung muncul di PO Admin & dilihat pelanggan via link tracking."}
+            </div>
           </div>
         </section>
       )}

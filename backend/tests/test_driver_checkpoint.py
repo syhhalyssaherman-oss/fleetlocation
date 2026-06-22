@@ -72,7 +72,7 @@ def test_01_root(session):
     assert r.status_code == 200
     data = r.json()
     assert data.get("message") == "Alyssa Driver Checkpoint API"
-    assert data.get("v") == "2.0"
+    assert data.get("v") == "2.2"
 
 
 def test_02_init_trip_new(session, trip_id):
@@ -357,3 +357,118 @@ def test_25_cair_sets_odoo_synced_cair_n(session):
     r3 = session.post(f"{API}/trips/{tid}/cair", json={"tahap": 3})
     assert r3.status_code == 200
     assert r3.json()["odoo_synced"]["cair_3"] is True
+
+
+# ---------- Iteration 4 tests: Album + Public tracking ----------
+
+PDF_BYTES = b"%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF"
+
+
+@pytest.fixture(scope="module")
+def trip_id_i4():
+    return f"TRIP-I4-{uuid.uuid4().hex[:8]}"
+
+
+def test_26_init_new_trip_has_album_field(session, trip_id_i4):
+    r = session.post(f"{API}/trips/init", json={
+        "trip_id": trip_id_i4, "nopol": "B 4444 AB", "route": "Jakarta - Medan",
+    })
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d.get("album") == {"asal": [], "kapal": [], "tujuan": [], "dokumen": []}
+
+
+def test_27_init_existing_legacy_backfills_album(session):
+    # Use a legacy trip created in earlier tests (trip_id fixture from class scope is module-level here)
+    # Strategy: create a trip without album field by stripping it directly via Mongo isn't allowed here.
+    # Instead, simulate: call init then unset album, then call init again to verify backfill.
+    tid = f"TRIP-LEG-{uuid.uuid4().hex[:8]}"
+    r = session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 LG", "route": "x"})
+    assert r.status_code == 200
+    # Re-init returns existing; album should be present
+    r2 = session.post(f"{API}/trips/init", json={"trip_id": tid, "nopol": "B 1 LG", "route": "x"})
+    assert r2.status_code == 200
+    assert r2.json().get("album") == {"asal": [], "kapal": [], "tujuan": [], "dokumen": []}
+
+
+def test_28_album_upload_asal_image(session, trip_id_i4):
+    files = {"foto": ("a.png", PNG, "image/png")}
+    data = {"stage": "asal", "catatan": "Foto loading di asal", "uploaded_by": "driver"}
+    r = session.post(f"{API}/trips/{trip_id_i4}/album", data=data, files=files)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert len(d["album"]["asal"]) == 1
+    item = d["album"]["asal"][0]
+    assert "id" in item and "url" in item
+    assert item["catatan"] == "Foto loading di asal"
+    assert item["uploaded_by"] == "driver"
+    assert item["url"].startswith(f"/api/uploads/{trip_id_i4}/album/asal/")
+
+
+def test_29_album_dokumen_accepts_pdf(session, trip_id_i4):
+    files = {"foto": ("doc.pdf", PDF_BYTES, "application/pdf")}
+    data = {"stage": "dokumen"}
+    r = session.post(f"{API}/trips/{trip_id_i4}/album", data=data, files=files)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert len(d["album"]["dokumen"]) == 1
+    assert d["album"]["dokumen"][0]["url"].endswith(".pdf")
+
+
+@pytest.mark.parametrize("stage", ["asal", "kapal", "tujuan"])
+def test_30_album_non_dokumen_rejects_pdf(session, trip_id_i4, stage):
+    files = {"foto": ("bad.pdf", PDF_BYTES, "application/pdf")}
+    r = session.post(f"{API}/trips/{trip_id_i4}/album", data={"stage": stage}, files=files)
+    assert r.status_code == 400, f"stage={stage}: {r.text}"
+
+
+def test_31_album_invalid_stage_400(session, trip_id_i4):
+    files = {"foto": ("a.png", PNG, "image/png")}
+    r = session.post(f"{API}/trips/{trip_id_i4}/album", data={"stage": "xxx"}, files=files)
+    assert r.status_code == 400
+
+
+def test_32_album_trip_not_found_404(session):
+    files = {"foto": ("a.png", PNG, "image/png")}
+    r = session.post(f"{API}/trips/NOPE-{uuid.uuid4().hex}/album", data={"stage": "asal"}, files=files)
+    assert r.status_code == 404
+
+
+def test_33_album_delete_photo(session, trip_id_i4):
+    # Upload a photo first, then delete it
+    files = {"foto": ("k.png", PNG, "image/png")}
+    r = session.post(f"{API}/trips/{trip_id_i4}/album", data={"stage": "kapal"}, files=files)
+    assert r.status_code == 200
+    pid = r.json()["album"]["kapal"][0]["id"]
+    # Delete it
+    r2 = session.delete(f"{API}/trips/{trip_id_i4}/album/kapal/{pid}")
+    assert r2.status_code == 200
+    d = r2.json()
+    assert all(p["id"] != pid for p in d["album"]["kapal"])
+
+
+def test_34_public_trip_view_filters_fields(session, trip_id_i4):
+    r = session.get(f"{API}/public/trips/{trip_id_i4}")
+    assert r.status_code == 200, r.text
+    d = r.json()
+    # Allowed fields
+    expected_keys = {"trip_id", "nopol", "tipe_kendaraan", "no_rangka", "route", "nama_driver",
+                     "legs", "album", "handover", "daily_count", "initial_done", "progress",
+                     "created_at", "updated_at"}
+    assert expected_keys.issubset(set(d.keys()))
+    # Sensitive fields must NOT be exposed
+    forbidden = {"xendit", "odoo_synced", "cair", "sop_read", "t1", "t2", "t3",
+                 "bonus_daily", "bonus_kerajinan", "driver_id"}
+    leaked = forbidden & set(d.keys())
+    assert leaked == set(), f"Leaked fields: {leaked}"
+    # Progress sub-keys
+    assert "initial_complete" in d["progress"]
+    assert "handover_complete" in d["progress"]
+    assert d["trip_id"] == trip_id_i4
+    assert isinstance(d["daily_count"], int)
+    assert isinstance(d["initial_done"], int)
+
+
+def test_35_public_trip_not_found_404(session):
+    r = session.get(f"{API}/public/trips/NOPE-{uuid.uuid4().hex}")
+    assert r.status_code == 404

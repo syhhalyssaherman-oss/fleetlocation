@@ -90,7 +90,10 @@ def trip_doc_to_public(doc: dict) -> dict:
 # ---------- Endpoints ----------
 @api_router.get("/")
 async def root():
-    return {"message": "Alyssa Driver Checkpoint API", "v": "2.0"}
+    return {"message": "Alyssa Driver Checkpoint API", "v": "2.2"}
+
+
+VALID_STAGES = {"asal", "kapal", "tujuan", "dokumen"}
 
 
 @api_router.post("/trips/init")
@@ -98,17 +101,25 @@ async def init_trip(payload: TripInit):
     """Idempotent — buat trip kalau belum ada, kalau sudah ada return existing."""
     existing = await db.trips.find_one({"trip_id": payload.trip_id})
     if existing:
+        # ensure album field exists for legacy docs created before v2.2
+        if "album" not in existing:
+            await db.trips.update_one(
+                {"trip_id": payload.trip_id},
+                {"$set": {"album": {"asal": [], "kapal": [], "tujuan": [], "dokumen": []}}}
+            )
+            existing = await db.trips.find_one({"trip_id": payload.trip_id})
         return trip_doc_to_public(existing)
     doc = payload.model_dump()
     doc.update({
         "id": str(uuid.uuid4()),
         "nama_driver": "",
         "sop_read": False,
-        "initial_photos": {},   # { 'depan': {url, ts}, 'belakang': ..., 'kiri': ..., 'kanan': ..., 'spidometer': ..., 'bbm': ... }
-        "daily_checkpoints": [],  # [{date: 'YYYY-MM-DD', url, ts}]
-        "handover": {"bastk": [], "resi": None},  # bastk: list pdf/jpg, resi: single
+        "initial_photos": {},
+        "daily_checkpoints": [],
+        "handover": {"bastk": [], "resi": None},
+        # Album foto per tahap perjalanan (selaras dengan PO Admin PHP existing)
+        "album": {"asal": [], "kapal": [], "tujuan": [], "dokumen": []},
         "cair": {"1": False, "2": False, "3": False},
-        # Xendit stub — filled when admin triggers disburse; MOCKED until legalitas done.
         "xendit": {
             "t1": {"id": None, "status": None, "ts": None},
             "t2": {"id": None, "status": None, "ts": None},
@@ -341,6 +352,87 @@ async def reset_today_daily(trip_id: str):
     await db.trips.update_one({"trip_id": trip_id}, {"$pull": {"daily_checkpoints": {"date": today}}})
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
+
+
+# ---------- Album foto per tahap (Asal / Dalam Kapal / Tujuan / Dokumen) ----------
+@api_router.post("/trips/{trip_id}/album")
+async def upload_album_photo(
+    trip_id: str,
+    stage: str = Form(...),
+    foto: UploadFile = File(...),
+    catatan: str = Form(""),
+    uploaded_by: str = Form("driver"),   # "driver" | "admin"
+):
+    """Upload foto ke album per tahap. Stage = asal|kapal|tujuan|dokumen.
+    Dokumen menerima PDF + gambar; lainnya hanya gambar."""
+    stage_norm = (stage or "").strip().lower()
+    if stage_norm not in VALID_STAGES:
+        raise HTTPException(400, f"Stage tidak valid. Pilihan: {sorted(VALID_STAGES)}")
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+    allowed = ALLOWED_IMG | ALLOWED_DOC if stage_norm == "dokumen" else ALLOWED_IMG
+    url = _save_upload(trip_id, f"album/{stage_norm}", foto, allowed)
+    entry = {
+        "id": str(uuid.uuid4()),
+        "url": url,
+        "catatan": (catatan or "").strip(),
+        "uploaded_by": uploaded_by or "driver",
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.trips.update_one(
+        {"trip_id": trip_id},
+        {"$push": {f"album.{stage_norm}": entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    doc = await db.trips.find_one({"trip_id": trip_id})
+    return trip_doc_to_public(doc)
+
+
+@api_router.delete("/trips/{trip_id}/album/{stage}/{photo_id}")
+async def delete_album_photo(trip_id: str, stage: str, photo_id: str):
+    stage_norm = (stage or "").strip().lower()
+    if stage_norm not in VALID_STAGES:
+        raise HTTPException(400, "Stage tidak valid.")
+    res = await db.trips.update_one(
+        {"trip_id": trip_id},
+        {"$pull": {f"album.{stage_norm}": {"id": photo_id}}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if res.matched_count == 0:
+        raise HTTPException(404, "Trip not found")
+    doc = await db.trips.find_one({"trip_id": trip_id})
+    return trip_doc_to_public(doc)
+
+
+# ---------- Public tracking (read-only untuk pelanggan) ----------
+@api_router.get("/public/trips/{trip_id}")
+async def public_trip(trip_id: str):
+    """Read-only view untuk pelanggan. Hanya field aman yang ter-expose."""
+    doc = await db.trips.find_one({"trip_id": trip_id})
+    if not doc:
+        raise HTTPException(404, "Trip not found")
+    h = doc.get("handover") or {}
+    return {
+        "trip_id": doc.get("trip_id"),
+        "nopol": doc.get("nopol"),
+        "tipe_kendaraan": doc.get("tipe_kendaraan", ""),
+        "no_rangka": doc.get("no_rangka", ""),
+        "route": doc.get("route", ""),
+        "nama_driver": doc.get("nama_driver", ""),
+        "legs": doc.get("legs", []),
+        "album": doc.get("album", {"asal": [], "kapal": [], "tujuan": [], "dokumen": []}),
+        "handover": {
+            "bastk": h.get("bastk", []),
+            "resi": h.get("resi"),
+        },
+        "daily_count": len(doc.get("daily_checkpoints", []) or []),
+        "initial_done": len(doc.get("initial_photos", {}) or {}),
+        "progress": {
+            "initial_complete": len(doc.get("initial_photos", {}) or {}) >= 6,
+            "handover_complete": bool(h.get("bastk")) and bool(h.get("resi")),
+        },
+        "created_at": doc.get("created_at"),
+        "updated_at": doc.get("updated_at"),
+    }
 
 
 # ---------- Static file serving for uploads ----------
