@@ -1,13 +1,41 @@
 /* ============================================================
-   CustomerOrderForm — 4-step wizard
-   Theme: Navy + Gold (matches Driver palette)
+   CustomerOrderForm — 4-step wizard, SF Pro font
+   Light mode default — dark via [data-theme="dark"]
    ============================================================ */
+
+/* Dark palette activates only when [data-theme="dark"] is set */
+[data-theme="dark"] .ord-root {
+  --bg: #0A1628;
+  --bg-2: #0F1E35;
+  --surface: #152238;
+  --surface-2: #1B2C46;
+  --border: #1F2F4A;
+  --border-light: #2C4264;
+  --text: #E6EDF3;
+  --text-2: #C4CFE0;
+  --text-mute: #94A3C4;
+  --text-dim: #5F7494;
+  --gold: #BA7517;
+  --gold-light: #D4A847;
+  --gold-soft: #EF9F27;
+  --gold-bg: #2B1D0E;
+  --gold-border: #5A3A05;
+  --green: #56d364;
+  --green-dark: #2ea043;
+  --green-bg: #0F2A1C;
+  --blue: #60A5FA;
+  --blue-dark: #2563EB;
+  --blue-bg: #0C2D52;
+  --red: #f85149;
+  --red-bg: #2d1515;
+  --font-mono: "SF Mono", "SFMono-Regular", ui-monospace, "Courier New", monospace;
+}
 
 .ord-root {
   min-height: 100vh;
   background: var(--bg, #0A1628);
   color: var(--text, #E6EDF3);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   padding: 0 0 120px;
   max-width: 760px;
   margin: 0 auto;
@@ -16,8 +44,8 @@
 /* ----- Header ----- */
 .ord-header {
   padding: 18px 16px 12px;
-  background: linear-gradient(180deg, #0A1628 0%, #0F1E35 100%);
-  border-bottom: 1px solid var(--border, #1F2F4A);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 .ord-brand {
   display: flex;
@@ -30,7 +58,7 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(180deg, #152238 0%, #0A1628 100%);
+  background: var(--surface-2);
   box-shadow: inset 0 0 0 2px var(--gold-light, #D4A847);
 }
 .ord-brand-name {
@@ -55,9 +83,9 @@
   padding: 14px 12px 0;
   position: sticky;
   top: 0;
-  background: var(--bg, #0A1628);
+  background: var(--bg);
   z-index: 10;
-  border-bottom: 1px solid var(--border, #1F2F4A);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
 }
 .ord-step {
@@ -168,7 +196,7 @@
   overflow: hidden;
 }
 .ord-summary-head {
-  background: linear-gradient(90deg, #0A1628 0%, #152238 100%);
+  background: var(--surface-2);
   color: var(--gold-light, #D4A847);
   padding: 8px 14px;
   font-weight: 800;
@@ -212,7 +240,7 @@
 .ord-nav {
   position: sticky;
   bottom: 0;
-  background: linear-gradient(180deg, transparent 0%, var(--bg, #0A1628) 30%);
+  background: linear-gradient(180deg, transparent 0%, var(--bg) 30%);
   padding: 16px;
   display: flex;
   justify-content: space-between;

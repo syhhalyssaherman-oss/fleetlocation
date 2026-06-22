@@ -1,14 +1,44 @@
 /* ============================================================
-   Admin Mini-Dashboard
-   Theme: Navy + Gold (consistent with Driver/BASTK/Order)
-   Mobile-first responsive
+   Admin Mini-Dashboard — SF Pro font
+   Light mode default — dark via [data-theme="dark"]
    ============================================================ */
+
+[data-theme="dark"] .adm-root,
+[data-theme="dark"] .adm-pin-wrap {
+  --bg: #0A1628;
+  --bg-2: #0F1E35;
+  --bg-3: #152238;
+  --surface: #152238;
+  --surface-2: #1B2C46;
+  --border: #1F2F4A;
+  --border-light: #2C4264;
+  --text: #E6EDF3;
+  --text-2: #C4CFE0;
+  --text-mute: #94A3C4;
+  --text-dim: #5F7494;
+  --gold: #BA7517;
+  --gold-light: #D4A847;
+  --gold-soft: #EF9F27;
+  --gold-bg: #2B1D0E;
+  --gold-border: #5A3A05;
+  --green: #56d364;
+  --green-dark: #2ea043;
+  --green-bg: #0F2A1C;
+  --blue: #60A5FA;
+  --blue-dark: #2563EB;
+  --blue-bg: #0C2D52;
+  --red: #f85149;
+  --red-bg: #2d1515;
+  --purple: #a78bfa;
+  --purple-bg: #1E1040;
+  --font-mono: "SF Mono", "SFMono-Regular", ui-monospace, "Courier New", monospace;
+}
 
 .adm-root {
   min-height: 100vh;
   background: var(--bg, #0A1628);
   color: var(--text, #E6EDF3);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   padding: 0 0 60px;
   max-width: 1180px;
   margin: 0 auto;
@@ -31,7 +61,7 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  background: linear-gradient(180deg, #152238 0%, #0A1628 100%);
+  background: var(--surface-2);
   box-shadow: inset 0 0 0 2px var(--gold-light, #D4A847), 0 18px 40px rgba(212,168,71,.18);
   margin-bottom: 6px;
 }
@@ -57,7 +87,7 @@
   font-size: 22px;
   letter-spacing: 6px;
   text-align: center;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   outline: none;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
@@ -90,8 +120,8 @@
   justify-content: space-between;
   gap: 8px;
   padding: 12px 16px;
-  background: linear-gradient(180deg, #0A1628 0%, #0F1E35 100%);
-  border-bottom: 1px solid var(--border, #1F2F4A);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
 }
 .adm-topbar-title {
@@ -132,7 +162,7 @@
   font-size: 26px;
   font-weight: 900;
   color: var(--text, #E6EDF3);
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   letter-spacing: 0.5px;
 }
 .adm-stat-lbl {
@@ -267,7 +297,7 @@
   flex-wrap: wrap;
 }
 .adm-card-id .adm-mono {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   font-weight: 800;
   letter-spacing: 0.4px;
   font-size: 13px;
@@ -298,7 +328,7 @@
   color: var(--text, #E6EDF3);
   font-weight: 600;
 }
-.adm-mono { font-family: "JetBrains Mono", monospace; letter-spacing: 0.4px; }
+.adm-mono { font-family: var(--font-mono); letter-spacing: 0.4px; }
 .adm-mute { color: var(--text-dim, #5F7494); font-style: italic; font-weight: 500; }
 .adm-pill-mini {
   display: inline-block;
@@ -334,7 +364,7 @@
   border-radius: 6px;
   color: var(--text, #E6EDF3);
   padding: 4px 8px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   width: 110px;
 }

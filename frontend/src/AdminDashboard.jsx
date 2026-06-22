@@ -23,9 +23,16 @@ const fmtDate = (s) => {
   catch { return s; }
 };
 
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  document.documentElement.setAttribute("data-theme", isDark ? "light" : "dark");
+  try { localStorage.setItem("aal-theme", isDark ? "light" : "dark"); } catch (_) {}
+}
+
 export default function AdminDashboard() {
   const [pin, setPin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const [authed, setAuthed] = useState(false);
+  const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const [authError, setAuthError] = useState("");
   const [authing, setAuthing] = useState(false);
 
@@ -202,6 +209,13 @@ function Dashboard({ pin, onLogout }) {
           <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={onLogout} data-testid="adm-logout">
             ⤴ Logout
           </button>
+          <button className="theme-toggle" onClick={() => { toggleTheme(); setDark(d => !d); }}
+            aria-label="Toggle dark mode" title={dark ? "Mode terang" : "Mode gelap"} style={{ marginLeft: 4 }}>
+            {dark
+              ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            }
+          </button>
         </div>
       </header>
 
@@ -264,7 +278,17 @@ function Dashboard({ pin, onLogout }) {
 
       {/* Orders list */}
       <section className="adm-list" data-testid="adm-list">
-        {loading && <div className="adm-loading">Memuat…</div>}
+        {loading && [1,2,3].map(i => (
+          <div key={i} className="adm-card" style={{ padding:"14px" }}>
+            <div style={{ display:"flex", gap:10, alignItems:"center", marginBottom:12 }}>
+              <span className="skeleton" style={{ width:80, height:20, borderRadius:6 }}/>
+              <span className="skeleton" style={{ width:60, height:20, borderRadius:6 }}/>
+              <span className="skeleton" style={{ width:100, height:14, borderRadius:6, marginLeft:"auto" }}/>
+            </div>
+            <span className="skeleton" style={{ display:"block", width:"70%", height:13, borderRadius:6, marginBottom:8 }}/>
+            <span className="skeleton" style={{ display:"block", width:"50%", height:13, borderRadius:6 }}/>
+          </div>
+        ))}
         {error && <div className="adm-error" data-testid="adm-list-err">{error}</div>}
         {!loading && !error && orders.length === 0 && (
           <div className="adm-empty" data-testid="adm-empty">
