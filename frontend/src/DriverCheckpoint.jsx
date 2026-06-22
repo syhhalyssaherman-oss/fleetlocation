@@ -507,7 +507,7 @@ export default function DriverCheckpoint() {
         </div>
       </section>
 
-      {/* INITIAL PHOTOS (6 foto wajib) */}
+      {/* INITIAL PHOTOS (5 foto wajib) */}
       {trip.nama_driver && (
         <section className="drv-card" data-testid="initial-card">
           <div className="drv-card-head">
@@ -553,7 +553,7 @@ export default function DriverCheckpoint() {
               })}
             </div>
             {!allInitialDone && (
-              <div className="drv-note">💡 Lengkapi 6 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
+              <div className="drv-note">💡 Lengkapi 5 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
             )}
           </div>
         </section>
@@ -701,7 +701,7 @@ export default function DriverCheckpoint() {
               color="green"
               title="Tahap 1 — Cair Saat Mulai"
               amount={trip.t1}
-              note="Upload 6 foto kendaraan awal — langsung cair"
+              note="Upload 5 foto kendaraan awal — langsung cair"
               cair={!!cair["1"]}
               ready={allInitialDone}
               onCair={() => requestCair(1)}
