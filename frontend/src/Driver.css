@@ -105,6 +105,105 @@
   border-radius: 100px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
+.pod-status-chip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  letter-spacing: 0.02em;
+}
+.pod-keterangan {
+  font-size: 12px;
+  color: var(--text-mute);
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border-left: 3px solid var(--gold-soft);
+  border-radius: 6px;
+  line-height: 1.45;
+}
+.pod-pdf-btn {
+  width: 100%;
+  margin-top: 0;
+  padding: 12px;
+  background: var(--surface-2);
+  color: var(--gold-light);
+  border: 1px solid var(--gold);
+  border-top-color: transparent;
+  border-radius: 0 0 14px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 140ms;
+}
+.pod-pdf-btn:hover:not(:disabled) { background: var(--gold-bg); color: #fff; }
+.pod-pdf-btn:disabled { opacity: 0.6; cursor: wait; }
+
+/* ============== REMINDER BANNER ============== */
+.drv-reminder {
+  margin: 12px 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid;
+  animation: drvReminderPulse 2.4s ease-in-out infinite;
+}
+@keyframes drvReminderPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 168, 71, 0); }
+  50% { box-shadow: 0 0 0 6px rgba(212, 168, 71, 0.18); }
+}
+.drv-reminder-now {
+  background: linear-gradient(135deg, #14291c 0%, #0f1e35 100%);
+  border-color: var(--green-dark);
+  color: var(--green);
+}
+.drv-reminder-late {
+  background: linear-gradient(135deg, #2d1515 0%, #0f1e35 100%);
+  border-color: var(--red);
+  color: var(--red);
+  animation: drvReminderPulseRed 1.8s ease-in-out infinite;
+}
+@keyframes drvReminderPulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 81, 73, 0); }
+  50% { box-shadow: 0 0 0 8px rgba(248, 81, 73, 0.18); }
+}
+.drv-reminder-soon {
+  background: linear-gradient(135deg, #2b1d0e 0%, #0f1e35 100%);
+  border-color: var(--gold-soft);
+  color: var(--gold-light);
+}
+.drv-reminder-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.drv-reminder-text b { font-size: 13px; display: block; margin-bottom: 2px; color: #fff; letter-spacing: 0.02em; }
+.drv-reminder-text div { font-size: 12px; line-height: 1.5; opacity: 0.9; }
+
+/* ============== DAILY STATUS FORM ============== */
+.drv-daily-form {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.drv-daily-form .drv-step-label { color: var(--gold-light); margin-bottom: 4px; }
+.drv-daily-form select.drv-step-input {
+  padding: 12px 14px;
+  font-size: 15px;
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--gold-light) 50%), linear-gradient(135deg, var(--gold-light) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+/* ============== PROOF OF DELIVERY CARD ============== */
 .pod-map-wrap {
   height: 160px;
   position: relative;

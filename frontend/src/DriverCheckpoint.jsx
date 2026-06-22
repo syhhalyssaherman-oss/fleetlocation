@@ -108,6 +108,8 @@ export default function DriverCheckpoint() {
 
   const [uploadingSlot, setUploadingSlot] = useState(null);
   const [uploadingDaily, setUploadingDaily] = useState(false);
+  const [dailyStatus, setDailyStatus] = useState("Berangkat");
+  const [dailyNote, setDailyNote] = useState("");
   const [uploadingBastk, setUploadingBastk] = useState(false);
   const [uploadingResi, setUploadingResi] = useState(false);
   const [cairingTahap, setCairingTahap] = useState(0);
@@ -228,6 +230,8 @@ export default function DriverCheckpoint() {
         fd.append("lat", String(gps.lat));
         fd.append("lng", String(gps.lng));
       }
+      if (dailyStatus) fd.append("status", dailyStatus);
+      if (dailyNote.trim()) fd.append("keterangan", dailyNote.trim());
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/daily`, fd);
       setTrip(r.data);
       showToast(gps
@@ -655,6 +659,31 @@ export default function DriverCheckpoint() {
         </section>
       )}
 
+      {/* REMINDER 06:00 WIB — kalau hari ini belum upload */}
+      {trip.nama_driver && allInitialDone && !todayDone && (() => {
+        const wibNow = new Date(Date.now() + (new Date().getTimezoneOffset() + 7 * 60) * 60000);
+        const wibHour = wibNow.getHours();
+        const isWindow = wibHour >= 6 && wibHour < 12;
+        const isLate = wibHour >= 12;
+        return (
+          <section className={`drv-reminder ${isLate ? "drv-reminder-late" : (isWindow ? "drv-reminder-now" : "drv-reminder-soon")}`} data-testid="daily-reminder">
+            <div className="drv-reminder-icon">{isLate ? "🚨" : (isWindow ? "📷" : "⏰")}</div>
+            <div className="drv-reminder-text">
+              <b>
+                {isLate ? "TERLAMBAT! Foto deadline lewat" : (isWindow ? "WAKTUNYA FOTO CHECKPOINT" : "Reminder Besok Pagi")}
+              </b>
+              <div>
+                {isLate
+                  ? "Window 06:00–12:00 WIB sudah lewat. Tetap foto sekarang untuk catat lokasi, tapi bonus harian besok ya."
+                  : (isWindow
+                      ? `Window aktif sampai 12:00 WIB. Sisa ${11 - wibHour} jam lagi. Tap kamera di bawah!`
+                      : "Jangan lupa foto checkpoint besok jam 06:00–12:00 WIB untuk dapat bonus Rp 30.000.")}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
+
       {/* DAILY CHECKPOINT */}
       {trip.nama_driver && allInitialDone && (
         <section className="drv-card drv-card-checkpoint" data-testid="daily-card">
@@ -672,6 +701,35 @@ export default function DriverCheckpoint() {
             onChange={(e) => uploadDaily(e.target.files?.[0])}
             style={{ display: "none" }}
           />
+
+          {/* Status + keterangan inputs (sebelum tap tombol kamera) */}
+          {!todayDone && (
+            <div className="drv-daily-form" data-testid="daily-status-form">
+              <label className="drv-step-label">STATUS PERJALANAN</label>
+              <select
+                className="drv-step-input"
+                value={dailyStatus}
+                onChange={(e) => setDailyStatus(e.target.value)}
+                data-testid="select-daily-status"
+              >
+                <option value="Berangkat">🚦 Berangkat</option>
+                <option value="Checkpoint 1">📍 Checkpoint 1</option>
+                <option value="Checkpoint 2">📍 Checkpoint 2</option>
+                <option value="Checkpoint 3">📍 Checkpoint 3</option>
+                <option value="Tiba Tujuan">🏁 Tiba Tujuan</option>
+              </select>
+              <label className="drv-step-label" style={{ marginTop: 8 }}>KETERANGAN (OPSIONAL)</label>
+              <input
+                type="text"
+                className="drv-step-input"
+                placeholder="Cth: Sudah lewat Cikampek, lalin lancar"
+                value={dailyNote}
+                onChange={(e) => setDailyNote(e.target.value)}
+                maxLength={200}
+                data-testid="input-daily-note"
+              />
+            </div>
+          )}
 
           <button
             className={`drv-daily-btn ${todayDone ? "drv-daily-done" : ""}`}

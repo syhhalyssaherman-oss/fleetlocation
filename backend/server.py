@@ -213,12 +213,13 @@ async def upload_daily_photo(
     foto: UploadFile = File(...),
     lat: Optional[float] = Form(None),
     lng: Optional[float] = Form(None),
+    status: Optional[str] = Form(None),  # Berangkat|Checkpoint 1|Checkpoint 2|Checkpoint 3|Tiba Tujuan
+    keterangan: Optional[str] = Form(None),
 ):
     trip = await db.trips.find_one({"trip_id": trip_id})
     if not trip:
         raise HTTPException(404, "Trip not found")
     today = today_wib()
-    # cek apakah hari ini sudah ada
     daily = trip.get("daily_checkpoints") or []
     if any(cp.get("date") == today for cp in daily):
         raise HTTPException(409, "Foto hari ini sudah terkirim")
@@ -232,6 +233,11 @@ async def upload_daily_photo(
     if lat is not None and lng is not None:
         entry["lat"] = float(lat)
         entry["lng"] = float(lng)
+    valid_status = {"Berangkat", "Checkpoint 1", "Checkpoint 2", "Checkpoint 3", "Tiba Tujuan"}
+    if status and status in valid_status:
+        entry["status"] = status
+    if keterangan:
+        entry["keterangan"] = keterangan.strip()[:300]
     await db.trips.update_one(
         {"trip_id": trip_id},
         {"$push": {"daily_checkpoints": entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}}
