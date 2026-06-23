@@ -154,12 +154,22 @@ export default function BASTKPage() {
   const downloadPDF = async () => {
     if (!printAreaRef.current) return;
     setGen(true);
+    const el = printAreaRef.current;
+    // Force A4 portrait width (210mm ≈ 794px @96dpi) saat capture, biar hasil PDF
+    // selalu proporsi A4 walau driver buka di HP (layar sempit).
+    const A4_W = 794;
+    const prev = { width: el.style.width, maxWidth: el.style.maxWidth, margin: el.style.margin };
     try {
       // Simpan dulu sebelum print
       await saveBASTK();
-      const canvas = await html2canvas(printAreaRef.current, {
+      el.style.width = A4_W + "px";
+      el.style.maxWidth = A4_W + "px";
+      el.style.margin = "0";
+      el.getBoundingClientRect(); // paksa reflow
+      const canvas = await html2canvas(el, {
         backgroundColor: "#FFFFFF",
         scale: 2.5, useCORS: true, logging: false,
+        width: A4_W, windowWidth: A4_W,
       });
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
       const pw = pdf.internal.pageSize.getWidth();
@@ -195,7 +205,13 @@ export default function BASTKPage() {
       showToast("PDF tersimpan");
     } catch (e) {
       showToast("Gagal generate PDF: " + e.message, "err");
-    } finally { setGen(false); }
+    } finally {
+      // Kembalikan style asli biar tampilan layar nggak ikut berubah
+      el.style.width = prev.width;
+      el.style.maxWidth = prev.maxWidth;
+      el.style.margin = prev.margin;
+      setGen(false);
+    }
   };
 
   if (loading) return <div className="drv-loading">Memuat BASTK…</div>;
