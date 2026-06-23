@@ -579,16 +579,20 @@ function ConvertModal({ order, onClose, onSubmit }) {
 ════════════════════════════════════════ */
 function OdooModal({ order, orderId, headers, onClose }) {
   const [withInvoice, setWithInvoice] = useState(false);
+  const [price, setPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // { message, odoo_url }
   const [err, setErr] = useState("");
+
+  const priceNum = parseInt((price || "").replace(/[^0-9]/g, ""), 10) || 0;
+  const priceFmt = priceNum ? priceNum.toLocaleString("id-ID") : "";
 
   const doSync = async () => {
     setLoading(true); setErr("");
     try {
       const r = await axios.post(
         `${API}/admin/orders/${orderId}/odoo-sync`,
-        { with_invoice: withInvoice },
+        { with_invoice: withInvoice, price: priceNum },
         { headers }
       );
       setResult(r.data);
@@ -619,7 +623,28 @@ function OdooModal({ order, orderId, headers, onClose }) {
         <div className="adm-modal-body">
           {!result ? (
             <>
-              <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, cursor:"pointer" }}>
+              {order && (
+                <div className="adm-modal-info" style={{ marginBottom:14 }}>
+                  <strong>{order.vehicle_type || "Kendaraan"}</strong> · {order.asal_kota || "—"} &rarr; {order.tujuan_kota || "—"}
+                  {order.nopol ? <span className="adm-mute"> · {order.nopol}</span> : null}
+                </div>
+              )}
+              <label style={{ display:"block", marginBottom:14 }}>
+                <span style={{ display:"block", fontSize:12, color:"var(--text-3)", marginBottom:5, fontWeight:700 }}>Harga Jual (Rp)</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className="adm-input"
+                  value={priceFmt}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="contoh: 30.380.000"
+                  data-testid="adm-odoo-price"
+                />
+                <span style={{ display:"block", fontSize:11, color:"var(--text-3)", marginTop:4 }}>
+                  Harga yang disepakati pelanggan. Kosongkan kalau mau isi manual di Odoo.
+                </span>
+              </label>
+              <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, cursor:"pointer" }}>
                 <input type="checkbox" checked={true} readOnly style={{ accentColor:"#7c3aed", width:16, height:16 }} />
                 <span>Sales Order — PO jadi SO di Odoo</span>
               </label>

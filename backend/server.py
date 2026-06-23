@@ -861,11 +861,52 @@ async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
     }
 
 
-async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
+ODOO_SERVICE_PRODUCT = "Jasa Pengiriman Kendaraan"
+
+
+async def _odoo_service_product_id(odoo) -> Optional[int]:
+    """Find (or create) a generic service product used as the SO line product."""
+    pids = await asyncio.to_thread(
+        odoo.call, "product.product", "search",
+        [[["name", "=", ODOO_SERVICE_PRODUCT]]], {"limit": 1},
+    )
+    if pids:
+        return pids[0]
+    # type=service so no stock tracking; detailed_type required on some Odoo versions
+    pid = await asyncio.to_thread(
+        odoo.call, "product.product", "create",
+        [{"name": ODOO_SERVICE_PRODUCT, "type": "service", "sale_ok": True, "list_price": 0.0}],
+    )
+    return pid
+
+
+def _odoo_line_desc(order: dict, order_id: str, trip_id: str) -> str:
+    """Build a human-readable order-line description from the customer's real input."""
+    route = f"{order.get('asal_kota','')} → {order.get('tujuan_kota','')}".strip(" →")
+    head = f"Pengiriman {order.get('vehicle_type','Kendaraan')} | {route}".strip()
+    parts = [head]
+    veh = []
+    if order.get("nopol"):  veh.append(f"Nopol {order['nopol']}")
+    if order.get("warna"):  veh.append(order["warna"])
+    if order.get("tahun"):  veh.append(f"Th {order['tahun']}")
+    if order.get("no_rangka"): veh.append(f"Rangka {order['no_rangka']}")
+    if veh:
+        parts.append(" · ".join(veh))
+    if order.get("pickup_date"):
+        parts.append(f"Pickup: {order['pickup_date']} {order.get('pickup_time','')}".strip())
+    if order.get("catatan"):
+        parts.append(f"Catatan: {order['catatan']}")
+    parts.append(f"Ref: {order_id}" + (f" / {trip_id}" if trip_id else ""))
+    return "\n".join(parts)
+
+
+async def _odoo_sync_order(order_id: str, trip_id: str, order: dict, price: float = 0.0) -> dict:
     """Best-effort real Odoo XML-RPC sync.
-    - Creates res.partner (customer) if not exists.
-    - Creates sale.order linked to partner with origin=order_id (idempotent:
-      reuses existing sale.order if one already exists for this origin).
+    - Find/creates res.partner (customer) with address from the order.
+    - Creates sale.order linked to partner with origin=order_id AND a real order
+      line (service product + route/vehicle description + price).
+    - Idempotent: reuses existing sale.order for this origin; if that SO has no
+      lines yet, backfills one so old empty SOs get fixed on re-click.
     Returns {"ok": bool, "sale_id": int|None, "partner_id": int|None, "error": str|None}.
     No-op when OdooClient.enabled is False. Never raises."""
     odoo = OdooClient()
@@ -878,6 +919,23 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
         return {"ok": False, "sale_id": None, "partner_id": None, "error": "Gagal autentikasi ke Odoo (cek ODOO_DB/USER/KEY)"}
 
     try:
+        product_id = await _odoo_service_product_id(odoo)
+        line_desc = _odoo_line_desc(order, order_id, trip_id)
+
+        def _build_line():
+            vals = {"name": line_desc, "product_uom_qty": 1, "price_unit": float(price or 0)}
+            if product_id:
+                vals["product_id"] = product_id
+            return [(0, 0, vals)]
+
+        note = (
+            f"Order: {order_id} | Trip: {trip_id}\n"
+            f"Route: {order.get('asal_kota','')} → {order.get('tujuan_kota','')}\n"
+            f"Vehicle: {order.get('vehicle_type','')} {order.get('nopol','')}\n"
+            f"Pickup: {order.get('pickup_date','')} {order.get('pickup_time','')}\n"
+            f"Catatan: {order.get('catatan','')}"
+        )
+
         # 0. Idempotency — reuse existing sale.order for this origin if present.
         existing = await asyncio.to_thread(
             odoo.call, "sale.order", "search",
@@ -885,6 +943,16 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
         )
         if existing:
             sale_id = existing[0]
+            # Backfill a line if the existing SO is empty (fixes old empty SOs).
+            rows = await asyncio.to_thread(
+                odoo.call, "sale.order", "read", [[sale_id]], {"fields": ["order_line"]},
+            )
+            has_lines = bool(rows and rows[0].get("order_line"))
+            if not has_lines:
+                await asyncio.to_thread(
+                    odoo.call, "sale.order", "write", [[sale_id], {"order_line": _build_line()}],
+                )
+                logger.info(f"[odoo:sync_order:backfill_line] order={order_id} sale={sale_id}")
             logger.info(f"[odoo:sync_order:reuse] order={order_id} sale={sale_id}")
             await db.orders.update_one(
                 {"order_id": order_id},
@@ -892,12 +960,13 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
             )
             return {"ok": True, "sale_id": sale_id, "partner_id": None, "error": None}
 
-        # 1. Find or create partner
+        # 1. Find or create partner (with address from order).
         partner_name = (order.get("customer_nama") or "").strip() or f"Customer {order_id}"
         partner_hp = (order.get("customer_hp") or "").strip()
         partner_email = (order.get("customer_email") or "").strip()
+        partner_street = (order.get("tujuan_alamat") or order.get("asal_alamat") or "").strip()
+        partner_city = (order.get("tujuan_kota") or "").strip()
 
-        # search by phone or name
         partner_ids = await asyncio.to_thread(
             odoo.call, "res.partner", "search",
             [[["name", "=", partner_name]]], {"limit": 1},
@@ -907,26 +976,28 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
         else:
             partner_id = await asyncio.to_thread(
                 odoo.call, "res.partner", "create",
-                [{"name": partner_name, "phone": partner_hp, "email": partner_email or False, "customer_rank": 1}],
+                [{
+                    "name": partner_name,
+                    "phone": partner_hp or False,
+                    "email": partner_email or False,
+                    "street": partner_street or False,
+                    "city": partner_city or False,
+                    "customer_rank": 1,
+                }],
             )
         if not partner_id:
             logger.warning(f"[odoo:sync_order:partner_fail] order_id={order_id}")
             return {"ok": False, "sale_id": None, "partner_id": None, "error": "Gagal membuat customer di Odoo"}
 
-        # 2. Create sale.order with origin = order_id, client_order_ref = trip_id
+        # 2. Create sale.order WITH a real order line.
         sale_id = await asyncio.to_thread(
             odoo.call, "sale.order", "create",
             [{
                 "partner_id": partner_id,
                 "origin": order_id,
                 "client_order_ref": trip_id,
-                "note": (
-                    f"Order: {order_id} | Trip: {trip_id}\n"
-                    f"Route: {order.get('asal_kota','')} → {order.get('tujuan_kota','')}\n"
-                    f"Vehicle: {order.get('vehicle_type','')} {order.get('nopol','')}\n"
-                    f"Pickup: {order.get('pickup_date','')} {order.get('pickup_time','')}\n"
-                    f"Catatan: {order.get('catatan','')}"
-                ),
+                "note": note,
+                "order_line": _build_line(),
             }],
         )
         if sale_id:
@@ -1272,8 +1343,13 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
     return fresh
 
 
+class OdooSyncBody(BaseModel):
+    with_invoice: bool = False
+    price: float = 0.0
+
+
 @api_router.post("/admin/orders/{order_id}/odoo-sync", dependencies=[Depends(require_admin_pin)])
-async def admin_odoo_sync(order_id: str):
+async def admin_odoo_sync(order_id: str, body: OdooSyncBody = OdooSyncBody()):
     """Manual Odoo sync untuk 1 order — re-trigger create sale.order + confirm invoice jika sudah ada trip."""
     order = await db.orders.find_one({"order_id": order_id})
     if not order:
@@ -1288,21 +1364,24 @@ async def admin_odoo_sync(order_id: str):
         raise HTTPException(400, "Odoo belum dikonfigurasi (ODOO_URL/DB/USER/KEY kosong di Railway).")
 
     # Step 1: sync sale.order — AWAIT so we get the real sale_id and can report it.
-    sync = await _odoo_sync_order(order_id, trip_id or "", order)
+    sync = await _odoo_sync_order(order_id, trip_id or "", order, price=body.price)
     if not sync.get("ok"):
         raise HTTPException(502, f"Gagal sync ke Odoo: {sync.get('error') or 'unknown error'}")
 
     sale_id = sync.get("sale_id")
     steps.append(f"Sales Order #{sale_id} dibuat" if sale_id else "sale.order sync selesai")
 
-    # Step 2: kalau sudah ada trip dan handover selesai, confirm invoice (await juga)
-    if trip_id:
+    # Step 2: invoice — kalau admin centang "Customer Invoice", ATAU trip sudah selesai.
+    want_invoice = body.with_invoice
+    if trip_id and not want_invoice:
         trip = await db.trips.find_one({"trip_id": trip_id})
-        if trip:
-            h = trip.get("handover") or {}
-            if h.get("bastk") and h.get("resi"):
-                await _odoo_confirm_invoice(trip_id, trip)
-                steps.append("Customer Invoice dikonfirmasi")
+        h = (trip or {}).get("handover") or {}
+        if h.get("bastk") and h.get("resi"):
+            want_invoice = True
+    if want_invoice and sale_id:
+        confirmed = await asyncio.to_thread(odoo.call, "sale.order", "action_confirm", [[sale_id]])
+        inv = await asyncio.to_thread(odoo.call, "sale.order", "_create_invoices", [[sale_id]])
+        steps.append("Customer Invoice dibuat" if inv else "Sales Order dikonfirmasi (invoice kosong)")
 
     # Build direct URL to the Odoo sale.order form view (modern web client).
     odoo_url = f"{odoo.url}/odoo/sales/{sale_id}" if sale_id else f"{odoo.url}/odoo/sales"
