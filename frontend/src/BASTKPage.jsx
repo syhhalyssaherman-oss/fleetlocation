@@ -268,6 +268,7 @@ export default function BASTKPage() {
               <div className="bk-kv"><span className="k">Tahun</span><span className="v">{customer.tahun || "—"}</span></div>
               <div className="bk-kv"><span className="k">Kilometer</span><span className="v">{customer.km || "—"}</span></div>
               <div className="bk-kv"><span className="k">Kondisi</span><span className="v">{customer.kondisi || "—"}</span></div>
+              <div className="bk-kv"><span className="k">PIC</span><span className="v">{customer.pic || "—"}</span></div>
               <div className="bk-kv bk-kv-full"><span className="k">Rute</span><span className="v">{data.route || "—"}</span></div>
             </div>
           </section>
