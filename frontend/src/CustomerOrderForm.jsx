@@ -371,6 +371,7 @@ export default function CustomerOrderForm() {
               <div className="of-summary">
                 <div className="of-summary-hd">Ringkasan Pesanan</div>
                 <div className="of-summary-body">
+                  <SRow k="Pemesan"      v={`${data.customer_nama || "—"} ${data.customer_hp ? `· ${data.customer_hp}` : ""}`.trim()} />
                   <SRow k="Kendaraan"    v={`${data.vehicle_type || "—"} ${data.nopol ? `· ${data.nopol}` : ""}`} />
                   <SRow k="Warna / Tahun" v={`${data.warna || "—"} / ${data.tahun || "—"}`} />
                   <SRow k="Asal"         v={`${data.asal_kota}${data.asal_alamat ? ` — ${data.asal_alamat}` : ""}`} />
@@ -379,6 +380,16 @@ export default function CustomerOrderForm() {
                   <SRow k="PIC Penerima" v={`${data.delivery_pic || "—"} ${data.delivery_hp ? `· ${data.delivery_hp}` : ""}`.trim()} />
                 </div>
               </div>
+
+              {!stepValid && (
+                <div className="of-error" data-testid="ord-missing" style={{ background:"#fff7ed", borderColor:"#fdba74", color:"#c2410c" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Lengkapi dulu data pemesan: {[
+                    !data.customer_nama.trim() && "Nama / PT",
+                    !data.customer_hp.trim() && "No. HP / WhatsApp",
+                  ].filter(Boolean).join(" & ")} — wajib diisi sebelum kirim.
+                </div>
+              )}
 
               {error && (
                 <div className="of-error" data-testid="ord-error">
