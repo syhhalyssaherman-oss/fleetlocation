@@ -412,12 +412,18 @@ export default function CustomerTracking() {
                           </a>
                         )}
                         <div className="trk-popup-meta">
-                          <div className="trk-popup-time">{fmtTs(cp.timestamp || cp.created_at)}</div>
+                          <div className="trk-popup-time">{fmtTs(cp.ts || cp.timestamp || cp.created_at)}</div>
+                          {data.nopol && <div className="trk-popup-nopol" style={{ fontWeight: 700 }}>🚚 {data.nopol}</div>}
                           {cp.status && <div className="trk-popup-status">{cp.status}</div>}
                           {cp.keterangan && <div className="trk-popup-note">{cp.keterangan}</div>}
-                          <div className="trk-popup-coords">
-                            {parseFloat(cp.lat).toFixed(5)}, {parseFloat(cp.lng).toFixed(5)}
-                          </div>
+                          <a
+                            href={`https://www.google.com/maps?q=${parseFloat(cp.lat)},${parseFloat(cp.lng)}`}
+                            target="_blank" rel="noreferrer"
+                            className="trk-popup-coords"
+                            style={{ textDecoration: "underline" }}
+                          >
+                            📍 {parseFloat(cp.lat).toFixed(5)}, {parseFloat(cp.lng).toFixed(5)} · Buka Maps
+                          </a>
                         </div>
                       </div>
                     </Popup>
@@ -518,13 +524,27 @@ export default function CustomerTracking() {
                         <div className="trk-cp-row">
                           <span className="trk-cp-name">CP-{cpNum}</span>
                           <span className="trk-cp-time">
-                            {fmtTime(cp.timestamp || cp.created_at)} &bull; {fmtDate(cp.timestamp || cp.created_at)}
+                            {fmtTime(cp.ts || cp.timestamp || cp.created_at)} &bull; {fmtDate(cp.ts || cp.timestamp || cp.created_at)}
                           </span>
                         </div>
-                        {hasGps && (
-                          <div className="trk-cp-coords">
-                            {parseFloat(cp.lat).toFixed(5)}, {parseFloat(cp.lng).toFixed(5)}
+                        {data.nopol && (
+                          <div className="trk-cp-nopol" style={{ fontWeight: 700, fontSize: 12, letterSpacing: ".3px", color: "var(--trk-accent, #2563eb)", marginTop: 2 }}>
+                            🚚 {data.nopol}
                           </div>
+                        )}
+                        {hasGps ? (
+                          <a
+                            href={`https://www.google.com/maps?q=${parseFloat(cp.lat)},${parseFloat(cp.lng)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="trk-cp-coords"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, textDecoration: "underline", cursor: "pointer" }}
+                          >
+                            📍 {parseFloat(cp.lat).toFixed(5)}, {parseFloat(cp.lng).toFixed(5)} · Buka Maps
+                          </a>
+                        ) : (
+                          <div className="trk-cp-coords" style={{ opacity: .7 }}>📍 Lokasi GPS tidak aktif</div>
                         )}
                         {cp.status && <div className="trk-cp-status">{cp.status}</div>}
                         {cp.keterangan && <div className="trk-cp-note">{cp.keterangan}</div>}
