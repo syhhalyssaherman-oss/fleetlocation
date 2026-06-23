@@ -1248,6 +1248,39 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
     return fresh
 
 
+@api_router.post("/admin/orders/{order_id}/odoo-sync", dependencies=[Depends(require_admin_pin)])
+async def admin_odoo_sync(order_id: str):
+    """Manual Odoo sync untuk 1 order — re-trigger create sale.order + confirm invoice jika sudah ada trip."""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+
+    trip_id = order.get("trip_id")
+    steps = []
+
+    # Step 1: sync / re-sync sale.order
+    asyncio.create_task(_odoo_sync_order(order_id, trip_id or "", order))
+    steps.append("sale.order sync triggered")
+
+    # Step 2: kalau sudah ada trip dan handover selesai, confirm invoice
+    if trip_id:
+        trip = await db.trips.find_one({"trip_id": trip_id})
+        if trip:
+            h = trip.get("handover") or {}
+            if h.get("bastk") and h.get("resi"):
+                asyncio.create_task(_odoo_confirm_invoice(trip_id, trip))
+                steps.append("invoice confirm triggered")
+
+    odoo_enabled = OdooClient().enabled
+    return {
+        "message": "Odoo sync dikirim" if odoo_enabled else "Odoo tidak dikonfigurasi (env kosong) — sync di-skip",
+        "order_id": order_id,
+        "trip_id": trip_id,
+        "odoo_enabled": odoo_enabled,
+        "steps": steps,
+    }
+
+
 # ---------- Static file serving for uploads ----------
 app.add_middleware(
     CORSMiddleware,

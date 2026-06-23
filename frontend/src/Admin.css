@@ -655,6 +655,13 @@
   box-shadow: 0 3px 12px rgba(74,222,128,.25);
 }
 .adm-btn-green:hover:not(:disabled) { box-shadow: 0 5px 20px rgba(74,222,128,.4); }
+.adm-btn-purple {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 3px 12px rgba(124,58,237,.25);
+}
+.adm-btn-purple:hover:not(:disabled) { box-shadow: 0 5px 20px rgba(124,58,237,.4); }
 
 .adm-btn-danger {
   background: transparent;

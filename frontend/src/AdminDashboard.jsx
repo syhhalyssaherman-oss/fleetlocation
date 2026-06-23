@@ -50,6 +50,7 @@ const IcoSearch   = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="
 const IcoInbox    = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>;
 const IcoSun      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const IcoMoon     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+const IcoOdoo     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="8" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><path d="M10 10h4"/></svg>;
 
 /* ════════════════════════════════════════
    ROOT
@@ -176,6 +177,13 @@ function Dashboard({ pin, onLogout }) {
       flash("Tersimpan");
       await loadAll();
     } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
+  };
+
+  const doOdoo = async (orderId) => {
+    try {
+      const r = await axios.post(`${API}/admin/orders/${orderId}/odoo-sync`, {}, { headers });
+      flash(r.data?.message || "Odoo sync berhasil");
+    } catch (e) { flash("Odoo error: " + (e?.response?.data?.detail || "gagal")); }
   };
 
   const doConvert = async (orderId, body) => {
@@ -328,6 +336,7 @@ function Dashboard({ pin, onLogout }) {
             idx={idx}
             onConvert={() => setConvertModal(o)}
             onPatch={(body) => patchOrder(o.order_id, body)}
+            onOdoo={doOdoo}
           />
         ))}
       </section>
@@ -365,7 +374,7 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 /* ════════════════════════════════════════
    ORDER CARD
 ════════════════════════════════════════ */
-function OrderCard({ order, idx, onConvert, onPatch }) {
+function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
@@ -469,6 +478,11 @@ function OrderCard({ order, idx, onConvert, onPatch }) {
         {linkDriver && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkDriver} target="_blank" rel="noreferrer" data-testid={`adm-link-driver-${order.order_id}`}>Driver</a>}
         {linkTrack  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkTrack}  target="_blank" rel="noreferrer" data-testid={`adm-link-track-${order.order_id}`}>Track</a>}
         {linkBastk  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkBastk}  target="_blank" rel="noreferrer" data-testid={`adm-link-bastk-${order.order_id}`}>BASTK</a>}
+        {order.trip_id && (
+          <button className="adm-btn adm-btn-purple adm-btn-sm" onClick={() => onOdoo(order.order_id)} data-testid={`adm-odoo-${order.order_id}`}>
+            <IcoOdoo /> Odoo
+          </button>
+        )}
         {!["DELIVERED","CANCELLED"].includes(order.status) && (
           <button className="adm-btn adm-btn-danger adm-btn-sm" onClick={() => { if (window.confirm("Batalkan order ini?")) onPatch({ status: "CANCELLED" }); }} data-testid={`adm-cancel-${order.order_id}`}>
             <IcoX /> Batal
