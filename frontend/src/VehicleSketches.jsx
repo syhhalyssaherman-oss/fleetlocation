@@ -347,8 +347,48 @@ export const VEHICLE_SKETCH_MAP = {
 
 export const VEHICLE_TYPE_LIST = Object.keys(VEHICLE_SKETCH_MAP);
 
+const TYPE_TO_FILENAME = {
+  "Sedan":          "sedan",
+  "MPV":            "mpv",
+  "SUV":            "suv",
+  "Pickup":         "pickup",
+  "Double Cabin":   "double-cabin",
+  "CDD":            "cdd",
+  "Truck Box":      "truck-box",
+  "Dump Truck":     "dump-truck",
+  "Tangki":         "tangki",
+  "Tronton":        "tronton",
+  "Box Besar":      "box-besar",
+  "Canter":         "canter",
+  "Canter Pemadam": "canter-pemadam",
+  "Motor 2 Roda":   "motor-2-roda",
+  "Motor 3 Roda":   "motor-3-roda",
+  "Forklift":       "forklift",
+  "Excavator":      "excavator",
+  "Dozer":          "dozer",
+  "Grader":         "grader",
+  "Vibro Roller":   "vibro-roller",
+};
+
 export function VehicleSketch({ type, className, color = "#D4A847", strokeWidth = 2 }) {
+  const [imgOk, setImgOk] = React.useState(true);
+  const filename = TYPE_TO_FILENAME[type];
+  const imgUrl = filename ? `/vehicles/${filename}.jpg` : null;
   const Comp = VEHICLE_SKETCH_MAP[type];
+
+  if (imgUrl && imgOk) {
+    return (
+      <div className={className} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+        <img
+          src={imgUrl}
+          alt={type}
+          style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          onError={() => setImgOk(false)}
+        />
+      </div>
+    );
+  }
+
   if (!Comp) return null;
   return (
     <div className={className} style={{ color }}>
