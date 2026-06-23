@@ -146,6 +146,7 @@ function Dashboard({ pin, onLogout }) {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [convertModal, setConvertModal] = useState(null);
+  const [odooModal, setOdooModal] = useState(null);
   const [toast, setToast] = useState("");
 
   const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2600); };
@@ -179,14 +180,9 @@ function Dashboard({ pin, onLogout }) {
     } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
   };
 
-  const doOdoo = async (orderId) => {
-    try {
-      const r = await axios.post(`${API}/admin/orders/${orderId}/odoo-sync`, {}, { headers });
-      if (r.data?.odoo_url) {
-        window.open(r.data.odoo_url, "_blank", "noopener");
-      }
-      flash(r.data?.message || "Odoo sync berhasil");
-    } catch (e) { flash("Odoo error: " + (e?.response?.data?.detail || "gagal")); }
+  const doOdoo = (orderId) => {
+    const order = orders.find(o => o.order_id === orderId);
+    setOdooModal({ orderId, order });
   };
 
   const doConvert = async (orderId, body) => {
@@ -350,6 +346,14 @@ function Dashboard({ pin, onLogout }) {
           order={convertModal}
           onClose={() => setConvertModal(null)}
           onSubmit={(body) => doConvert(convertModal.order_id, body)}
+        />
+      )}
+      {odooModal && (
+        <OdooModal
+          order={odooModal.order}
+          orderId={odooModal.orderId}
+          headers={headers}
+          onClose={() => setOdooModal(null)}
         />
       )}
     </div>
@@ -564,6 +568,96 @@ function ConvertModal({ order, onClose, onSubmit }) {
           <button className="adm-btn adm-btn-gold" onClick={submit} disabled={submitting} data-testid="adm-modal-submit">
             {submitting ? "Memproses..." : "Konversi Sekarang"}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
+   ODOO MODAL
+════════════════════════════════════════ */
+function OdooModal({ order, orderId, headers, onClose }) {
+  const [withInvoice, setWithInvoice] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null); // { message, odoo_url }
+  const [err, setErr] = useState("");
+
+  const doSync = async () => {
+    setLoading(true); setErr("");
+    try {
+      const r = await axios.post(
+        `${API}/admin/orders/${orderId}/odoo-sync`,
+        { with_invoice: withInvoice },
+        { headers }
+      );
+      setResult(r.data);
+    } catch (e) {
+      setErr("Error: " + (e?.response?.data?.detail || "gagal"));
+    } finally { setLoading(false); }
+  };
+
+  const openOdoo = () => {
+    if (result?.odoo_url) window.open(result.odoo_url, "_blank", "noopener");
+    onClose();
+  };
+
+  const label = order
+    ? `${order.order_id} - ${order.customer_nama || "—"}`
+    : orderId;
+
+  return (
+    <div className="adm-modal-bg" onClick={!loading ? onClose : undefined} data-testid="adm-odoo-modal">
+      <div className="adm-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460 }}>
+        <div className="adm-modal-head">
+          <div>
+            <div className="adm-modal-title">Kirim ke Odoo</div>
+            <div className="adm-modal-sub">{label}</div>
+          </div>
+          <button className="adm-modal-close" onClick={onClose} aria-label="Tutup" disabled={loading}><IcoX /></button>
+        </div>
+        <div className="adm-modal-body">
+          {!result ? (
+            <>
+              <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, cursor:"pointer" }}>
+                <input type="checkbox" checked={true} readOnly style={{ accentColor:"#7c3aed", width:16, height:16 }} />
+                <span>Sales Order — PO jadi SO di Odoo</span>
+              </label>
+              <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
+                <input type="checkbox" checked={withInvoice} onChange={(e) => setWithInvoice(e.target.checked)} style={{ accentColor:"#7c3aed", width:16, height:16 }} />
+                <span>Customer Invoice — Tagihan ke pelanggan</span>
+              </label>
+              {err && <div style={{ marginTop:12, color:"#ef4444", fontSize:13 }}>{err}</div>}
+            </>
+          ) : (
+            <>
+              <div style={{ color:"#22c55e", fontWeight:700, fontSize:14, marginBottom:8 }}>
+                ✓ {result.message}
+              </div>
+              {result.steps?.map((s, i) => (
+                <div key={i} style={{ fontSize:12, color:"var(--text-3)", marginBottom:4 }}>• {s}</div>
+              ))}
+            </>
+          )}
+        </div>
+        <div className="adm-modal-foot">
+          {!result ? (
+            <>
+              <button className="adm-btn adm-btn-ghost" onClick={onClose} disabled={loading}>Batal</button>
+              <button className="adm-btn adm-btn-purple" onClick={doSync} disabled={loading}>
+                {loading ? "Mengirim..." : "Kirim Sekarang"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="adm-btn adm-btn-ghost" onClick={onClose}>Tutup</button>
+              {result.odoo_url && (
+                <button className="adm-btn adm-btn-purple" onClick={openOdoo}>
+                  Selesai — Buka di Odoo
+                </button>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
