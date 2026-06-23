@@ -532,6 +532,17 @@
   object-fit: cover;
   display: block;
 }
+.trk-album-caption {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mute);
+  text-align: center;
+  padding: 4px 4px 6px;
+  background: var(--surface-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .trk-pdf-thumb {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;

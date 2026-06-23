@@ -7,6 +7,13 @@ import "./Tracking.css";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+/* Resolve foto URL — Supabase URLs sudah absolute, lainnya prepend BACKEND_URL */
+function resolveUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${BACKEND_URL}${url}`;
+}
 const ALBUM_STAGES = ["asal", "kapal", "tujuan", "dokumen"];
 
 /* ── Fix leaflet default icon ── */
@@ -400,8 +407,8 @@ export default function CustomerTracking() {
                           {isLatest && <span className="trk-popup-latest">Terakhir</span>}
                         </div>
                         {cp.url && (
-                          <a href={`${BACKEND_URL}${cp.url}`} target="_blank" rel="noreferrer" className="trk-popup-photo-wrap">
-                            <img src={`${BACKEND_URL}${cp.url}`} alt={`CP-${i + 1}`} className="trk-popup-photo" />
+                          <a href={resolveUrl(cp.url)} target="_blank" rel="noreferrer" className="trk-popup-photo-wrap">
+                            <img src={resolveUrl(cp.url)} alt={`CP-${i + 1}`} className="trk-popup-photo" />
                           </a>
                         )}
                         <div className="trk-popup-meta">
@@ -524,12 +531,12 @@ export default function CustomerTracking() {
                         {/* Thumbnail */}
                         {selectedCp?.id === cp.id && cp.url && (
                           <a
-                            href={`${BACKEND_URL}${cp.url}`}
+                            href={resolveUrl(cp.url)}
                             target="_blank"
                             rel="noreferrer"
                             className="trk-cp-thumb-wrap"
                           >
-                            <img src={`${BACKEND_URL}${cp.url}`} alt={`CP-${cpNum}`} className="trk-cp-thumb" />
+                            <img src={resolveUrl(cp.url)} alt={`CP-${cpNum}`} className="trk-cp-thumb" />
                           </a>
                         )}
                       </div>
@@ -569,6 +576,36 @@ export default function CustomerTracking() {
             </div>
           )}
 
+          {/* Foto Kondisi Awal Kendaraan */}
+          {(() => {
+            const initial = data.initial_photos || {};
+            const SLOT_LABELS = {
+              depan: "Tampak Depan", belakang: "Tampak Belakang",
+              kiri: "Sisi Kiri", kanan: "Sisi Kanan", spidometer: "Dashboard",
+            };
+            const slots = ["depan", "belakang", "kiri", "kanan", "spidometer"].filter(s => initial[s]?.url);
+            if (slots.length === 0) return null;
+            return (
+              <div className="trk-album-section">
+                <div className="trk-section-title">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  Foto Kondisi Kendaraan
+                </div>
+                <div className="trk-album-grid">
+                  {slots.map(s => (
+                    <a key={s} href={resolveUrl(initial[s].url)} target="_blank" rel="noreferrer" className="trk-album-item">
+                      <img src={resolveUrl(initial[s].url)} alt={SLOT_LABELS[s]} loading="lazy" />
+                      <div className="trk-album-caption">{SLOT_LABELS[s]}</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Album */}
           <div className="trk-album-section">
             <div className="trk-section-title"><IcoCamera /> Album Perjalanan</div>
@@ -593,11 +630,11 @@ export default function CustomerTracking() {
                 {(album[stage] || []).map((p) => {
                   const isPdf = (p.url || "").toLowerCase().endsWith(".pdf");
                   return (
-                    <a key={p.id} href={`${BACKEND_URL}${p.url}`} target="_blank" rel="noreferrer"
+                    <a key={p.id} href={resolveUrl(p.url)} target="_blank" rel="noreferrer"
                       className="trk-album-item" data-testid={`trk-item-${p.id}`}>
                       {isPdf
                         ? <div className="trk-pdf-thumb">PDF</div>
-                        : <img src={`${BACKEND_URL}${p.url}`} alt={stage} loading="lazy" />}
+                        : <img src={resolveUrl(p.url)} alt={stage} loading="lazy" />}
                     </a>
                   );
                 })}
@@ -616,8 +653,8 @@ export default function CustomerTracking() {
                     {(data.handover.bastk || []).map((b) => {
                       const isPdf = (b.url || "").toLowerCase().endsWith(".pdf");
                       return (
-                        <a key={b.id} href={`${BACKEND_URL}${b.url}`} target="_blank" rel="noreferrer" className="trk-album-item">
-                          {isPdf ? <div className="trk-pdf-thumb">PDF</div> : <img src={`${BACKEND_URL}${b.url}`} alt="bastk" loading="lazy" />}
+                        <a key={b.id} href={resolveUrl(b.url)} target="_blank" rel="noreferrer" className="trk-album-item">
+                          {isPdf ? <div className="trk-pdf-thumb">PDF</div> : <img src={resolveUrl(b.url)} alt="bastk" loading="lazy" />}
                         </a>
                       );
                     })}
@@ -628,10 +665,10 @@ export default function CustomerTracking() {
                 <>
                   <div className="trk-handover-label">Foto Resi Pengiriman</div>
                   <div className="trk-album-grid" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>
-                    <a href={`${BACKEND_URL}${data.handover.resi.url}`} target="_blank" rel="noreferrer" className="trk-album-item">
+                    <a href={resolveUrl(data.handover.resi.url)} target="_blank" rel="noreferrer" className="trk-album-item">
                       {(data.handover.resi.url || "").toLowerCase().endsWith(".pdf")
                         ? <div className="trk-pdf-thumb">PDF</div>
-                        : <img src={`${BACKEND_URL}${data.handover.resi.url}`} alt="resi" loading="lazy" />}
+                        : <img src={resolveUrl(data.handover.resi.url)} alt="resi" loading="lazy" />}
                     </a>
                   </div>
                 </>
