@@ -73,6 +73,9 @@ function readURLParams() {
   };
 }
 
+// A "real" plate is a non-empty nopol that isn't the TBD placeholder for new cars.
+const isRealPlate = (np) => !!np && !/^TBD-/i.test(np);
+
 export default function DriverCheckpoint() {
   const params = useMemo(readURLParams, []);
   const [now, setNow] = useState(new Date());
@@ -103,7 +106,7 @@ export default function DriverCheckpoint() {
 
   // Init trip on mount (idempotent)
   useEffect(() => {
-    if (!params.trip || !params.nopol) {
+    if (!params.trip || (!params.nopol && !params.rangka)) {
       setError("Link tidak lengkap. Hubungi admin via WA 0818-631-135.");
       setLoading(false);
       return;
@@ -382,9 +385,9 @@ export default function DriverCheckpoint() {
             </button>
             <div className="drv-step-footnote">Data rekening akan diisi oleh admin</div>
           </div>
-          {trip.nopol && (
+          {(isRealPlate(trip.nopol) || trip.no_rangka) && (
             <div className="drv-step-trip-pill" data-testid="drv-step-nopol">
-              <span>UNIT</span><b>{trip.nopol}</b>
+              <span>UNIT</span><b>{isRealPlate(trip.nopol) ? trip.nopol : `Rangka ${trip.no_rangka}`}</b>
             </div>
           )}
         </div>
@@ -479,10 +482,15 @@ export default function DriverCheckpoint() {
       {/* TRIP INFO BANNER */}
       <section className="drv-trip-banner" data-testid="trip-banner">
         <div className="drv-nopol-wrap">
-          <div className="drv-nopol-lbl">Nomor Polisi</div>
-          <div className="drv-nopol" data-testid="drv-nopol">{trip.nopol}</div>
+          <div className="drv-nopol-lbl">{isRealPlate(trip.nopol) ? "Nomor Polisi" : "No. Rangka"}</div>
+          <div className="drv-nopol" data-testid="drv-nopol">
+            {isRealPlate(trip.nopol) ? trip.nopol : (trip.no_rangka || trip.nopol || "—")}
+          </div>
           {trip.tipe_kendaraan && (
-            <div className="drv-tipe" data-testid="drv-tipe">{trip.tipe_kendaraan}{trip.no_rangka ? <span className="drv-rangka"> · {trip.no_rangka}</span> : null}</div>
+            <div className="drv-tipe" data-testid="drv-tipe">
+              {trip.tipe_kendaraan}
+              {isRealPlate(trip.nopol) && trip.no_rangka ? <span className="drv-rangka"> · Rangka {trip.no_rangka}</span> : null}
+            </div>
           )}
           {trip.route && <div className="drv-route">{trip.route}</div>}
         </div>

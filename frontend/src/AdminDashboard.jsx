@@ -395,9 +395,14 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
     setEditVehicle(false);
   };
 
-  const linkDriver = order.trip_id
-    ? `/trip/${order.trip_id}${order.driver_id ? `?driver=${order.driver_id}` : ""}${order.nopol ? `${order.driver_id?"&":"?"}nopol=${encodeURIComponent(order.nopol)}` : ""}`
-    : null;
+  const linkDriver = order.trip_id ? (() => {
+    const p = new URLSearchParams();
+    if (order.driver_id) p.set("driver", order.driver_id);
+    if (order.nopol)     p.set("nopol", order.nopol);
+    if (order.no_rangka) p.set("rangka", order.no_rangka);
+    const qs = p.toString();
+    return `/trip/${order.trip_id}${qs ? `?${qs}` : ""}`;
+  })() : null;
   const linkTrack = order.trip_id ? `/track/${order.trip_id}` : null;
   const linkBastk = order.trip_id ? `/bastk/${order.trip_id}` : null;
 
