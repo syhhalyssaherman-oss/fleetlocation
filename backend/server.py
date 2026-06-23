@@ -861,16 +861,37 @@ async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
     }
 
 
-async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
+async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> dict:
     """Best-effort real Odoo XML-RPC sync.
     - Creates res.partner (customer) if not exists.
-    - Creates sale.order linked to partner with origin=order_id.
+    - Creates sale.order linked to partner with origin=order_id (idempotent:
+      reuses existing sale.order if one already exists for this origin).
+    Returns {"ok": bool, "sale_id": int|None, "partner_id": int|None, "error": str|None}.
     No-op when OdooClient.enabled is False. Never raises."""
     odoo = OdooClient()
     if not odoo.enabled:
         logger.info(f"[odoo:sync_order:skip] order_id={order_id} (env not configured)")
-        return
+        return {"ok": False, "sale_id": None, "partner_id": None, "error": "Odoo env not configured"}
+
+    if not odoo.authenticate():
+        logger.warning(f"[odoo:sync_order:auth_fail] order_id={order_id}")
+        return {"ok": False, "sale_id": None, "partner_id": None, "error": "Gagal autentikasi ke Odoo (cek ODOO_DB/USER/KEY)"}
+
     try:
+        # 0. Idempotency — reuse existing sale.order for this origin if present.
+        existing = await asyncio.to_thread(
+            odoo.call, "sale.order", "search",
+            [[["origin", "=", order_id]]], {"limit": 1},
+        )
+        if existing:
+            sale_id = existing[0]
+            logger.info(f"[odoo:sync_order:reuse] order={order_id} sale={sale_id}")
+            await db.orders.update_one(
+                {"order_id": order_id},
+                {"$set": {"odoo.sale_order_id": sale_id, "odoo.ts": datetime.now(timezone.utc).isoformat()}},
+            )
+            return {"ok": True, "sale_id": sale_id, "partner_id": None, "error": None}
+
         # 1. Find or create partner
         partner_name = (order.get("customer_nama") or "").strip() or f"Customer {order_id}"
         partner_hp = (order.get("customer_hp") or "").strip()
@@ -890,7 +911,7 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
             )
         if not partner_id:
             logger.warning(f"[odoo:sync_order:partner_fail] order_id={order_id}")
-            return
+            return {"ok": False, "sale_id": None, "partner_id": None, "error": "Gagal membuat customer di Odoo"}
 
         # 2. Create sale.order with origin = order_id, client_order_ref = trip_id
         sale_id = await asyncio.to_thread(
@@ -916,10 +937,13 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
                     "odoo": {"partner_id": partner_id, "sale_order_id": sale_id, "ts": datetime.now(timezone.utc).isoformat()},
                 }},
             )
+            return {"ok": True, "sale_id": sale_id, "partner_id": partner_id, "error": None}
         else:
             logger.warning(f"[odoo:sync_order:sale_fail] order_id={order_id}")
+            return {"ok": False, "sale_id": None, "partner_id": partner_id, "error": "Gagal membuat sale.order di Odoo"}
     except Exception as e:
         logger.warning(f"[odoo:sync_order:exception] order_id={order_id}: {e}")
+        return {"ok": False, "sale_id": None, "partner_id": None, "error": str(e)}
 
 
 async def _odoo_confirm_invoice(trip_id: str, trip: dict) -> None:
@@ -1258,37 +1282,37 @@ async def admin_odoo_sync(order_id: str):
     trip_id = order.get("trip_id")
     steps = []
 
-    # Step 1: sync / re-sync sale.order
-    asyncio.create_task(_odoo_sync_order(order_id, trip_id or "", order))
-    steps.append("sale.order sync triggered")
+    odoo = OdooClient()
+    odoo_enabled = odoo.enabled
+    if not odoo_enabled:
+        raise HTTPException(400, "Odoo belum dikonfigurasi (ODOO_URL/DB/USER/KEY kosong di Railway).")
 
-    # Step 2: kalau sudah ada trip dan handover selesai, confirm invoice
+    # Step 1: sync sale.order — AWAIT so we get the real sale_id and can report it.
+    sync = await _odoo_sync_order(order_id, trip_id or "", order)
+    if not sync.get("ok"):
+        raise HTTPException(502, f"Gagal sync ke Odoo: {sync.get('error') or 'unknown error'}")
+
+    sale_id = sync.get("sale_id")
+    steps.append(f"Sales Order #{sale_id} dibuat" if sale_id else "sale.order sync selesai")
+
+    # Step 2: kalau sudah ada trip dan handover selesai, confirm invoice (await juga)
     if trip_id:
         trip = await db.trips.find_one({"trip_id": trip_id})
         if trip:
             h = trip.get("handover") or {}
             if h.get("bastk") and h.get("resi"):
-                asyncio.create_task(_odoo_confirm_invoice(trip_id, trip))
-                steps.append("invoice confirm triggered")
+                await _odoo_confirm_invoice(trip_id, trip)
+                steps.append("Customer Invoice dikonfirmasi")
 
-    odoo = OdooClient()
-    odoo_enabled = odoo.enabled
-
-    # Build direct URL to Odoo sale.order form view
-    odoo_url = None
-    odoo_meta = order.get("odoo") or {}
-    sale_id = odoo_meta.get("sale_order_id")
-    if sale_id and odoo.url:
-        odoo_url = f"{odoo.url}/web#action=sale.action_quotations_with_onboarding&id={sale_id}&model=sale.order&view_type=form"
-    elif odoo.url:
-        # Fallback: open sales order list filtered by origin (order_id)
-        odoo_url = f"{odoo.url}/odoo/sales"
+    # Build direct URL to the Odoo sale.order form view (modern web client).
+    odoo_url = f"{odoo.url}/odoo/sales/{sale_id}" if sale_id else f"{odoo.url}/odoo/sales"
 
     return {
-        "message": "Odoo sync dikirim" if odoo_enabled else "Odoo tidak dikonfigurasi (env kosong) — sync di-skip",
+        "message": f"OK: Sales Order #{sale_id} dibuat" if sale_id else "Odoo sync selesai",
         "order_id": order_id,
         "trip_id": trip_id,
         "odoo_enabled": odoo_enabled,
+        "sale_id": sale_id,
         "odoo_url": odoo_url,
         "steps": steps,
     }
