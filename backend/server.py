@@ -317,6 +317,7 @@ async def _maybe_notify_handover_complete(trip_id: str):
             "bastk_count": len(h.get("bastk", [])),
             "resi_url": (h.get("resi") or {}).get("url"),
         })
+        asyncio.create_task(_odoo_confirm_invoice(trip_id, trip))
 
 
 @api_router.post("/trips/{trip_id}/photos/handover-bastk")
@@ -386,6 +387,7 @@ async def request_cair(trip_id: str, payload: CairBody):
             "bonus": bonus,
             "total": trip.get(amount_field, 0) + bonus,
         })
+        asyncio.create_task(_odoo_log_expense(trip_id, trip, payload.tahap))
     doc = await db.trips.find_one({"trip_id": trip_id})
     return trip_doc_to_public(doc)
 
@@ -888,6 +890,112 @@ async def _odoo_sync_order(order_id: str, trip_id: str, order: dict) -> None:
             logger.warning(f"[odoo:sync_order:sale_fail] order_id={order_id}")
     except Exception as e:
         logger.warning(f"[odoo:sync_order:exception] order_id={order_id}: {e}")
+
+
+async def _odoo_confirm_invoice(trip_id: str, trip: dict) -> None:
+    """Trip selesai (BASTK + Resi uploaded) → confirm sale.order → auto-create invoice di Odoo.
+    Best-effort, never raises."""
+    odoo = OdooClient()
+    if not odoo.enabled:
+        return
+    try:
+        order = await db.orders.find_one({"trip_id": trip_id})
+        if not order:
+            logger.info(f"[odoo:invoice:skip] no order linked to trip {trip_id}")
+            return
+        odoo_meta = order.get("odoo") or {}
+        sale_id = odoo_meta.get("sale_order_id")
+        if not sale_id:
+            logger.info(f"[odoo:invoice:skip] no sale_order_id on order {order.get('order_id')}")
+            return
+
+        # Confirm the sale order (quotation → sales order)
+        confirmed = await asyncio.to_thread(
+            odoo.call, "sale.order", "action_confirm", [[sale_id]],
+        )
+        logger.info(f"[odoo:invoice:confirmed] sale_id={sale_id} trip={trip_id} result={confirmed}")
+
+        # Create invoice from the confirmed SO
+        invoice_ids = await asyncio.to_thread(
+            odoo.call, "sale.order", "action_invoice_create", [[sale_id]], {"final": False},
+        )
+        if invoice_ids:
+            logger.info(f"[odoo:invoice:created] invoice_ids={invoice_ids} sale_id={sale_id}")
+            await db.orders.update_one(
+                {"trip_id": trip_id},
+                {"$set": {"odoo.invoice_ids": invoice_ids, "odoo.invoice_ts": datetime.now(timezone.utc).isoformat()}},
+            )
+        else:
+            logger.info(f"[odoo:invoice:no_lines] sale_id={sale_id} — SO has no lines, skip invoice creation")
+    except Exception as e:
+        logger.warning(f"[odoo:invoice:exception] trip={trip_id}: {e}")
+
+
+async def _odoo_log_expense(trip_id: str, trip: dict, tahap: int) -> None:
+    """Pencairan uang jalan driver → catat sebagai hr.expense di Odoo (Pengeluaran).
+    Best-effort, never raises."""
+    odoo = OdooClient()
+    if not odoo.enabled:
+        return
+    try:
+        amount_field = {1: "t1", 2: "t2", 3: "t3"}[tahap]
+        bonus = trip.get("bonus_kerajinan", 0) if tahap == 3 else 0
+        amount = (trip.get(amount_field) or 0) + bonus
+        if amount <= 0:
+            return
+
+        driver_name = (trip.get("nama_driver") or "").strip() or f"Driver {trip_id}"
+        nopol = trip.get("nopol", "")
+        label_tahap = {1: "Tahap 1 (Awal)", 2: "Tahap 2 (Tengah)", 3: "Tahap 3 (Selesai)"}[tahap]
+
+        # Find or create employee record for this driver
+        emp_ids = await asyncio.to_thread(
+            odoo.call, "hr.employee", "search",
+            [[["name", "=", driver_name]]], {"limit": 1},
+        )
+        if emp_ids:
+            emp_id = emp_ids[0]
+        else:
+            emp_id = await asyncio.to_thread(
+                odoo.call, "hr.employee", "create",
+                [{"name": driver_name, "job_title": "Driver"}],
+            )
+
+        if not emp_id:
+            logger.warning(f"[odoo:expense:emp_fail] driver={driver_name}")
+            return
+
+        # Find generic expense product "Uang Jalan Driver"
+        prod_ids = await asyncio.to_thread(
+            odoo.call, "product.product", "search",
+            [[["name", "ilike", "Uang Jalan"]]], {"limit": 1},
+        )
+        product_id = prod_ids[0] if prod_ids else False
+
+        expense_vals = {
+            "name": f"Uang Jalan {label_tahap} — {nopol} ({trip_id})",
+            "employee_id": emp_id,
+            "total_amount": amount,
+            "quantity": 1.0,
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "description": f"Trip: {trip_id} | Nopol: {nopol} | Driver: {driver_name} | {label_tahap}",
+        }
+        if product_id:
+            expense_vals["product_id"] = product_id
+
+        expense_id = await asyncio.to_thread(
+            odoo.call, "hr.expense", "create", [expense_vals],
+        )
+        if expense_id:
+            logger.info(f"[odoo:expense:ok] expense_id={expense_id} trip={trip_id} tahap={tahap} amount={amount}")
+            await db.trips.update_one(
+                {"trip_id": trip_id},
+                {"$set": {f"odoo_synced.expense_{tahap}": expense_id}},
+            )
+        else:
+            logger.warning(f"[odoo:expense:fail] trip={trip_id} tahap={tahap}")
+    except Exception as e:
+        logger.warning(f"[odoo:expense:exception] trip={trip_id} tahap={tahap}: {e}")
 
 
 # ---------- Admin Mini-Dashboard (v2.6d, PIN-gated) ----------
