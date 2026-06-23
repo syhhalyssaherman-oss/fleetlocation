@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { VEHICLE_TYPE_LIST } from "@/VehicleSketches";
 import "@/App.css";
 import "@/Driver.css";
 import "@/Admin.css";
@@ -384,7 +385,15 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
+  const [editVehicle, setEditVehicle] = useState(false);
+  const [vtDraft, setVtDraft] = useState(order.vehicle_type || "");
+  const [nopolDraft, setNopolDraft] = useState(order.nopol || "");
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
+
+  const saveVehicle = async () => {
+    await onPatch({ vehicle_type: vtDraft, nopol: nopolDraft.trim() });
+    setEditVehicle(false);
+  };
 
   const linkDriver = order.trip_id
     ? `/trip/${order.trip_id}${order.driver_id ? `?driver=${order.driver_id}` : ""}${order.nopol ? `${order.driver_id?"&":"?"}nopol=${encodeURIComponent(order.nopol)}` : ""}`
@@ -427,8 +436,34 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
         <div className="adm-field-row">
           <div className="adm-field-key">Kendaraan</div>
           <div className="adm-field-val">
-            {order.vehicle_type || "—"}
-            {order.nopol && <span className="adm-pill adm-mono">{order.nopol}</span>}
+            {editVehicle ? (
+              <span className="adm-driver-edit-row" style={{ flexWrap: "wrap" }}>
+                <select
+                  className="adm-input-inline"
+                  value={vtDraft}
+                  onChange={(e) => setVtDraft(e.target.value)}
+                  data-testid={`adm-vehicle-type-${order.order_id}`}
+                >
+                  <option value="">— Tipe —</option>
+                  {VEHICLE_TYPE_LIST.map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <input
+                  className="adm-input-inline adm-mono"
+                  value={nopolDraft}
+                  onChange={(e) => setNopolDraft(e.target.value.toUpperCase())}
+                  placeholder="B 1234 ABC"
+                  data-testid={`adm-vehicle-nopol-${order.order_id}`}
+                />
+                <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveVehicle} data-testid={`adm-vehicle-save-${order.order_id}`}>OK</button>
+                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditVehicle(false); setVtDraft(order.vehicle_type || ""); setNopolDraft(order.nopol || ""); }}><IcoX /></button>
+              </span>
+            ) : (
+              <span className="adm-driver-row">
+                {order.vehicle_type || "—"}
+                {order.nopol && <span className="adm-pill adm-mono">{order.nopol}</span>}
+                <button className="adm-link" onClick={() => setEditVehicle(true)} data-testid={`adm-vehicle-edit-${order.order_id}`}><IcoPencil /></button>
+              </span>
+            )}
           </div>
         </div>
         {order.trip_id && (
