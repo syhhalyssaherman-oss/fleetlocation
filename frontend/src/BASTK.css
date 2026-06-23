@@ -262,6 +262,20 @@
   .bk-grid-2 { grid-template-columns: 1fr; }
 }
 
+/* Kolom kanan: 2 kotak penyerah + penerima */
+.bk-party-col { display: flex; flex-direction: column; gap: 10px; }
+.bk-party-col .bk-panel { margin-bottom: 0; }
+
+/* Syarat & Ketentuan */
+.bk-terms {
+  margin: 0;
+  padding: 10px 14px 10px 28px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #0A1628;
+}
+.bk-terms li { margin-bottom: 3px; }
+
 /* ----- Panel (block dengan head) ----- */
 .bk-panel {
   border: 1px solid #d9dce3;

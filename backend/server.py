@@ -524,6 +524,12 @@ async def upsert_bastk(trip_id: str, payload: BASTKBody):
             "tahun":    (cd.get("tahun") or "").strip()[:6],
             "km":       (cd.get("km") or "").strip()[:12],
             "kondisi":  (cd.get("kondisi") or "").strip()[:20],
+            "penyerah_nama":   (cd.get("penyerah_nama") or "").strip()[:120],
+            "penyerah_hp":     (cd.get("penyerah_hp") or "").strip()[:30],
+            "penyerah_alamat": (cd.get("penyerah_alamat") or "").strip()[:300],
+            "penerima_nama":   (cd.get("penerima_nama") or "").strip()[:120],
+            "penerima_hp":     (cd.get("penerima_hp") or "").strip()[:30],
+            "penerima_alamat": (cd.get("penerima_alamat") or "").strip()[:300],
         }
     if payload.signatures is not None:
         sigs = payload.signatures or {}
@@ -838,6 +844,13 @@ async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
             "tahun":   (order.get("tahun") or "")[:6],
             "km":      (order.get("km") or "")[:12],
             "kondisi": (order.get("kondisi") or "Bekas")[:20],
+            # Penyerah (lokasi jemput / asal) & Penerima (lokasi antar / tujuan)
+            "penyerah_nama":   (order.get("pickup_pic") or order.get("customer_nama") or "")[:120],
+            "penyerah_hp":     (order.get("pickup_hp") or order.get("customer_hp") or "")[:30],
+            "penyerah_alamat": (order.get("asal_alamat") or "")[:300],
+            "penerima_nama":   (order.get("delivery_pic") or order.get("customer_nama") or "")[:120],
+            "penerima_hp":     (order.get("delivery_hp") or order.get("customer_hp") or "")[:30],
+            "penerima_alamat": (order.get("tujuan_alamat") or "")[:300],
         },
         "vehicle_type": order.get("vehicle_type", ""),
         # Backlink to source order

@@ -113,6 +113,8 @@ export default function BASTKPage() {
           nama: cd.nama || "", hp: cd.hp || "", alamat: cd.alamat || "",
           pic: cd.pic || "", warna: cd.warna || "", tahun: cd.tahun || "",
           km: cd.km || "", kondisi: cd.kondisi || "Bekas",
+          penyerah_nama: cd.penyerah_nama || "", penyerah_hp: cd.penyerah_hp || "", penyerah_alamat: cd.penyerah_alamat || "",
+          penerima_nama: cd.penerima_nama || cd.nama || "", penerima_hp: cd.penerima_hp || cd.hp || "", penerima_alamat: cd.penerima_alamat || cd.alamat || "",
         });
         const sigs = r.data.signatures || {};
         setSigDriver(sigs.driver || "");
@@ -285,18 +287,28 @@ export default function BASTKPage() {
               </tbody>
             </table>
           </section>
-          <section className="bk-panel">
-            <div className="bk-panel-head">DATA PELANGGAN</div>
-            <table className="bk-table">
-              <tbody>
-                <tr><th>Nama / PT</th><td>{customer.nama || "—"}</td></tr>
-                <tr><th>No. HP</th><td>{customer.hp || "—"}</td></tr>
-                <tr><th>PIC</th><td>{customer.pic || "—"}</td></tr>
-                <tr><th>Alamat</th><td className="bk-wrap">{customer.alamat || "—"}</td></tr>
-                <tr><th>Driver</th><td>{data.nama_driver || "—"}</td></tr>
-              </tbody>
-            </table>
-          </section>
+          <div className="bk-party-col">
+            <section className="bk-panel">
+              <div className="bk-panel-head">PELANGGAN YANG MENYERAHKAN</div>
+              <table className="bk-table">
+                <tbody>
+                  <tr><th>Nama</th><td>{customer.penyerah_nama || "—"}</td></tr>
+                  <tr><th>No. HP</th><td>{customer.penyerah_hp || "—"}</td></tr>
+                  <tr><th>Alamat</th><td className="bk-wrap">{customer.penyerah_alamat || "—"}</td></tr>
+                </tbody>
+              </table>
+            </section>
+            <section className="bk-panel">
+              <div className="bk-panel-head">PELANGGAN YANG MENERIMA</div>
+              <table className="bk-table">
+                <tbody>
+                  <tr><th>Nama</th><td>{customer.penerima_nama || "—"}</td></tr>
+                  <tr><th>No. HP</th><td>{customer.penerima_hp || "—"}</td></tr>
+                  <tr><th>Alamat</th><td className="bk-wrap">{customer.penerima_alamat || "—"}</td></tr>
+                </tbody>
+              </table>
+            </section>
+          </div>
         </div>
 
         {/* SKETSA + DAMAGE CHECKLIST */}
@@ -361,6 +373,17 @@ export default function BASTKPage() {
         <section className="bk-panel">
           <div className="bk-panel-head">CATATAN TAMBAHAN</div>
           <div className="bk-catatan-display">{catatan || "—"}</div>
+        </section>
+
+        {/* SYARAT & KETENTUAN */}
+        <section className="bk-panel">
+          <div className="bk-panel-head">SYARAT &amp; KETENTUAN</div>
+          <ul className="bk-terms">
+            <li><b>Resiko:</b> Kerusakan atau kehilangan tanpa asuransi ditanggung pemilik.</li>
+            <li><b>Barang Konsumen:</b> Barang di dalam kendaraan bukan tanggung jawab logistik.</li>
+            <li><b>Barang Terlarang:</b> Menjadi tanggung jawab penuh pemilik kendaraan.</li>
+            <li><b>Larangan Keras:</b> Dilarang menitipkan barang ilegal di dalam unit.</li>
+          </ul>
         </section>
 
         {/* QR VERIFIKASI + TRACKING */}
@@ -435,7 +458,7 @@ export default function BASTKPage() {
             <div className="bk-sig-box">
               <div className="bk-sig-box-label">Penerima / Customer</div>
               {sigCustomer ? <img src={sigCustomer} alt="ttd customer" className="bk-sig-img" /> : <div className="bk-sig-empty">(belum tanda tangan)</div>}
-              <div className="bk-sig-name">{customer.nama || "—"}</div>
+              <div className="bk-sig-name">{customer.penerima_nama || customer.nama || "—"}</div>
             </div>
             <div className="bk-sig-box">
               <div className="bk-sig-box-label">Admin AAL</div>
@@ -495,6 +518,24 @@ export default function BASTKPage() {
                 <option>Baru</option><option>Bekas</option>
               </select>
             </div>
+          </div>
+        </section>
+
+        <section className="bk-edit-card">
+          <div className="bk-edit-head">Pelanggan Yang Menyerahkan</div>
+          <div className="bk-form-grid">
+            <CFld lbl="Nama"   v={customer.penyerah_nama}   on={(v) => setCustomer({ ...customer, penyerah_nama: v })}   testid="penyerah-nama" />
+            <CFld lbl="No. HP" v={customer.penyerah_hp}     on={(v) => setCustomer({ ...customer, penyerah_hp: v })}     testid="penyerah-hp" />
+            <CFld lbl="Alamat" v={customer.penyerah_alamat} on={(v) => setCustomer({ ...customer, penyerah_alamat: v })} testid="penyerah-alamat" full />
+          </div>
+        </section>
+
+        <section className="bk-edit-card">
+          <div className="bk-edit-head">Pelanggan Yang Menerima</div>
+          <div className="bk-form-grid">
+            <CFld lbl="Nama"   v={customer.penerima_nama}   on={(v) => setCustomer({ ...customer, penerima_nama: v })}   testid="penerima-nama" />
+            <CFld lbl="No. HP" v={customer.penerima_hp}     on={(v) => setCustomer({ ...customer, penerima_hp: v })}     testid="penerima-hp" />
+            <CFld lbl="Alamat" v={customer.penerima_alamat} on={(v) => setCustomer({ ...customer, penerima_alamat: v })} testid="penerima-alamat" full />
           </div>
         </section>
 
