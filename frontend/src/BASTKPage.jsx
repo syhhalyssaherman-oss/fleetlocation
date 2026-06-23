@@ -90,6 +90,7 @@ export default function BASTKPage() {
   const [customer, setCustomer] = useState({ nama: "", hp: "", alamat: "", pic: "", warna: "", tahun: "", km: "", kondisi: "Bekas" });
   const [sigDriver, setSigDriver] = useState("");
   const [sigCustomer, setSigCustomer] = useState("");
+  const [sigPenyerah, setSigPenyerah] = useState("");
   const [catatan, setCatatan] = useState("");
 
   const [saving, setSaving] = useState(false);
@@ -119,6 +120,7 @@ export default function BASTKPage() {
         const sigs = r.data.signatures || {};
         setSigDriver(sigs.driver || "");
         setSigCustomer(sigs.customer || "");
+        setSigPenyerah(sigs.penyerah || "");
         setCatatan(r.data.bastk_catatan || "");
       } catch (e) { setError("Data trip tidak ditemukan."); }
       finally { setLoading(false); }
@@ -142,7 +144,7 @@ export default function BASTKPage() {
         vehicle_type: vehicleType,
         damage_marks: marks,
         customer_data: customer,
-        signatures: { driver: sigDriver, customer: sigCustomer },
+        signatures: { driver: sigDriver, customer: sigCustomer, penyerah: sigPenyerah },
         catatan,
       };
       const r = await axios.post(`${API}/trips/${tripId}/bastk`, body);
@@ -436,19 +438,22 @@ export default function BASTKPage() {
           <div className="bk-panel-head">TANDA TANGAN</div>
           <div className="bk-sig-grid">
             <div className="bk-sig-box">
-              <div className="bk-sig-box-label">Driver</div>
+              <div className="bk-sig-box-label">Menyerahkan / Customer</div>
+              {sigPenyerah ? <img src={sigPenyerah} alt="ttd penyerah" className="bk-sig-img" /> : <div className="bk-sig-empty">(belum tanda tangan)</div>}
+              <div className="bk-sig-line" />
+              <div className="bk-sig-name">{customer.penyerah_nama || "—"}</div>
+            </div>
+            <div className="bk-sig-box">
+              <div className="bk-sig-box-label">Driver / Ekspedisi</div>
               {sigDriver ? <img src={sigDriver} alt="ttd driver" className="bk-sig-img" /> : <div className="bk-sig-empty">(belum tanda tangan)</div>}
+              <div className="bk-sig-line" />
               <div className="bk-sig-name">{data.nama_driver || "—"}</div>
             </div>
             <div className="bk-sig-box">
-              <div className="bk-sig-box-label">Penerima / Customer</div>
+              <div className="bk-sig-box-label">Menerima / Customer</div>
               {sigCustomer ? <img src={sigCustomer} alt="ttd customer" className="bk-sig-img" /> : <div className="bk-sig-empty">(belum tanda tangan)</div>}
+              <div className="bk-sig-line" />
               <div className="bk-sig-name">{customer.penerima_nama || customer.nama || "—"}</div>
-            </div>
-            <div className="bk-sig-box">
-              <div className="bk-sig-box-label">Admin AAL</div>
-              <div className="bk-sig-empty">(cap &amp; ttd kantor)</div>
-              <div className="bk-sig-name">PT Alyssa Auto Logistik</div>
             </div>
           </div>
         </section>
@@ -540,8 +545,9 @@ export default function BASTKPage() {
         <section className="bk-edit-card">
           <div className="bk-edit-head">Tanda Tangan</div>
           <div className="bk-sig-grid">
-            <SignaturePad label="Driver" value={sigDriver} onChange={setSigDriver} />
-            <SignaturePad label="Customer" value={sigCustomer} onChange={setSigCustomer} />
+            <SignaturePad label="Menyerahkan / Customer" value={sigPenyerah} onChange={setSigPenyerah} />
+            <SignaturePad label="Driver / Ekspedisi" value={sigDriver} onChange={setSigDriver} />
+            <SignaturePad label="Menerima / Customer" value={sigCustomer} onChange={setSigCustomer} />
           </div>
         </section>
       </div>

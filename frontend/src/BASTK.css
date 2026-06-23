@@ -475,13 +475,16 @@
   font-size: 11px;
   font-style: italic;
 }
+.bk-sig-line {
+  border-bottom: 1px solid #0A1628;
+  margin: 4px 8px 0;
+}
 .bk-sig-name {
   font-size: 11px;
   font-weight: 700;
   color: #0A1628;
-  border-top: 1px dashed #d9dce3;
-  padding-top: 6px;
-  margin-top: 6px;
+  padding-top: 4px;
+  margin-top: 4px;
 }
 
 /* ----- Footer ----- */

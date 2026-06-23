@@ -535,7 +535,7 @@ async def upsert_bastk(trip_id: str, payload: BASTKBody):
         sigs = payload.signatures or {}
         # store base64 dataURL strings — accept driver/customer/admin keys
         clean_sigs = {}
-        for k in ("driver", "customer", "admin"):
+        for k in ("driver", "customer", "admin", "penyerah", "penerima"):
             v = sigs.get(k)
             if isinstance(v, str) and v.startswith("data:image"):
                 clean_sigs[k] = v[:400_000]  # max ~400KB dataURL
