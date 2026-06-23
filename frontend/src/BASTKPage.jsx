@@ -176,32 +176,18 @@ export default function BASTKPage() {
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
       const pw = pdf.internal.pageSize.getWidth();
       const ph = pdf.internal.pageSize.getHeight();
-      const imgW = pw - 16;  // margin 8mm
-      const imgH = (canvas.height / canvas.width) * imgW;
-      let y = 8;
-      // page 1
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      if (imgH <= ph - 16) {
-        pdf.addImage(imgData, "JPEG", 8, y, imgW, imgH);
-      } else {
-        // multi-page split
-        const pageH = ph - 16;
-        const ratio = canvas.width / imgW;
-        const pxPerPage = pageH * ratio;
-        let offset = 0;
-        let pageNum = 0;
-        while (offset < canvas.height) {
-          const sliceH = Math.min(pxPerPage, canvas.height - offset);
-          const slice = document.createElement("canvas");
-          slice.width = canvas.width; slice.height = sliceH;
-          slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-          const sliceImg = slice.toDataURL("image/jpeg", 0.95);
-          if (pageNum > 0) pdf.addPage();
-          pdf.addImage(sliceImg, "JPEG", 8, 8, imgW, (sliceH / ratio));
-          offset += sliceH;
-          pageNum++;
-        }
+      // Paksa muat 1 halaman A4: scale konten agar lebar & tinggi pas dalam margin.
+      const maxW = pw - 12;  // margin 6mm kiri-kanan
+      const maxH = ph - 12;  // margin 6mm atas-bawah
+      let w = maxW;
+      let h = (canvas.height / canvas.width) * w;
+      if (h > maxH) {           // kalau kepanjangan, kecilkan ikut tinggi
+        h = maxH;
+        w = (canvas.width / canvas.height) * h;
       }
+      const x = (pw - w) / 2;   // center horizontal
+      pdf.addImage(imgData, "JPEG", x, 6, w, h);
       const nopol = (data?.nopol || "AAL").replace(/\s+/g, "-");
       pdf.save(`BASTK-${nopol}.pdf`);
       showToast("PDF tersimpan");
