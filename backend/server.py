@@ -1271,12 +1271,25 @@ async def admin_odoo_sync(order_id: str):
                 asyncio.create_task(_odoo_confirm_invoice(trip_id, trip))
                 steps.append("invoice confirm triggered")
 
-    odoo_enabled = OdooClient().enabled
+    odoo = OdooClient()
+    odoo_enabled = odoo.enabled
+
+    # Build direct URL to Odoo sale.order form view
+    odoo_url = None
+    odoo_meta = order.get("odoo") or {}
+    sale_id = odoo_meta.get("sale_order_id")
+    if sale_id and odoo.url:
+        odoo_url = f"{odoo.url}/web#action=sale.action_quotations_with_onboarding&id={sale_id}&model=sale.order&view_type=form"
+    elif odoo.url:
+        # Fallback: open sales order list filtered by origin (order_id)
+        odoo_url = f"{odoo.url}/odoo/sales"
+
     return {
         "message": "Odoo sync dikirim" if odoo_enabled else "Odoo tidak dikonfigurasi (env kosong) — sync di-skip",
         "order_id": order_id,
         "trip_id": trip_id,
         "odoo_enabled": odoo_enabled,
+        "odoo_url": odoo_url,
         "steps": steps,
     }
 

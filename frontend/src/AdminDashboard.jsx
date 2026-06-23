@@ -182,6 +182,9 @@ function Dashboard({ pin, onLogout }) {
   const doOdoo = async (orderId) => {
     try {
       const r = await axios.post(`${API}/admin/orders/${orderId}/odoo-sync`, {}, { headers });
+      if (r.data?.odoo_url) {
+        window.open(r.data.odoo_url, "_blank", "noopener");
+      }
       flash(r.data?.message || "Odoo sync berhasil");
     } catch (e) { flash("Odoo error: " + (e?.response?.data?.detail || "gagal")); }
   };
