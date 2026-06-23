@@ -27,7 +27,10 @@ logger = logging.getLogger(__name__)
 
 class OdooClient:
     def __init__(self) -> None:
-        self.url = os.environ.get("ODOO_URL", "").strip().rstrip("/")
+        raw_url = os.environ.get("ODOO_URL", "").strip().rstrip("/")
+        if raw_url and not raw_url.startswith(("http://", "https://")):
+            raw_url = "https://" + raw_url
+        self.url = raw_url
         self.db = os.environ.get("ODOO_DB", "").strip()
         self.user = os.environ.get("ODOO_USER", "").strip()
         self.key = os.environ.get("ODOO_KEY", "").strip()
