@@ -452,6 +452,17 @@ async def xendit_disburse(trip_id: str, payload: CairBody):
 
 # ---------- BASTK (Berita Acara Serah Terima Kendaraan) — v2.6a ADDITIVE ----------
 VALID_VEHICLE_TYPES = {
+    # Tipe baru (dipakai di dropdown)
+    "Mobil Kecil Biasa", "Mobil Kecil Medium",
+    "Truck Ringan D4 Std", "Truck Ringan D4 Long",
+    "Truck Sedang D6 Std", "Truck Sedang D6 Long",
+    "Truck Besar F6 Std", "Truck Besar F6 Long",
+    "Tronton T10 Std", "Tronton T10 Long",
+    "Alat Berat 2 - 3,9 Ton", "Alat Berat 4 - 6,9 Ton", "Alat Berat 7 - 9,9 Ton",
+    "Alat Berat 10 - 15,9 Ton", "Alat Berat 16 - 23,9 Ton", "Alat Berat 24 - 27,9 Ton",
+    "Alat Berat 28 - 34,9 Ton", "Alat Berat 35 - 36,9 Ton", "Alat Berat 37 - 43,9 Ton",
+    "Alat Berat 44 - 46,9 Ton", "Alat Berat 47 - 54,9 Ton",
+    # Tipe lama (backward-compat untuk data lama)
     "Sedan", "MPV", "SUV", "Pickup", "Double Cabin", "CDD", "Truck Box",
     "Dump Truck", "Tangki", "Tronton", "Box Besar", "Canter", "Canter Pemadam",
     "Motor 2 Roda", "Motor 3 Roda", "Forklift", "Excavator", "Dozer",

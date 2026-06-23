@@ -323,6 +323,29 @@ export function SketchVibroRoller(p) {
 }
 
 export const VEHICLE_SKETCH_MAP = {
+  /* ── Tipe baru (dipakai di dropdown) ── */
+  "Mobil Kecil Biasa": SketchSedan,
+  "Mobil Kecil Medium": SketchSUV,
+  "Truck Ringan D4 Std": SketchCDD,
+  "Truck Ringan D4 Long": SketchCDD,
+  "Truck Sedang D6 Std": SketchTruckBox,
+  "Truck Sedang D6 Long": SketchTruckBox,
+  "Truck Besar F6 Std": SketchBoxBesar,
+  "Truck Besar F6 Long": SketchBoxBesar,
+  "Tronton T10 Std": SketchTronton,
+  "Tronton T10 Long": SketchTronton,
+  "Alat Berat 2 - 3,9 Ton": SketchExcavator,
+  "Alat Berat 4 - 6,9 Ton": SketchExcavator,
+  "Alat Berat 7 - 9,9 Ton": SketchExcavator,
+  "Alat Berat 10 - 15,9 Ton": SketchExcavator,
+  "Alat Berat 16 - 23,9 Ton": SketchExcavator,
+  "Alat Berat 24 - 27,9 Ton": SketchExcavator,
+  "Alat Berat 28 - 34,9 Ton": SketchExcavator,
+  "Alat Berat 35 - 36,9 Ton": SketchExcavator,
+  "Alat Berat 37 - 43,9 Ton": SketchExcavator,
+  "Alat Berat 44 - 46,9 Ton": SketchExcavator,
+  "Alat Berat 47 - 54,9 Ton": SketchExcavator,
+  /* ── Tipe lama (backward-compat: sketsa BASTK data lama tetap render) ── */
   "Sedan": SketchSedan,
   "MPV": SketchMPV,
   "SUV": SketchSUV,
@@ -345,7 +368,30 @@ export const VEHICLE_SKETCH_MAP = {
   "Vibro Roller": SketchVibroRoller,
 };
 
-export const VEHICLE_TYPE_LIST = Object.keys(VEHICLE_SKETCH_MAP);
+/* Daftar tipe untuk dropdown — hanya tipe baru. */
+export const VEHICLE_TYPE_LIST = [
+  "Mobil Kecil Biasa",
+  "Mobil Kecil Medium",
+  "Truck Ringan D4 Std",
+  "Truck Ringan D4 Long",
+  "Truck Sedang D6 Std",
+  "Truck Sedang D6 Long",
+  "Truck Besar F6 Std",
+  "Truck Besar F6 Long",
+  "Tronton T10 Std",
+  "Tronton T10 Long",
+  "Alat Berat 2 - 3,9 Ton",
+  "Alat Berat 4 - 6,9 Ton",
+  "Alat Berat 7 - 9,9 Ton",
+  "Alat Berat 10 - 15,9 Ton",
+  "Alat Berat 16 - 23,9 Ton",
+  "Alat Berat 24 - 27,9 Ton",
+  "Alat Berat 28 - 34,9 Ton",
+  "Alat Berat 35 - 36,9 Ton",
+  "Alat Berat 37 - 43,9 Ton",
+  "Alat Berat 44 - 46,9 Ton",
+  "Alat Berat 47 - 54,9 Ton",
+];
 
 const TYPE_TO_FILENAME = {
   "Sedan":          "sedan",
