@@ -77,13 +77,13 @@
 .bk-print {
   background: #ffffff;
   color: #0A1628;
-  margin: 18px;
-  padding: 22px 26px;
+  margin: 10px;
+  padding: 14px 18px;
   border-radius: 14px;
   border: 1px solid #d9dce3;
   box-shadow: 0 10px 30px rgba(0,0,0,.35);
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
 /* ----- Header ----- */
@@ -255,26 +255,44 @@
 .bk-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 @media (max-width: 720px) {
   .bk-grid-2 { grid-template-columns: 1fr; }
 }
 
 /* Kolom kanan: 2 kotak penyerah + penerima */
-.bk-party-col { display: flex; flex-direction: column; gap: 10px; }
+.bk-party-col { display: flex; flex-direction: column; gap: 8px; }
 .bk-party-col .bk-panel { margin-bottom: 0; }
+
+/* Data kendaraan 2 kolom (label:value) — hemat tinggi */
+.bk-kv-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.bk-kv {
+  display: flex;
+  gap: 6px;
+  padding: 3px 10px;
+  border-bottom: 1px dashed #e4e7ee;
+  font-size: 11.5px;
+  align-items: baseline;
+}
+.bk-kv .k { color: #5F7494; font-weight: 600; min-width: 64px; }
+.bk-kv .v { color: #0A1628; font-weight: 700; }
+.bk-kv-full { grid-column: 1 / -1; }
 
 /* Syarat & Ketentuan */
 .bk-terms {
   margin: 0;
-  padding: 10px 14px 10px 28px;
-  font-size: 11.5px;
-  line-height: 1.5;
+  padding: 6px 12px 6px 26px;
+  font-size: 11px;
+  line-height: 1.35;
   color: #0A1628;
 }
-.bk-terms li { margin-bottom: 3px; }
+.bk-terms li { margin-bottom: 1px; }
 
 /* ----- Panel (block dengan head) ----- */
 .bk-panel {
@@ -282,15 +300,15 @@
   border-radius: 10px;
   overflow: hidden;
   background: #fff;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .bk-panel-head {
   background: linear-gradient(90deg, #0A1628 0%, #152238 100%);
   color: #D4A847;
   font-weight: 800;
-  font-size: 11.5px;
-  letter-spacing: 1px;
-  padding: 8px 12px;
+  font-size: 10.5px;
+  letter-spacing: .8px;
+  padding: 4px 10px;
   text-transform: uppercase;
 }
 
@@ -301,7 +319,7 @@
   font-size: 12px;
 }
 .bk-table th, .bk-table td {
-  padding: 6px 10px;
+  padding: 3px 10px;
   text-align: left;
   vertical-align: top;
   border-bottom: 1px dashed #e4e7ee;
@@ -318,10 +336,10 @@
 
 /* ----- Sketsa area + damage marks ----- */
 .bk-sketch-meta {
-  padding: 8px 12px;
+  padding: 4px 10px;
   background: #f8f9fb;
   border-bottom: 1px solid #e4e7ee;
-  font-size: 11.5px;
+  font-size: 11px;
   color: #0A1628;
   display: flex;
   flex-wrap: wrap;
@@ -351,7 +369,7 @@
 .bk-sketch-area {
   position: relative;
   width: 100%;
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 16 / 5;
   background:
     linear-gradient(to bottom, #fbfcfe 0%, #f4f6fa 100%);
   cursor: crosshair;
@@ -406,12 +424,12 @@
 
 /* ----- Catatan box ----- */
 .bk-catatan-display {
-  padding: 10px 12px;
-  min-height: 40px;
-  font-size: 12.5px;
+  padding: 5px 12px;
+  min-height: 22px;
+  font-size: 12px;
   color: #0A1628;
   white-space: pre-line;
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 /* ----- Tanda tangan grid ----- */

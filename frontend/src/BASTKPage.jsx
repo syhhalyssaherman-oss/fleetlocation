@@ -260,18 +260,16 @@ export default function BASTKPage() {
         <div className="bk-grid-2">
           <section className="bk-panel">
             <div className="bk-panel-head">DATA KENDARAAN</div>
-            <table className="bk-table">
-              <tbody>
-                <tr><th>No. Polisi</th><td className="bk-mono">{data.nopol || "—"}</td></tr>
-                <tr><th>Tipe Kendaraan</th><td>{vehicleType || data.tipe_kendaraan || "—"}</td></tr>
-                <tr><th>No. Rangka</th><td className="bk-mono">{data.no_rangka || "—"}</td></tr>
-                <tr><th>Warna</th><td>{customer.warna || "—"}</td></tr>
-                <tr><th>Tahun</th><td>{customer.tahun || "—"}</td></tr>
-                <tr><th>Kilometer</th><td>{customer.km || "—"}</td></tr>
-                <tr><th>Kondisi</th><td>{customer.kondisi || "—"}</td></tr>
-                <tr><th>Rute</th><td>{data.route || "—"}</td></tr>
-              </tbody>
-            </table>
+            <div className="bk-kv-grid">
+              <div className="bk-kv"><span className="k">No. Polisi</span><span className="v bk-mono">{data.nopol || "—"}</span></div>
+              <div className="bk-kv"><span className="k">Tipe</span><span className="v">{vehicleType || data.tipe_kendaraan || "—"}</span></div>
+              <div className="bk-kv"><span className="k">No. Rangka</span><span className="v bk-mono">{data.no_rangka || "—"}</span></div>
+              <div className="bk-kv"><span className="k">Warna</span><span className="v">{customer.warna || "—"}</span></div>
+              <div className="bk-kv"><span className="k">Tahun</span><span className="v">{customer.tahun || "—"}</span></div>
+              <div className="bk-kv"><span className="k">Kilometer</span><span className="v">{customer.km || "—"}</span></div>
+              <div className="bk-kv"><span className="k">Kondisi</span><span className="v">{customer.kondisi || "—"}</span></div>
+              <div className="bk-kv bk-kv-full"><span className="k">Rute</span><span className="v">{data.route || "—"}</span></div>
+            </div>
           </section>
           <div className="bk-party-col">
             <section className="bk-panel">
