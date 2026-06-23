@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-import os, logging, uuid, shutil, asyncio
+import os, logging, uuid, shutil, asyncio, io
 import requests as _requests
 from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
@@ -214,19 +214,49 @@ MIME_TO_EXT = {
     "application/pdf": ".pdf",
 }
 
+SUPABASE_URL    = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_KEY    = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+SUPABASE_BUCKET = os.environ.get("SUPABASE_BUCKET", "fleet-photos").strip()
+
 def _save_upload(trip_id: str, sub: str, file: UploadFile, allowed: set) -> str:
     ext = Path(file.filename or "").suffix.lower()
     if not ext or ext not in allowed:
         ext = MIME_TO_EXT.get((file.content_type or "").split(";")[0].strip().lower(), ext)
     if ext not in allowed:
         raise HTTPException(400, f"Format file tidak didukung: {file.content_type or ext}")
+
     fname = f"{uuid.uuid4().hex}{ext}"
-    folder = UPLOAD_DIR / trip_id / sub
-    folder.mkdir(parents=True, exist_ok=True)
-    fpath = folder / fname
-    with fpath.open("wb") as f:
-        shutil.copyfileobj(file.file, f)
-    return f"/api/uploads/{trip_id}/{sub}/{fname}"
+    storage_path = f"{trip_id}/{sub}/{fname}"
+    content_type = (file.content_type or "application/octet-stream").split(";")[0].strip()
+    data = file.file.read()
+
+    if SUPABASE_URL and SUPABASE_KEY:
+        # Upload ke Supabase Storage
+        upload_url = f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{storage_path}"
+        resp = _requests.post(
+            upload_url,
+            headers={
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": content_type,
+                "x-upsert": "true",
+            },
+            data=data,
+            timeout=30,
+        )
+        if resp.status_code not in (200, 201):
+            logger.error(f"[supabase:upload_fail] {resp.status_code} {resp.text[:200]}")
+            raise HTTPException(500, f"Gagal upload foto: {resp.status_code}")
+        public_url = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{storage_path}"
+        logger.info(f"[supabase:upload_ok] {public_url}")
+        return public_url
+    else:
+        # Fallback ke filesystem lokal (development)
+        folder = UPLOAD_DIR / trip_id / sub
+        folder.mkdir(parents=True, exist_ok=True)
+        fpath = folder / fname
+        with fpath.open("wb") as f:
+            f.write(data)
+        return f"/api/uploads/{trip_id}/{sub}/{fname}"
 
 
 @api_router.post("/trips/{trip_id}/photos/initial")
