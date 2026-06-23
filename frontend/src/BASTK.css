@@ -159,10 +159,10 @@
 .bk-qr-panel { page-break-inside: avoid; }
 .bk-qr-body {
   display: grid;
-  grid-template-columns: 160px 1fr;
-  gap: 16px;
-  padding: 14px;
-  align-items: stretch;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  padding: 7px 10px;
+  align-items: center;
 }
 @media (max-width: 540px) {
   .bk-qr-body { grid-template-columns: 1fr; }
@@ -198,8 +198,8 @@
 }
 .bk-qr-svg svg {
   display: block;
-  width: 132px;
-  height: 132px;
+  width: 88px;
+  height: 88px;
 }
 .bk-qr-cap {
   font-size: 9.5px;
@@ -211,15 +211,15 @@
 .bk-qr-meta {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 2px;
+  gap: 0;
+  padding: 2px;
 }
 .bk-qr-row {
   display: grid;
   grid-template-columns: 110px 1fr;
   gap: 8px;
-  font-size: 11.5px;
-  padding: 4px 0;
+  font-size: 10.5px;
+  padding: 1.5px 0;
   border-bottom: 1px dashed #e4e7ee;
 }
 .bk-qr-row:last-of-type { border-bottom: 0; }
@@ -240,13 +240,13 @@
   color: #854F0B;
 }
 .bk-qr-note {
-  margin-top: 6px;
-  padding: 8px 10px;
+  margin-top: 3px;
+  padding: 4px 8px;
   background: linear-gradient(90deg, #fdf6e6 0%, #fbfcfe 100%);
   border-left: 3px solid #D4A847;
-  font-size: 10.5px;
+  font-size: 9px;
   color: #0A1628;
-  line-height: 1.4;
+  line-height: 1.3;
   border-radius: 0 6px 6px 0;
   font-style: italic;
 }
@@ -439,8 +439,8 @@
 .bk-sig-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 10px;
+  gap: 7px;
+  padding: 6px;
 }
 @media (max-width: 720px) {
   .bk-sig-grid { grid-template-columns: 1fr; }
@@ -448,31 +448,31 @@
 .bk-sig-box {
   border: 1px solid #d9dce3;
   border-radius: 8px;
-  padding: 10px;
+  padding: 6px 8px;
   background: #fbfcfe;
   text-align: center;
 }
 .bk-sig-box-label {
-  font-size: 10.5px;
+  font-size: 9.5px;
   font-weight: 800;
   color: #5F7494;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
 }
 .bk-sig-img {
   width: 100%;
-  max-height: 90px;
+  max-height: 40px;
   object-fit: contain;
   background: #fff;
   border-radius: 4px;
 }
 .bk-sig-empty {
-  height: 70px;
+  height: 38px;
   display: grid;
   place-items: center;
   color: #5F7494;
-  font-size: 11px;
+  font-size: 10px;
   font-style: italic;
 }
 .bk-sig-line {
