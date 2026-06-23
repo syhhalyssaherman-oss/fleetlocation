@@ -322,38 +322,31 @@ export function SketchVibroRoller(p) {
   );
 }
 
+/* SVG fallback (dipakai kalau gambar /vehicles/*.jpg gagal load). */
 export const VEHICLE_SKETCH_MAP = {
-  /* ── Tipe baru (dipakai di dropdown) ── */
-  "Mobil Kecil Biasa": SketchSedan,
-  "Mobil Kecil Medium": SketchSUV,
-  "Truck Ringan D4 Std": SketchCDD,
-  "Truck Ringan D4 Long": SketchCDD,
-  "Truck Sedang D6 Std": SketchTruckBox,
-  "Truck Sedang D6 Long": SketchTruckBox,
-  "Truck Besar F6 Std": SketchBoxBesar,
-  "Truck Besar F6 Long": SketchBoxBesar,
-  "Tronton T10 Std": SketchTronton,
-  "Tronton T10 Long": SketchTronton,
-  "Alat Berat 2 - 3,9 Ton": SketchExcavator,
-  "Alat Berat 4 - 6,9 Ton": SketchExcavator,
-  "Alat Berat 7 - 9,9 Ton": SketchExcavator,
-  "Alat Berat 10 - 15,9 Ton": SketchExcavator,
-  "Alat Berat 16 - 23,9 Ton": SketchExcavator,
-  "Alat Berat 24 - 27,9 Ton": SketchExcavator,
-  "Alat Berat 28 - 34,9 Ton": SketchExcavator,
-  "Alat Berat 35 - 36,9 Ton": SketchExcavator,
-  "Alat Berat 37 - 43,9 Ton": SketchExcavator,
-  "Alat Berat 44 - 46,9 Ton": SketchExcavator,
-  "Alat Berat 47 - 54,9 Ton": SketchExcavator,
-  /* ── Tipe lama (backward-compat: sketsa BASTK data lama tetap render) ── */
+  /* ── 16 bentuk unit (dropdown) ── */
   "Sedan": SketchSedan,
+  "MPV / SUV": SketchMPV,
+  "Pickup / Double Cabin": SketchDoubleCabin,
+  "Truck Box": SketchTruckBox,
+  "Truck Bak": SketchCDD,
+  "Dump Truck": SketchDumpTruck,
+  "Truck Tangki": SketchTangki,
+  "Concrete Pump": SketchTruckBox,
+  "Fire Truck": SketchCanterPemadam,
+  "Motor": SketchMotor2,
+  "Excavator": SketchExcavator,
+  "Grader": SketchGrader,
+  "Dozer": SketchDozer,
+  "Vibro Roller": SketchVibroRoller,
+  "Forklift": SketchForklift,
+  "Dump Crawler": SketchDumpTruck,
+  /* ── Tipe lama (backward-compat: data lama tetap render) ── */
   "MPV": SketchMPV,
   "SUV": SketchSUV,
   "Pickup": SketchPickup,
   "Double Cabin": SketchDoubleCabin,
   "CDD": SketchCDD,
-  "Truck Box": SketchTruckBox,
-  "Dump Truck": SketchDumpTruck,
   "Tangki": SketchTangki,
   "Tronton": SketchTronton,
   "Box Besar": SketchBoxBesar,
@@ -361,62 +354,51 @@ export const VEHICLE_SKETCH_MAP = {
   "Canter Pemadam": SketchCanterPemadam,
   "Motor 2 Roda": SketchMotor2,
   "Motor 3 Roda": SketchMotor3,
-  "Forklift": SketchForklift,
-  "Excavator": SketchExcavator,
-  "Dozer": SketchDozer,
-  "Grader": SketchGrader,
-  "Vibro Roller": SketchVibroRoller,
+  "Mobil Kecil Biasa": SketchSedan,
+  "Mobil Kecil Medium": SketchSUV,
 };
 
-/* Daftar tipe untuk dropdown — hanya tipe baru. */
+/* Daftar tipe untuk dropdown — 16 bentuk unit (cocok dgn sketsa). */
 export const VEHICLE_TYPE_LIST = [
-  "Mobil Kecil Biasa",
-  "Mobil Kecil Medium",
-  "Truck Ringan D4 Std",
-  "Truck Ringan D4 Long",
-  "Truck Sedang D6 Std",
-  "Truck Sedang D6 Long",
-  "Truck Besar F6 Std",
-  "Truck Besar F6 Long",
-  "Tronton T10 Std",
-  "Tronton T10 Long",
-  "Alat Berat 2 - 3,9 Ton",
-  "Alat Berat 4 - 6,9 Ton",
-  "Alat Berat 7 - 9,9 Ton",
-  "Alat Berat 10 - 15,9 Ton",
-  "Alat Berat 16 - 23,9 Ton",
-  "Alat Berat 24 - 27,9 Ton",
-  "Alat Berat 28 - 34,9 Ton",
-  "Alat Berat 35 - 36,9 Ton",
-  "Alat Berat 37 - 43,9 Ton",
-  "Alat Berat 44 - 46,9 Ton",
-  "Alat Berat 47 - 54,9 Ton",
+  "Sedan",
+  "MPV / SUV",
+  "Pickup / Double Cabin",
+  "Truck Box",
+  "Truck Bak",
+  "Dump Truck",
+  "Truck Tangki",
+  "Concrete Pump",
+  "Fire Truck",
+  "Motor",
+  "Excavator",
+  "Grader",
+  "Dozer",
+  "Vibro Roller",
+  "Forklift",
+  "Dump Crawler",
 ];
 
 const TYPE_TO_FILENAME = {
-  "Sedan":          "sedan",
-  "MPV":            "mpv",
-  "SUV":            "suv",
-  "Pickup":         "pickup",
-  "Double Cabin":   "double-cabin",
-  "CDD":            "cdd",
-  "Truck Box":      "truck-box",
-  "Dump Truck":     "dump-truck",
-  "Tangki":         "tangki",
-  "Tronton":        "tronton",
-  "Box Besar":      "box-besar",
-  "Canter":         "canter",
-  "Canter Pemadam": "canter-pemadam",
-  "Motor 2 Roda":   "motor-2-roda",
-  "Motor 3 Roda":   "motor-3-roda",
-  "Forklift":       "forklift",
-  "Excavator":      "excavator",
-  "Dozer":          "dozer",
-  "Grader":         "grader",
-  "Vibro Roller":   "vibro-roller",
+  /* ── 16 bentuk unit → file di /vehicles/ ── */
+  "Sedan":                  "sedan",
+  "MPV / SUV":              "mpv-suv",
+  "Pickup / Double Cabin":  "pickup",
+  "Truck Box":              "truck-box",
+  "Truck Bak":              "truck-bak",
+  "Dump Truck":             "dump-truck",
+  "Truck Tangki":           "tangki",
+  "Concrete Pump":          "concrete-pump",
+  "Fire Truck":             "fire-truck",
+  "Motor":                  "motor",
+  "Excavator":              "excavator",
+  "Grader":                 "grader",
+  "Dozer":                  "dozer",
+  "Vibro Roller":           "vibro",
+  "Forklift":               "forklift",
+  "Dump Crawler":           "dump-crawler",
 };
 
-export function VehicleSketch({ type, className, color = "#D4A847", strokeWidth = 2 }) {
+export function VehicleSketch({ type, className, style, color = "#D4A847", strokeWidth = 2 }) {
   const [imgOk, setImgOk] = React.useState(true);
   const filename = TYPE_TO_FILENAME[type];
   const imgUrl = filename ? `/vehicles/${filename}.jpg` : null;
@@ -424,7 +406,7 @@ export function VehicleSketch({ type, className, color = "#D4A847", strokeWidth 
 
   if (imgUrl && imgOk) {
     return (
-      <div className={className} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#fff" }}>
+      <div className={className} style={{ display: "flex", alignItems: "center", justifyContent: "center", background: "#fff", ...style }}>
         <img
           src={imgUrl}
           alt={type}
@@ -437,7 +419,7 @@ export function VehicleSketch({ type, className, color = "#D4A847", strokeWidth 
 
   if (!Comp) return null;
   return (
-    <div className={className} style={{ color }}>
+    <div className={className} style={{ color, ...style }}>
       <Comp width="100%" height="100%" strokeWidth={strokeWidth} />
     </div>
   );

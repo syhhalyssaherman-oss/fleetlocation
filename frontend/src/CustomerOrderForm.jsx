@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import axios from "axios";
 import "./Order.css";
-import { VEHICLE_TYPE_LIST } from "./VehicleSketches";
+import { VEHICLE_TYPE_LIST, VehicleSketch } from "./VehicleSketches";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -215,6 +215,20 @@ export default function CustomerOrderForm() {
                     {VEHICLE_TYPE_LIST.map((v) => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </Field>
+                {data.vehicle_type && (
+                  <div className="of-field--full" style={{ marginTop: 4 }}>
+                    <div style={{
+                      border: "1px solid var(--of-border, #e5e7eb)", borderRadius: 12,
+                      background: "#fff", padding: 12, display: "flex", flexDirection: "column",
+                      alignItems: "center", gap: 6,
+                    }}>
+                      <VehicleSketch type={data.vehicle_type} style={{ width: "100%", height: 200 }} />
+                      <div style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>
+                        Sketsa referensi — {data.vehicle_type}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <Field label="No. Polisi">
                   <input type="text" className="of-inp" value={data.nopol}
                     onChange={(e) => set("nopol", e.target.value.toUpperCase())}

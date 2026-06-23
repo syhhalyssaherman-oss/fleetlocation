@@ -452,7 +452,11 @@ async def xendit_disburse(trip_id: str, payload: CairBody):
 
 # ---------- BASTK (Berita Acara Serah Terima Kendaraan) — v2.6a ADDITIVE ----------
 VALID_VEHICLE_TYPES = {
-    # Tipe baru (dipakai di dropdown)
+    # 16 bentuk unit (dropdown — cocok dgn sketsa)
+    "Sedan", "MPV / SUV", "Pickup / Double Cabin", "Truck Box", "Truck Bak",
+    "Dump Truck", "Truck Tangki", "Concrete Pump", "Fire Truck", "Motor",
+    "Excavator", "Grader", "Dozer", "Vibro Roller", "Forklift", "Dump Crawler",
+    # Tipe lama (backward-compat untuk data lama)
     "Mobil Kecil Biasa", "Mobil Kecil Medium",
     "Truck Ringan D4 Std", "Truck Ringan D4 Long",
     "Truck Sedang D6 Std", "Truck Sedang D6 Long",
@@ -462,11 +466,8 @@ VALID_VEHICLE_TYPES = {
     "Alat Berat 10 - 15,9 Ton", "Alat Berat 16 - 23,9 Ton", "Alat Berat 24 - 27,9 Ton",
     "Alat Berat 28 - 34,9 Ton", "Alat Berat 35 - 36,9 Ton", "Alat Berat 37 - 43,9 Ton",
     "Alat Berat 44 - 46,9 Ton", "Alat Berat 47 - 54,9 Ton",
-    # Tipe lama (backward-compat untuk data lama)
-    "Sedan", "MPV", "SUV", "Pickup", "Double Cabin", "CDD", "Truck Box",
-    "Dump Truck", "Tangki", "Tronton", "Box Besar", "Canter", "Canter Pemadam",
-    "Motor 2 Roda", "Motor 3 Roda", "Forklift", "Excavator", "Dozer",
-    "Grader", "Vibro Roller",
+    "MPV", "SUV", "Pickup", "Double Cabin", "CDD", "Tangki", "Tronton",
+    "Box Besar", "Canter", "Canter Pemadam", "Motor 2 Roda", "Motor 3 Roda",
 }
 VALID_DAMAGE_CODES = {"RSK", "B", "P", "PC", "CL", "L"}
 
