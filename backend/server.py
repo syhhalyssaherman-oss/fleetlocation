@@ -208,10 +208,18 @@ async def mark_sop_read(trip_id: str):
     return {"ok": True}
 
 
+MIME_TO_EXT = {
+    "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/png": ".png",
+    "image/webp": ".webp", "image/heic": ".heic", "image/heif": ".heic",
+    "application/pdf": ".pdf",
+}
+
 def _save_upload(trip_id: str, sub: str, file: UploadFile, allowed: set) -> str:
     ext = Path(file.filename or "").suffix.lower()
+    if not ext or ext not in allowed:
+        ext = MIME_TO_EXT.get((file.content_type or "").split(";")[0].strip().lower(), ext)
     if ext not in allowed:
-        raise HTTPException(400, f"Format file tidak didukung: {ext}")
+        raise HTTPException(400, f"Format file tidak didukung: {file.content_type or ext}")
     fname = f"{uuid.uuid4().hex}{ext}"
     folder = UPLOAD_DIR / trip_id / sub
     folder.mkdir(parents=True, exist_ok=True)
