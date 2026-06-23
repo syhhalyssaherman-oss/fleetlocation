@@ -1219,10 +1219,6 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
 
 
 # ---------- Static file serving for uploads ----------
-app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
-
-
-app.include_router(api_router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=False,
@@ -1230,6 +1226,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/api/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
+app.include_router(api_router)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 @app.on_event("shutdown")
