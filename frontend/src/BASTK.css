@@ -643,12 +643,15 @@
   .bk-toolbar, .bk-editor { display: none !important; }
   .bk-root { background: #fff; padding: 0; margin: 0; max-width: none; }
   .bk-print {
-    margin: 0;
+    margin: 0 auto;
     box-shadow: none;
     border: 0;
     border-radius: 0;
-    padding: 0;
-    width: 100%;
+    /* Samakan lebar dgn lebar capture (794px) supaya tinggi konten pasti
+       (~1137px terukur), lalu skala turun agar muat 1 halaman A4.
+       zoom mempengaruhi layout di Chrome/Edge -> paginasi ikut mengecil. */
+    width: 794px;
+    zoom: 0.86;
   }
   /* Jangan pecah blok ke halaman berikutnya */
   .bk-panel, .bk-grid-2, .bk-qr-panel, .bk-sig-grid, .bk-sketch-area { break-inside: avoid; }
