@@ -126,6 +126,7 @@ export default function CustomerOrderForm() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+  const [files, setFiles] = useState([]);  // berkas scan (PDF/gambar)
 
   const set = (k, v) => setData((d) => ({ ...d, [k]: v }));
 
@@ -144,6 +145,17 @@ export default function CustomerOrderForm() {
     setError(""); setSubmitting(true);
     try {
       const r = await axios.post(`${API}/orders`, data);
+      const orderId = r.data?.order_id;
+      // Upload berkas scan (kalau ada) — best-effort, order tetap jadi walau upload gagal
+      if (orderId && files.length) {
+        for (const f of files) {
+          try {
+            const fd = new FormData();
+            fd.append("file", f);
+            await axios.post(`${API}/orders/${orderId}/attachment`, fd);
+          } catch (_) { /* skip file gagal */ }
+        }
+      }
       setResult(r.data);
     } catch (e) {
       setError(e?.response?.data?.detail || "Gagal mengirim pesanan. Coba lagi.");
@@ -378,6 +390,21 @@ export default function CustomerOrderForm() {
                     onChange={(e) => set("catatan", e.target.value)}
                     placeholder="Cth: tolong dijemput sore, kunci ada di security."
                     data-testid="ord-catatan" />
+                </Field>
+                <Field label="Upload Berkas / Scan (opsional)" full hint="PDF atau foto — mis. STNK, surat jalan, dokumen ekspedisi. Bisa lebih dari satu.">
+                  <input
+                    type="file"
+                    className="of-inp"
+                    multiple
+                    accept=".pdf,image/*"
+                    onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                    data-testid="ord-berkas"
+                  />
+                  {files.length > 0 && (
+                    <div style={{ marginTop: 6, fontSize: 13, color: "#2563eb" }}>
+                      {files.map((f, i) => <div key={i}>📎 {f.name}</div>)}
+                    </div>
+                  )}
                 </Field>
               </div>
 

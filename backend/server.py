@@ -744,6 +744,27 @@ async def create_order(payload: OrderBody):
     return doc
 
 
+@api_router.post("/orders/{order_id}/attachment")
+async def upload_order_attachment(order_id: str, file: UploadFile = File(...), label: str = Form("")):
+    """Pelanggan/ekspedisi upload berkas scan (PDF/gambar) untuk order ini.
+    Tersimpan di order.attachments[] dan tampil di admin dashboard."""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    url = _save_upload(order_id, "berkas", file, ALLOWED_IMG | ALLOWED_DOC)
+    entry = {
+        "url": url,
+        "filename": (file.filename or "berkas")[:120],
+        "label": (label or "").strip()[:80],
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.orders.update_one(
+        {"order_id": order_id},
+        {"$push": {"attachments": entry}, "$set": {"updated_at": datetime.now(timezone.utc).isoformat()}},
+    )
+    return entry
+
+
 @api_router.get("/orders/{order_id}")
 async def get_order(order_id: str):
     doc = await db.orders.find_one({"order_id": order_id})

@@ -503,6 +503,26 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
             )}
           </div>
         </div>
+        {Array.isArray(order.attachments) && order.attachments.length > 0 && (
+          <div className="adm-field-row adm-full">
+            <div className="adm-field-key">Berkas</div>
+            <div className="adm-field-val" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {order.attachments.map((a, i) => (
+                <a
+                  key={i}
+                  href={a.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="adm-pill"
+                  style={{ textDecoration: "none", cursor: "pointer" }}
+                  title={a.filename}
+                >
+                  📎 {a.filename || `Berkas ${i + 1}`}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer actions */}

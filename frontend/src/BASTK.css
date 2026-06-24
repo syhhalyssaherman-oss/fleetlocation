@@ -356,16 +356,24 @@
   padding: 3px 9px;
   font-weight: 600;
 }
-.bk-codes-row { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.bk-codes-row {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  width: 100%;
+  flex-basis: 100%;
+  margin-top: 2px;
+}
 .bk-code-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   border: 1px solid #d9dce3;
   border-radius: 999px;
-  padding: 2px 9px;
-  font-size: 11px;
+  padding: 1px 7px;
+  font-size: 9.5px;
   font-weight: 600;
+  white-space: nowrap;
 }
 .bk-code-pill b { font-weight: 800; letter-spacing: 0.5px; }
 
