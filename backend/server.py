@@ -29,6 +29,12 @@ db = client[os.environ['DB_NAME']]
 # When empty -> no-op (events only logged).
 ODOO_WEBHOOK = os.environ.get("ODOO_WEBHOOK_URL", "").strip()
 
+# WhatsApp pickup reminders via Fonnte (https://fonnte.com).
+# FONNTE_TOKEN empty -> reminders are logged only (no-op), so dev/staging never sends real WA.
+FONNTE_TOKEN     = os.environ.get("FONNTE_TOKEN", "").strip()
+REMINDER_TARGET  = os.environ.get("REMINDER_TARGET", "087779270110").strip()
+CRON_SECRET      = os.environ.get("CRON_SECRET", "").strip()
+
 
 def _validate_env_on_startup() -> None:
     """Production env hygiene — log warnings for unsafe defaults. Non-fatal."""
@@ -100,6 +106,45 @@ async def notify_odoo(event: str, payload: dict) -> None:
         await asyncio.to_thread(_post)
     except Exception as e:
         logger.warning(f"[odoo:dispatch_fail] {e}")
+
+
+def _wa_normalize(no: str) -> str:
+    """Indonesian local number -> Fonnte/E.164-ish format (08xx -> 628xx)."""
+    n = "".join(ch for ch in (no or "") if ch.isdigit())
+    if n.startswith("0"):
+        n = "62" + n[1:]
+    return n
+
+
+async def send_whatsapp(target: str, message: str) -> bool:
+    """Fire-and-forget WhatsApp via Fonnte. Never raises. Returns True if accepted by gateway."""
+    to = _wa_normalize(target)
+    if not FONNTE_TOKEN:
+        logger.info(f"[wa:skip] (no FONNTE_TOKEN) to={to}: {message[:60]}")
+        return False
+    if not to:
+        logger.warning("[wa:skip] empty target")
+        return False
+    def _post() -> bool:
+        try:
+            r = _requests.post(
+                "https://api.fonnte.com/send",
+                headers={"Authorization": FONNTE_TOKEN},
+                data={"target": to, "message": message},
+                timeout=10,
+            )
+            ok = r.status_code == 200 and (r.json() or {}).get("status", False)
+            if not ok:
+                logger.warning(f"[wa:fail] to={to} status={r.status_code} body={r.text[:200]}")
+            return bool(ok)
+        except Exception as e:
+            logger.warning(f"[wa:fail] to={to}: {e}")
+            return False
+    try:
+        return await asyncio.to_thread(_post)
+    except Exception as e:
+        logger.warning(f"[wa:dispatch_fail] {e}")
+        return False
 
 
 # ---------- Models ----------
@@ -842,7 +887,7 @@ async def convert_order_to_trip(order_id: str, payload: OrderConvertBody):
         "tipe_kendaraan": order.get("vehicle_type", ""),
         "no_rangka": order.get("no_rangka", ""),
         "legs": [],
-        "nama_driver": "",
+        "nama_driver": (order.get("nama_driver") or "").strip()[:120],
         "sop_read": False,
         "initial_photos": {},
         "daily_checkpoints": [],
@@ -1352,6 +1397,7 @@ async def admin_export_csv(
 class OrderPatchBody(BaseModel):
     status: Optional[str] = None
     driver_id: Optional[str] = None
+    nama_driver: Optional[str] = None
     catatan: Optional[str] = None
     vehicle_type: Optional[str] = None
     nopol: Optional[str] = None
@@ -1371,6 +1417,8 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
         upd["status"] = s
     if payload.driver_id is not None:
         upd["driver_id"] = payload.driver_id.strip()[:60]
+    if payload.nama_driver is not None:
+        upd["nama_driver"] = payload.nama_driver.strip()[:120]
     if payload.catatan is not None:
         upd["catatan"] = payload.catatan.strip()[:500]
     if payload.vehicle_type is not None:
@@ -1388,6 +1436,9 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
     tid = order.get("trip_id")
     if tid and "driver_id" in upd:
         await db.trips.update_one({"trip_id": tid}, {"$set": {"driver_id": upd["driver_id"], "updated_at": upd["updated_at"]}})
+    # Mirror nama_driver to linked trip (shown on BASTK)
+    if tid and "nama_driver" in upd:
+        await db.trips.update_one({"trip_id": tid}, {"$set": {"nama_driver": upd["nama_driver"], "updated_at": upd["updated_at"]}})
     # Mirror vehicle changes to linked trip too
     if tid and ("vehicle_type" in upd or "nopol" in upd):
         tupd = {"updated_at": upd["updated_at"]}
@@ -1459,6 +1510,59 @@ async def admin_odoo_sync(order_id: str, body: OdooSyncBody = OdooSyncBody()):
         "odoo_url": odoo_url,
         "steps": steps,
     }
+
+
+# ---------- Pickup WhatsApp reminders (H-3 / H-2 / H-1) ----------
+# Called once a day by an external scheduler (Railway Cron / cron-job.org).
+# Protected by X-Cron-Secret header matching CRON_SECRET env var.
+REMINDER_ACTIVE_STATUS = {"NEW", "DISPATCHED"}  # not yet picked up
+
+
+@api_router.post("/cron/pickup-reminders")
+async def cron_pickup_reminders(x_cron_secret: str = Header(default="")):
+    if not CRON_SECRET:
+        raise HTTPException(503, "CRON_SECRET belum dikonfigurasi di server.")
+    if x_cron_secret.strip() != CRON_SECRET:
+        raise HTTPException(401, "Invalid cron secret.")
+
+    now_wib = datetime.now(WIB)
+    today = now_wib.date()
+    sent_marker = today.isoformat()  # dedup: 1 reminder per order per calendar day (WIB)
+
+    results = []
+    sent_count = 0
+    for offset in (3, 2, 1):
+        target_date = (today + timedelta(days=offset)).isoformat()
+        cursor = db.orders.find({
+            "pickup_date": target_date,
+            "status": {"$in": list(REMINDER_ACTIVE_STATUS)},
+        })
+        async for order in cursor:
+            already = order.get("reminders_sent") or []
+            if sent_marker in already:
+                continue  # already reminded today
+            label = f"H-{offset}"
+            jam = order.get("pickup_time") or "-"
+            msg = (
+                f"🔔 *Pengingat Pickup ({label})*\n"
+                f"Order: {order.get('order_id','-')}\n"
+                f"Customer: {order.get('customer_nama','-')}\n"
+                f"Jadwal: {target_date} {jam} WIB\n"
+                f"Rute: {order.get('asal_kota','-')} → {order.get('tujuan_kota','-')}\n"
+                f"Kendaraan: {order.get('vehicle_type') or order.get('nopol') or '-'}\n"
+                f"PIC Pickup: {order.get('pickup_pic','-')} ({order.get('pickup_hp','-')})"
+            )
+            ok = await send_whatsapp(REMINDER_TARGET, msg)
+            if ok:
+                await db.orders.update_one(
+                    {"order_id": order["order_id"]},
+                    {"$addToSet": {"reminders_sent": sent_marker}},
+                )
+                sent_count += 1
+            results.append({"order_id": order.get("order_id"), "label": label, "sent": ok})
+
+    logger.info(f"[cron:pickup-reminders] date={sent_marker} sent={sent_count} matched={len(results)}")
+    return {"date": sent_marker, "target": REMINDER_TARGET, "sent": sent_count, "details": results}
 
 
 # ---------- Static file serving for uploads ----------

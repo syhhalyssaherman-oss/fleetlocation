@@ -385,6 +385,8 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
+  const [editNama, setEditNama] = useState(false);
+  const [namaDraft, setNamaDraft] = useState(order.nama_driver || "");
   const [editVehicle, setEditVehicle] = useState(false);
   const [vtDraft, setVtDraft] = useState(order.vehicle_type || "");
   const [nopolDraft, setNopolDraft] = useState(order.nopol || "");
@@ -407,6 +409,7 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
   const linkBastk = order.trip_id ? `/bastk/${order.trip_id}` : null;
 
   const saveDriver = async () => { await onPatch({ driver_id: driverDraft }); setEditDriver(false); };
+  const saveNama = async () => { await onPatch({ nama_driver: namaDraft.trim() }); setEditNama(false); };
 
   return (
     <article
@@ -499,6 +502,32 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo }) {
                   ? <span className="adm-pill adm-mono">{order.driver_id}</span>
                   : <i className="adm-mute">belum di-assign</i>}
                 <button className="adm-link" onClick={() => setEditDriver(true)} data-testid={`adm-driver-edit-${order.order_id}`}><IcoPencil /></button>
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="adm-field-row adm-full">
+          <div className="adm-field-key">Nama Driver</div>
+          <div className="adm-field-val">
+            {editNama ? (
+              <span className="adm-driver-edit-row">
+                <input
+                  className="adm-input-inline"
+                  value={namaDraft}
+                  onChange={(e) => setNamaDraft(e.target.value)}
+                  placeholder="Nama lengkap driver"
+                  autoFocus
+                  data-testid={`adm-nama-input-${order.order_id}`}
+                />
+                <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveNama} data-testid={`adm-nama-save-${order.order_id}`}>OK</button>
+                <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditNama(false); setNamaDraft(order.nama_driver || ""); }}><IcoX /></button>
+              </span>
+            ) : (
+              <span className="adm-driver-row">
+                {order.nama_driver
+                  ? <span className="adm-pill">{order.nama_driver}</span>
+                  : <i className="adm-mute">belum diisi</i>}
+                <button className="adm-link" onClick={() => setEditNama(true)} data-testid={`adm-nama-edit-${order.order_id}`}><IcoPencil /></button>
               </span>
             )}
           </div>
