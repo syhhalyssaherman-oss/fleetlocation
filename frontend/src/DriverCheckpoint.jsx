@@ -102,6 +102,16 @@ const SLOT_LABELS = {
 };
 const SLOT_ORDER = ["depan", "belakang", "kiri", "kanan", "spidometer"];
 
+// Urutan & panduan wizard foto awal (dituntun satu per satu untuk driver).
+const SLOT_GUIDE_ORDER = ["depan", "kiri", "belakang", "kanan", "spidometer"];
+const SLOT_GUIDE = {
+  depan:      { emoji: "🚗", title: "Foto DEPAN Mobil",     tips: ["Berdiri di depan mobil", "Pastikan nopol kelihatan jelas"] },
+  kiri:       { emoji: "🚙", title: "Foto SAMPING KIRI",    tips: ["Ambil dari sisi kiri mobil", "Seluruh badan mobil masuk"] },
+  belakang:   { emoji: "🚗", title: "Foto BELAKANG Mobil",  tips: ["Berdiri di belakang mobil", "Plat belakang terlihat jelas"] },
+  kanan:      { emoji: "🚙", title: "Foto SAMPING KANAN",   tips: ["Ambil dari sisi kanan mobil", "Seluruh badan mobil masuk"] },
+  spidometer: { emoji: "🎛️", title: "Foto SPIDOMETER",      tips: ["Foto dashboard / odometer", "Angka KM terlihat jelas"] },
+};
+
 const SOP_POINTS = [
   { title: "CEK FISIK", body: "Cek oli, air radiator, lampu, dan ban (termasuk ban serep) sebelum berangkat." },
   { title: "FOTO UNIT", body: "Wajib upload foto 4 sisi mobil + foto dashboard bensin sebelum gas." },
@@ -712,45 +722,78 @@ export default function DriverCheckpoint() {
             {allInitialDone && <span className="drv-pill drv-pill-ok">Lengkap</span>}
           </div>
           <div className="drv-card-body">
-            <div className="drv-slot-grid">
-              {SLOT_ORDER.map((slot) => {
-                const photo = initial[slot];
-                const isUp = uploadingSlot === slot;
-                return (
-                  <div key={slot} className={`drv-slot ${photo ? "drv-slot-done" : ""}`} data-testid={`slot-${slot}`}>
-                    <input
-                      ref={(el) => fileRefs.current[`init-${slot}`] = el}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={(e) => uploadInitial(slot, e.target.files?.[0])}
-                      style={{ display: "none" }}
-                    />
-                    {photo ? (
-                      <>
-                        <img src={resolveUrl(photo.url)} alt={slot} />
-                        <div className="drv-slot-check">✓</div>
-                      </>
-                    ) : (
-                      <div className="drv-slot-empty">
-                        <div className="drv-slot-icon">📷</div>
-                      </div>
-                    )}
-                    <button
-                      className="drv-slot-overlay"
-                      onClick={() => triggerFile(`init-${slot}`)}
-                      disabled={isUp}
-                      data-testid={`btn-slot-${slot}`}
-                    >
-                      <div className="drv-slot-label">{SLOT_LABELS[slot]}</div>
-                      <div className="drv-slot-cta">{isUp ? "Upload..." : (photo ? "Ganti Foto" : "Ambil Foto")}</div>
-                    </button>
+            {/* input kamera tersembunyi untuk tiap slot */}
+            {SLOT_GUIDE_ORDER.map((slot) => (
+              <input
+                key={slot}
+                ref={(el) => fileRefs.current[`init-${slot}`] = el}
+                type="file" accept="image/*" capture="environment"
+                onChange={(e) => uploadInitial(slot, e.target.files?.[0])}
+                style={{ display: "none" }}
+              />
+            ))}
+
+            {!allInitialDone ? (() => {
+              const idx = SLOT_GUIDE_ORDER.findIndex((s) => !initial[s]);
+              const slot = SLOT_GUIDE_ORDER[idx];
+              const g = SLOT_GUIDE[slot];
+              const isUp = uploadingSlot === slot;
+              const doneSlots = SLOT_GUIDE_ORDER.filter((s) => initial[s]);
+              return (
+                <div data-testid="init-wizard">
+                  <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                    {SLOT_GUIDE_ORDER.map((s, i) => (
+                      <div key={s} style={{ flex: 1, height: 6, borderRadius: 4, background: initial[s] ? "#56d364" : (i === idx ? "#D4A847" : "rgba(255,255,255,0.13)") }} />
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-            {!allInitialDone && (
-              <div className="drv-note">Lengkapi 5 foto di atas. Setelah lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
+                  <div style={{ textAlign: "center", color: "#9FB2CC", fontSize: 13, marginBottom: 4 }}>Foto {idx + 1} dari 5</div>
+                  <div style={{ textAlign: "center", fontSize: 64, lineHeight: 1.1, margin: "6px 0" }}>{g.emoji}</div>
+                  <div style={{ textAlign: "center", fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 12 }}>{g.title}</div>
+                  <div style={{ background: "rgba(212,168,71,0.08)", border: "1.5px solid #D4A847", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
+                    {g.tips.map((tip, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, color: "#EAD9B0", fontSize: 14.5, padding: "3px 0" }}>
+                        <span style={{ fontSize: 16 }}>{i === 0 ? "📍" : "📸"}</span><b>{tip}</b>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => triggerFile(`init-${slot}`)}
+                    disabled={isUp}
+                    style={{ width: "100%", padding: "15px", background: "#1DB954", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, fontSize: 17, cursor: "pointer" }}
+                    data-testid={`btn-slot-${slot}`}
+                  >
+                    📸 {isUp ? "Mengirim..." : "Ambil Foto Sekarang"}
+                  </button>
+                  {doneSlots.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+                      {doneSlots.map((s) => (
+                        <button key={s} onClick={() => triggerFile(`init-${s}`)} title={`Ganti ${SLOT_LABELS[s]}`}
+                          style={{ position: "relative", border: "1.5px solid #2ea043", borderRadius: 8, padding: 0, background: "none", cursor: "pointer", width: 58, height: 58, overflow: "hidden" }}>
+                          <img src={resolveUrl(initial[s].url)} alt={s} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                          <span style={{ position: "absolute", top: 2, right: 2, background: "#2ea043", color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>✓</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="drv-note" style={{ marginTop: 14 }}>Setelah 5 foto lengkap, Tahap 1 (Rp {(trip.t1||0).toLocaleString("id-ID")}) langsung cair.</div>
+                </div>
+              );
+            })() : (
+              <div data-testid="init-done">
+                <div style={{ textAlign: "center", color: "#56d364", fontSize: 15, fontWeight: 700, marginBottom: 12 }}>✓ Semua 5 foto sudah lengkap!</div>
+                <div className="drv-slot-grid">
+                  {SLOT_GUIDE_ORDER.map((slot) => (
+                    <div key={slot} className="drv-slot drv-slot-done" data-testid={`slot-${slot}`}>
+                      <img src={resolveUrl(initial[slot].url)} alt={slot} />
+                      <div className="drv-slot-check">✓</div>
+                      <button className="drv-slot-overlay" onClick={() => triggerFile(`init-${slot}`)} data-testid={`btn-slot-${slot}`}>
+                        <div className="drv-slot-label">{SLOT_LABELS[slot]}</div>
+                        <div className="drv-slot-cta">Ganti Foto</div>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </section>
