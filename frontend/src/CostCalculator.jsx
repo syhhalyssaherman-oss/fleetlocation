@@ -79,11 +79,17 @@ export default function CostCalculator() {
   const [nextId, setNextId] = useState(4);
   const [M, setM] = useState(DEFAULT_MARGIN);
   const [savedMsg, setSavedMsg] = useState(false);
-  const [routeList, setRouteList] = useState([]);
+  const [routeList, setRouteList] = useState(() => {
+    try { const raw = localStorage.getItem("alyssa_routelist"); return raw ? JSON.parse(raw) : []; } catch { return []; }
+  });
 
   useEffect(() => {
     try { const raw = localStorage.getItem("alyssa_margin"); if (raw) setM((m) => ({ ...m, ...JSON.parse(raw) })); } catch (e) {}
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("alyssa_routelist", JSON.stringify(routeList)); } catch (e) {}
+  }, [routeList]);
 
   const isRawan = risiko === "rawan";
   const isTempo = top === "tempo30";
