@@ -161,13 +161,15 @@ export default function CostCalculator() {
     const thCols = cfg.cols.map(c => `<th style="color:#fff;background:#BA7517">${c.lbl}</th>`).join("");
     const rows = routeList.map((r, i) => {
       const priceCols = cfg.cols.map(c => `<td class="money" style="color:${c.c}">${fRp(r[c.key])}</td>`).join("");
+      const noAsuransi = !r.asuransi || r.asuransi === 0;
+      const catatanFull = [r.catatan, noAsuransi ? "⚠ Harga belum termasuk asuransi" : ""].filter(Boolean).join(" · ");
       return `<tr class="${i % 2 === 1 ? "alt" : ""}">
         <td class="num">${i + 1}</td>
         <td>${r.asal}</td><td>${r.tujuan}</td>
         <td class="small">${r.tipe}</td>
         <td class="small">${r.top}${r.risiko === "Rawan" ? "<br><span class='badge'>Rawan</span>" : ""}</td>
         ${priceCols}
-        <td class="small">${r.catatan || "-"}</td>
+        <td class="small${noAsuransi ? " no-asu" : ""}">${catatanFull || "-"}</td>
       </tr>`;
     }).join("");
 
@@ -189,6 +191,7 @@ export default function CostCalculator() {
       .small { font-size: 8.5px; color: #555; }
       .money { text-align: right; font-weight: 700; white-space: nowrap; font-size: 10.5px; }
       .badge { background: #f97316; color: #fff; font-size: 7px; padding: 1px 4px; border-radius: 3px; }
+      .no-asu { color: #c05621 !important; font-weight: 600; }
       .footer { border-top: 1px solid #ddd; padding-top: 8px; font-size: 8.5px; color: #999; display: flex; justify-content: space-between; }
       @media print { body { padding: 10px 14px; } @page { margin: 12mm 10mm; size: A4 landscape; } }
     </style></head><body>
