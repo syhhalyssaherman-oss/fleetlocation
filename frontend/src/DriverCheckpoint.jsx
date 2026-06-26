@@ -190,9 +190,13 @@ export default function DriverCheckpoint() {
 
   const requestGps = () => {
     if (!("geolocation" in navigator)) { setGpsState("denied"); return; }
+    showToast("Pilih yang PALING ATAS (Allow / Izinkan)");
     navigator.geolocation.getCurrentPosition(
-      () => setGpsState("granted"),
-      (err) => setGpsState(err && err.code === 1 ? "denied" : "prompt"),
+      () => { setGpsState("granted"); showToast("GPS aktif! Lokasi siap dicatat."); },
+      (err) => {
+        setGpsState(err && err.code === 1 ? "denied" : "prompt");
+        showToast(err && err.code === 1 ? "Izin lokasi ditolak" : "Coba lagi ya", "err");
+      },
       { enableHighAccuracy: true, timeout: 8000 }
     );
   };
