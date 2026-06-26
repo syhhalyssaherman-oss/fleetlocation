@@ -1459,6 +1459,23 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
     return fresh
 
 
+@api_router.delete("/admin/orders/{order_id}", dependencies=[Depends(require_admin_pin)])
+async def admin_delete_order(order_id: str):
+    """Hapus permanen 1 order beserta trip tertaut (untuk membersihkan data dummy/uji).
+    Catatan: foto yang sudah terupload ke storage tidak ikut terhapus."""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(404, "Order not found")
+    tid = order.get("trip_id")
+    await db.orders.delete_one({"order_id": order_id})
+    trip_deleted = False
+    if tid:
+        res = await db.trips.delete_one({"trip_id": tid})
+        trip_deleted = res.deleted_count > 0
+    logger.info(f"[admin:delete_order] {order_id} trip={tid} trip_deleted={trip_deleted}")
+    return {"ok": True, "order_id": order_id, "trip_id": tid, "trip_deleted": trip_deleted}
+
+
 class OdooSyncBody(BaseModel):
     with_invoice: bool = False
     price: float = 0.0
