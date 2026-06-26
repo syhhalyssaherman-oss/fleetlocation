@@ -14,27 +14,34 @@ function resolveUrl(url) {
   return `${BACKEND_URL}${url}`;
 }
 
-/* Best-effort nama lokasi dari koordinat (OpenStreetMap). Gagal/timeout → "". */
+/* Alamat bertingkat (desa → kecamatan → kabupaten → provinsi) dari koordinat,
+   bahasa Indonesia. Best-effort; gagal/timeout → []. */
 async function reverseGeocode(lat, lng) {
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
+    const t = setTimeout(() => ctrl.abort(), 5000);
     const r = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&zoom=14&addressdetails=1&lat=${lat}&lon=${lng}`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1&accept-language=id&lat=${lat}&lon=${lng}`,
       { signal: ctrl.signal, headers: { Accept: "application/json" } }
     );
     clearTimeout(t);
-    if (!r.ok) return "";
+    if (!r.ok) return [];
     const j = await r.json();
     const a = j.address || {};
-    const parts = [
-      a.suburb || a.village || a.town || a.city_district || a.neighbourhood,
-      a.city || a.county || a.regency,
-      a.state,
-    ].filter(Boolean);
-    return parts.slice(0, 2).join(", ") || (j.display_name || "").split(",").slice(0, 2).join(", ").trim();
+    const lines = [];
+    const desa = a.village || a.hamlet || a.suburb || a.neighbourhood || a.residential;
+    if (desa) lines.push(desa);
+    const kec = a.city_district || a.municipality || a.subdistrict || a.town;
+    if (kec) lines.push(/^kecamatan/i.test(kec) ? kec : `Kecamatan ${kec}`);
+    const kab = a.county || a.city || a.regency;
+    if (kab) lines.push(kab);
+    if (a.state) lines.push(a.state);
+    if (lines.length === 0 && j.display_name) {
+      return j.display_name.split(",").slice(0, 3).map((s) => s.trim()).filter(Boolean);
+    }
+    return lines;
   } catch {
-    return "";
+    return [];
   }
 }
 
@@ -59,22 +66,28 @@ function stampPhoto(file, lines) {
 
           const rows = (lines || []).filter(Boolean);
           if (rows.length) {
-            const fs = Math.max(15, Math.round(w * 0.030));
-            const lh = Math.round(fs * 1.4);
-            const pad = Math.round(w * 0.022);
-            const barH = lh * rows.length + pad * 1.6;
-            ctx.fillStyle = "rgba(8,18,36,0.62)";
+            const fs = Math.max(14, Math.round(w * 0.028));
+            const fsHead = Math.round(fs * 1.18);
+            const lh = Math.round(fs * 1.42);
+            const pad = Math.round(w * 0.024);
+            const barH = lh * rows.length + pad * 1.8 + Math.round(fs * 0.35);
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
             ctx.fillRect(0, h - barH, w, barH);
             ctx.fillStyle = "#D4A847";
             ctx.fillRect(0, h - barH, Math.max(4, Math.round(w * 0.012)), barH);
             ctx.textBaseline = "top";
-            let y = h - barH + pad * 0.8;
+            ctx.shadowColor = "rgba(0,0,0,0.85)";
+            ctx.shadowBlur = Math.round(fs * 0.25);
+            let y = h - barH + pad * 0.9;
             rows.forEach((ln, i) => {
-              ctx.font = `500 ${fs}px sans-serif`;
-              ctx.fillStyle = i === 0 ? "#FFD77A" : "#FFFFFF";
+              const big = i === 0;
+              ctx.font = `${big ? 700 : 500} ${big ? fsHead : fs}px sans-serif`;
+              ctx.fillStyle = "#FFFFFF";
               ctx.fillText(ln, pad * 1.6, y);
-              y += lh;
+              y += big ? Math.round(fsHead * 1.42) : lh;
             });
+            ctx.shadowColor = "transparent";
+            ctx.shadowBlur = 0;
           }
           URL.revokeObjectURL(objUrl);
           canvas.toBlob(
@@ -304,17 +317,16 @@ export default function DriverCheckpoint() {
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
       );
     });
-    const nowWib = new Date().toLocaleString("id-ID", {
-      timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
-    const lines = [];
+    const now = new Date();
+    const tgl = now.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
+    const jam = now.toLocaleTimeString("id-ID", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit" }).replace(/[:.]/g, ".");
+    const lines = [`${tgl} ${jam} WIB`];
     if (gps) {
-      const place = await reverseGeocode(gps.lat, gps.lng);
-      if (place) lines.push(place);
-      lines.push(`${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`);
+      const addr = await reverseGeocode(gps.lat, gps.lng);
+      addr.forEach((l) => lines.push(l));
+      if (addr.length === 0) lines.push(`${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`);
     }
-    lines.push(`${nowWib} WIB${trip?.nopol ? "  ·  " + trip.nopol : ""}`);
+    if (trip?.nopol) lines.push(trip.nopol);
     const stamped = await stampPhoto(file, lines);
     return { file: stamped, gps };
   };
