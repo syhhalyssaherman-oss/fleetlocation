@@ -55,6 +55,7 @@ const IcoSun      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="
 const IcoMoon     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
 const IcoOdoo     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="8" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><path d="M10 10h4"/></svg>;
 const IcoCalc     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>;
+const IcoRoute    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 17V9a6 6 0 0 1 6-6h1"/><path d="M18 7v8a6 6 0 0 1-6 6h-1"/></svg>;
 const IcoList     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
 
 /* ════════════════════════════════════════
@@ -153,6 +154,7 @@ function Dashboard({ pin, onLogout }) {
   const [dateTo, setDateTo] = useState("");
   const [convertModal, setConvertModal] = useState(null);
   const [odooModal, setOdooModal] = useState(null);
+  const [legsModal, setLegsModal] = useState(null);
   const [toast, setToast] = useState("");
 
   const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2600); };
@@ -197,6 +199,15 @@ function Dashboard({ pin, onLogout }) {
   const doOdoo = (orderId) => {
     const order = orders.find(o => o.order_id === orderId);
     setOdooModal({ orderId, order });
+  };
+
+  const saveLegs = async (tripId, legs) => {
+    try {
+      await axios.patch(`${API}/admin/trips/${tripId}/legs`, { legs }, { headers });
+      flash("Rute leg tersimpan");
+      setLegsModal(null);
+      await loadAll();
+    } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
   };
 
   const doConvert = async (orderId, body) => {
@@ -395,6 +406,14 @@ function Dashboard({ pin, onLogout }) {
           orderId={odooModal.orderId}
           headers={headers}
           onClose={() => setOdooModal(null)}
+        />
+      )}
+      {legsModal && (
+        <LegsModal
+          tripId={legsModal.tripId}
+          order={legsModal.order}
+          onClose={() => setLegsModal(null)}
+          onSave={(legs) => saveLegs(legsModal.tripId, legs)}
         />
       )}
 
@@ -613,6 +632,11 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete }) {
             <IcoCheck /> Mark Delivered
           </button>
         )}
+        {order.trip_id && (
+          <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => setLegsModal({ tripId: order.trip_id, order })} data-testid={`adm-legs-${order.order_id}`}>
+            <IcoRoute /> Rute Leg
+          </button>
+        )}
         {linkDriver && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkDriver} target="_blank" rel="noreferrer" data-testid={`adm-link-driver-${order.order_id}`}>Driver</a>}
         {linkTrack  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkTrack}  target="_blank" rel="noreferrer" data-testid={`adm-link-track-${order.order_id}`}>Track</a>}
         {linkBastk  && <a className="adm-btn adm-btn-ghost adm-btn-sm" href={linkBastk}  target="_blank" rel="noreferrer" data-testid={`adm-link-bastk-${order.order_id}`}>BASTK</a>}
@@ -827,6 +851,103 @@ function OdooModal({ order, orderId, headers, onClose }) {
     </div>
   );
 }
+
+/* ════════════════════════════════════════
+   LEGS MODAL
+════════════════════════════════════════ */
+const LEG_TIPE = ["Self Drive", "Kapal RoRo", "Kapal Kontainer", "Car Carrier", "Towing", "Self Loader", "Lainnya"];
+const LEG_STATUS = ["Menunggu", "Berlangsung", "Selesai"];
+
+function LegsModal({ tripId, order, onClose, onSave }) {
+  const [legs, setLegs] = useState(() => {
+    const def = [
+      { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
+      { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
+      { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu" },
+    ];
+    return def;
+  });
+  const [saving, setSaving] = useState(false);
+
+  const setLeg = (i, patch) => setLegs(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
+  const addLeg = () => setLegs(ls => [...ls, { tipe: "Self Drive", asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu" }]);
+  const delLeg = (i) => setLegs(ls => ls.filter((_, idx) => idx !== i));
+  const moveLeg = (i, dir) => {
+    const j = i + dir;
+    if (j < 0 || j >= legs.length) return;
+    const arr = [...legs]; [arr[i], arr[j]] = [arr[j], arr[i]]; setLegs(arr);
+  };
+
+  const submit = async () => { setSaving(true); await onSave(legs); setSaving(false); };
+
+  const IL = { background: "#0d1117", border: "1px solid #30363d", borderRadius: 5, padding: "5px 8px", color: "#e6edf3", fontSize: 11, outline: "none", width: "100%" };
+  const TIPE_ICON = { "Self Drive": "🚗", "Kapal RoRo": "🚢", "Kapal Kontainer": "🚢", "Car Carrier": "🚛", "Towing": "🔗", "Self Loader": "🏗", "Lainnya": "📦" };
+
+  return (
+    <div className="adm-modal-bg" onClick={onClose}>
+      <div className="adm-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620, maxHeight: "90vh", overflowY: "auto" }}>
+        <div className="adm-modal-head">
+          <div>
+            <div className="adm-modal-title"><IcoRoute /> Atur Rute Leg</div>
+            <div className="adm-modal-sub">{tripId} · {order?.asal_kota} → {order?.tujuan_kota}</div>
+          </div>
+          <button className="adm-modal-close" onClick={onClose}><IcoX /></button>
+        </div>
+        <div className="adm-modal-body">
+          {legs.map((leg, i) => (
+            <div key={i} style={{ background: "#0d1117", border: "1px solid #21262d", borderRadius: 8, padding: 10, marginBottom: 8 }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 8 }}>
+                <span style={{ fontSize: 16 }}>{TIPE_ICON[leg.tipe] || "📦"}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#EF9F27" }}>Leg {i + 1}</span>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                  <button onClick={() => moveLeg(i, -1)} disabled={i === 0} style={{ background: "none", border: "1px solid #30363d", color: "#8b949e", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>↑</button>
+                  <button onClick={() => moveLeg(i, 1)} disabled={i === legs.length - 1} style={{ background: "none", border: "1px solid #30363d", color: "#8b949e", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>↓</button>
+                  <button onClick={() => delLeg(i)} style={{ background: "none", border: "1px solid #f85149", color: "#f85149", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 11 }}>Hapus</button>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 6 }}>
+                <label style={{ fontSize: 10, color: "#8b949e" }}>Tipe
+                  <select style={{ ...IL, marginTop: 2 }} value={leg.tipe} onChange={e => setLeg(i, { tipe: e.target.value })}>
+                    {LEG_TIPE.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </label>
+                <label style={{ fontSize: 10, color: "#8b949e" }}>Status
+                  <select style={{ ...IL, marginTop: 2 }} value={leg.status} onChange={e => setLeg(i, { status: e.target.value })}>
+                    {LEG_STATUS.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                </label>
+                <label style={{ fontSize: 10, color: "#8b949e" }}>ETA
+                  <input type="date" style={{ ...IL, marginTop: 2 }} value={leg.eta} onChange={e => setLeg(i, { eta: e.target.value })} />
+                </label>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+                <label style={{ fontSize: 10, color: "#8b949e" }}>Asal
+                  <input style={{ ...IL, marginTop: 2 }} value={leg.asal} onChange={e => setLeg(i, { asal: e.target.value })} placeholder="Pelabuhan / Kota" />
+                </label>
+                <label style={{ fontSize: 10, color: "#8b949e" }}>Tujuan
+                  <input style={{ ...IL, marginTop: 2 }} value={leg.tujuan} onChange={e => setLeg(i, { tujuan: e.target.value })} placeholder="Pelabuhan / Kota" />
+                </label>
+              </div>
+              {(leg.tipe.startsWith("Kapal") || leg.tipe === "Car Carrier" || leg.tipe === "Towing") && (
+                <label style={{ fontSize: 10, color: "#8b949e" }}>Nama Kapal / Armada
+                  <input style={{ ...IL, marginTop: 2 }} value={leg.kapal} onChange={e => setLeg(i, { kapal: e.target.value })} placeholder="KM Mutiara Persada" />
+                </label>
+              )}
+            </div>
+          ))}
+          <button onClick={addLeg} style={{ width: "100%", padding: "8px", border: "1px dashed #30363d", borderRadius: 7, background: "none", color: "#8b949e", cursor: "pointer", fontSize: 12 }}>+ Tambah Leg</button>
+        </div>
+        <div className="adm-modal-foot">
+          <button className="adm-btn adm-btn-ghost" onClick={onClose} disabled={saving}>Batal</button>
+          <button className="adm-btn adm-btn-gold" onClick={submit} disabled={saving}>
+            {saving ? "Menyimpan..." : "Simpan Rute"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function Field({ label, hint, children }) {
   return (

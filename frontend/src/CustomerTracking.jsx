@@ -657,34 +657,57 @@ export default function CustomerTracking() {
             )}
           </div>
 
-          {/* Legs */}
-          {legs.length > 0 && (
-            <div className="trk-legs-section">
-              <div className="trk-section-title"><IcoPin /> Rute Pengiriman</div>
-              {legs.map((leg, i) => {
-                const st = (leg.status || "").toLowerCase();
-                const isDone = /delivered|selesai|tiba/.test(st);
-                const isActive = /jalan|berangkat|kapal|laut|feri/.test(st);
-                return (
-                  <div key={i} className={`trk-leg${isDone ? " trk-leg-done" : isActive ? " trk-leg-active" : ""}`}>
-                    <div className="trk-leg-num">{i + 1}</div>
-                    <div className="trk-leg-body">
-                      <div className="trk-leg-route">
-                        <span>{leg.asal || "?"}</span>
-                        <IcoArrow />
-                        <span>{leg.tujuan || "?"}</span>
+          {/* Legs Timeline */}
+          {legs.length > 0 && (() => {
+            const activeIdx = legs.findIndex(l => /berlangsung|jalan|kapal|berangkat/i.test(l.status || ""));
+            const doneCount = legs.filter(l => /selesai|tiba|delivered/i.test(l.status || "")).length;
+            const TIPE_ICON = {
+              "Self Drive": "🚗", "Kapal RoRo": "🚢", "Kapal Kontainer": "🚢",
+              "Car Carrier": "🚛", "Towing": "🔗", "Self Loader": "🏗", "Lainnya": "📦",
+            };
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div className="trk-section-title" style={{ marginBottom: 10 }}>
+                  <IcoPin /> Rute Pengiriman
+                  {activeIdx >= 0 && <span style={{ marginLeft: 8, fontSize: 10, color: "#EF9F27", fontWeight: 600 }}>Leg {activeIdx + 1} dari {legs.length}</span>}
+                </div>
+                <div style={{ position: "relative", paddingLeft: 32 }}>
+                  {/* vertical connector line */}
+                  <div style={{ position: "absolute", left: 14, top: 16, bottom: 16, width: 2, background: "linear-gradient(to bottom, #2ea043, #30363d)", borderRadius: 2 }} />
+                  {legs.map((leg, i) => {
+                    const st = (leg.status || "").toLowerCase();
+                    const isDone = /selesai|tiba|delivered/.test(st);
+                    const isActive = /berlangsung|jalan|kapal|berangkat/.test(st);
+                    const icon = TIPE_ICON[leg.tipe] || "📦";
+                    const dotColor = isDone ? "#2ea043" : isActive ? "#EF9F27" : "#30363d";
+                    const dotBg = isDone ? "#0f2d1f" : isActive ? "#2b1d0e" : "#161b22";
+                    return (
+                      <div key={i} style={{ display: "flex", gap: 10, marginBottom: 12, position: "relative" }}>
+                        {/* dot */}
+                        <div style={{ position: "absolute", left: -25, width: 22, height: 22, borderRadius: "50%", background: dotBg, border: `2px solid ${dotColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, zIndex: 1 }}>
+                          {icon}
+                        </div>
+                        {/* card */}
+                        <div style={{ flex: 1, background: isActive ? "#1c1a0e" : "#161b22", border: `1px solid ${isActive ? "#EF9F27" : isDone ? "#2ea043" : "#21262d"}`, borderRadius: 8, padding: "10px 12px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: isActive ? "#EF9F27" : isDone ? "#56d364" : "#8b949e" }}>{leg.tipe}</span>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: isDone ? "#2ea043" : isActive ? "#EF9F27" : "#21262d", color: isDone ? "#fff" : isActive ? "#000" : "#8b949e" }}>
+                              {isDone ? "Selesai ✓" : isActive ? "Berlangsung" : "Menunggu"}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#e6edf3", fontWeight: 600 }}>
+                            {leg.asal || "?"} <span style={{ color: "#8b949e", fontWeight: 400 }}>→</span> {leg.tujuan || "?"}
+                          </div>
+                          {leg.kapal && <div style={{ fontSize: 11, color: "#8b949e", marginTop: 3 }}>⚓ {leg.kapal}</div>}
+                          {leg.eta && <div style={{ fontSize: 10, color: isActive ? "#EF9F27" : "#8b949e", marginTop: 3 }}>ETA {new Date(leg.eta).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</div>}
+                        </div>
                       </div>
-                      {leg.jalur && <div className="trk-leg-jalur">{leg.jalur}</div>}
-                      {leg.kapal && <div className="trk-leg-kapal"><IcoShip /> {leg.kapal}</div>}
-                    </div>
-                    <span className={`trk-leg-badge${isDone ? " ok" : isActive ? " active" : ""}`}>
-                      {leg.status || "Menunggu"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Foto Kondisi Awal Kendaraan */}
           {(() => {

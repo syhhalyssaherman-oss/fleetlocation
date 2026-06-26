@@ -1459,6 +1459,20 @@ async def admin_patch_order(order_id: str, payload: OrderPatchBody):
     return fresh
 
 
+class LegsBody(BaseModel):
+    legs: List[Dict[str, Any]] = []
+
+@api_router.patch("/admin/trips/{trip_id}/legs", dependencies=[Depends(require_admin_pin)])
+async def admin_patch_trip_legs(trip_id: str, body: LegsBody):
+    """Simpan/update array legs pada trip. Tiap leg: {tipe, asal, tujuan, kapal, eta, status}."""
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+    now = datetime.utcnow().isoformat()
+    await db.trips.update_one({"trip_id": trip_id}, {"$set": {"legs": body.legs, "updated_at": now}})
+    return {"ok": True, "trip_id": trip_id, "legs_count": len(body.legs)}
+
+
 @api_router.delete("/admin/orders/{order_id}", dependencies=[Depends(require_admin_pin)])
 async def admin_delete_order(order_id: str):
     """Hapus permanen 1 order beserta trip tertaut (untuk membersihkan data dummy/uji).
