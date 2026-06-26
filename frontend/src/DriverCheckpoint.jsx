@@ -639,12 +639,15 @@ export default function DriverCheckpoint() {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
               <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>3</span>
-              <span>Tekan tombol bawah, pilih <b>Izinkan</b></span>
+              <span>Tekan tombol bawah → muncul pilihan, <b>tap yang PALING ATAS</b> (Allow / Izinkan)</span>
             </div>
           </div>
           <button onClick={requestGps} style={{ width: "100%", padding: "13px", background: "#D4A847", color: "#1A1206", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" }} data-testid="btn-gps">
             📍 Aktifkan GPS Sekarang
           </button>
+          <div style={{ marginTop: 9, fontSize: 12.5, color: "#C9B98F", lineHeight: 1.5, textAlign: "center" }}>
+            Setelah tap tombol, muncul kotak izin lokasi.<br/>Pilih opsi <b style={{ color: "#FFD77A" }}>paling atas</b> — cukup sekali, seterusnya otomatis.
+          </div>
           {gpsState === "denied" && (
             <div style={{ marginTop: 9, fontSize: 12.5, color: "#F0997B", lineHeight: 1.5 }}>
               Lokasi terblokir. Buka <b>Setelan browser → Izin situs → Lokasi → Izinkan</b>, lalu muat ulang halaman ini.
