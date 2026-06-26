@@ -8,6 +8,7 @@ import CustomerOrderStatus from "@/CustomerOrderStatus";
 import AdminDashboard from "@/AdminDashboard";
 import OperationGuide from "@/OperationGuide";
 import Homepage from "@/Homepage";
+import CostCalculator from "@/CostCalculator";
 
 // Resolve path segment: /track/TRIP-XXX -> "TRIP-XXX"
 function pathSegment(pathname, prefix) {
@@ -24,6 +25,7 @@ function App() {
     // ── Path-based routing (new scheme) ────────────────────────────
     if (p === "/order")             return { route: "order" };
     if (p === "/admin")             return { route: "admin" };
+    if (p === "/kalkulator")        return { route: "kalkulator" };
     if (p === "/guide")             return { route: "guide" };
     if (p.startsWith("/track/"))    return { route: "track" };
     if (p.startsWith("/trip/"))     return { route: "driver" };
@@ -68,6 +70,7 @@ function App() {
   if (route === "home")   return <Homepage />;
   if (route === "guide")  return <OperationGuide />;
   if (route === "admin")  return <AdminDashboard />;
+  if (route === "kalkulator") return <CostCalculator />;
   if (route === "order")  return <CustomerOrderForm />;
   if (route === "status") return <CustomerOrderStatus />;
   if (route === "bastk")  return <BASTKPage />;
