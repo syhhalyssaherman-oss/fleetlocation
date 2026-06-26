@@ -143,11 +143,15 @@ export default function CostCalculator() {
     const tgl = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
     // Konfigurasi per segmen — label kode netral untuk pelanggan
+    const P = "Harga Pengiriman";
     const CFG = {
-      eksp:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "eksp", lbl: "Harga A", c: "#1a7f37" }, { key: "eksp2", lbl: "Harga B", c: "#1a7f37" }] },
-      sales: { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "sales", lbl: "Harga A", c: "#9a5000" }, { key: "sales2", lbl: "Harga B", c: "#9a5000" }] },
-      corp:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "corp", lbl: "Harga A", c: "#0550ae" }, { key: "corp2", lbl: "Harga B", c: "#6e40c9" }] },
-      all:   { title: "REKAP HARGA INTERNAL", cols: [
+      eksp_a:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "eksp",  lbl: P, c: "#1a7f37" }] },
+      eksp_b:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "eksp2", lbl: P, c: "#1a7f37" }] },
+      sales_a: { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "sales",  lbl: P, c: "#9a5000" }] },
+      sales_b: { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "sales2", lbl: P, c: "#9a5000" }] },
+      corp_a:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "corp",  lbl: P, c: "#0550ae" }] },
+      corp_b:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "corp2", lbl: P, c: "#6e40c9" }] },
+      all:     { title: "REKAP HARGA INTERNAL", cols: [
         { key: "eksp", lbl: "Eksp 1", c: "#1a7f37" }, { key: "eksp2", lbl: "Eksp 2", c: "#1a7f37" },
         { key: "sales", lbl: "Sales 1", c: "#9a5000" }, { key: "sales2", lbl: "Sales 2", c: "#9a5000" },
         { key: "corp", lbl: "Corp 1", c: "#0550ae" }, { key: "corp2", lbl: "Corp 2", c: "#6e40c9" },
@@ -331,10 +335,16 @@ export default function CostCalculator() {
             <span style={{ fontSize: 12, fontWeight: 700 }}>List Rute</span>
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={saveList} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: listSaved ? "#2ea043" : "#1f6feb", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{listSaved ? "✓ Tersimpan!" : "💾 Simpan"}</button>
-              <button onClick={() => printPDF("eksp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Ekspedisi</button>
-              <button onClick={() => printPDF("sales")} style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#9a5000", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Sales</button>
-              <button onClick={() => printPDF("corp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#0550ae", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Corporate</button>
-              <button onClick={() => printPDF("all")}   style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "1px solid #30363d", background: "none", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>🖨 Rekap Internal</button>
+              <span style={{ color: "#484f58", fontSize: 10, alignSelf: "center" }}>Eksp:</span>
+              <button onClick={() => printPDF("eksp_a")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 A</button>
+              <button onClick={() => printPDF("eksp_b")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "1px solid #1a7f37", background: "none", color: "#56d364", cursor: "pointer", fontWeight: 700 }}>🖨 B</button>
+              <span style={{ color: "#484f58", fontSize: 10, alignSelf: "center" }}>Sales:</span>
+              <button onClick={() => printPDF("sales_a")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "none", background: "#9a5000", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 A</button>
+              <button onClick={() => printPDF("sales_b")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "1px solid #9a5000", background: "none", color: "#EF9F27", cursor: "pointer", fontWeight: 700 }}>🖨 B</button>
+              <span style={{ color: "#484f58", fontSize: 10, alignSelf: "center" }}>Corp:</span>
+              <button onClick={() => printPDF("corp_a")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "none", background: "#0550ae", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 A</button>
+              <button onClick={() => printPDF("corp_b")} style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "1px solid #6e40c9", background: "none", color: "#a78bfa", cursor: "pointer", fontWeight: 700 }}>🖨 B</button>
+              <button onClick={() => printPDF("all")}   style={{ padding: "5px 9px", fontSize: 11, borderRadius: 7, border: "1px solid #30363d", background: "none", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>🖨 Rekap</button>
               <button onClick={exportCSV} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: "#BA7517", color: "#FAEEDA", cursor: "pointer", fontWeight: 700 }}>Export CSV</button>
               <button onClick={clearList} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, background: "none", border: "1px solid #30363d", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>Clear</button>
             </div>
