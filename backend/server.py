@@ -677,6 +677,7 @@ async def public_trip(trip_id: str):
         "daily_count": len(doc.get("daily_checkpoints", []) or []),
         "daily_checkpoints": doc.get("daily_checkpoints", []) or [],
         "initial_done": len(doc.get("initial_photos", {}) or {}),
+        "initial_photos": doc.get("initial_photos", {}) or {},
         # BASTK fields (v2.6a, optional)
         "vehicle_type": doc.get("vehicle_type", ""),
         "damage_marks": doc.get("damage_marks", []),
