@@ -28,13 +28,39 @@ function shareWaText(text) {
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
 }
 
-/* Tombol bulat kecil "kirim ke WhatsApp" untuk 1 foto. */
+/* Bagikan FOTO ASLI ke WhatsApp via Web Share API (share sheet → pilih WhatsApp),
+   sehingga gambar langsung tampil di chat, bukan sekadar link.
+   items: [{ url, label }]. Fallback ke link teks bila perangkat tak mendukung. */
+async function shareWaPhotos(items) {
+  try {
+    const files = [];
+    for (const it of items) {
+      const resp = await fetch(it.url, { mode: "cors" });
+      if (!resp.ok) throw new Error(`fetch ${resp.status}`);
+      const blob = await resp.blob();
+      const ext = (blob.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
+      const safe = (it.label || "foto").replace(/[^\w]+/g, "_");
+      files.push(new File([blob], `${safe}.${ext}`, { type: blob.type || "image/jpeg" }));
+    }
+    if (navigator.canShare && navigator.canShare({ files })) {
+      await navigator.share({ files });
+      return;
+    }
+    throw new Error("file share unsupported");
+  } catch (err) {
+    if (err && err.name === "AbortError") return; // user membatalkan share
+    // Fallback (desktop / browser lama): kirim link teks
+    shareWaText(items.map((it) => `${it.label ? it.label + "\n" : ""}${it.url}`).join("\n\n"));
+  }
+}
+
+/* Tombol bulat kecil "kirim foto ini ke WhatsApp". */
 function WaShareBtn({ url, label }) {
   return (
     <button
       type="button"
       title="Kirim foto ini ke WhatsApp"
-      onClick={(e) => { e.preventDefault(); e.stopPropagation(); shareWaText(`${label ? label + "\n" : ""}${url}`); }}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); shareWaPhotos([{ url, label }]); }}
       style={{
         position: "absolute", bottom: 6, right: 6, width: 28, height: 28, padding: 0,
         borderRadius: "50%", border: "none", background: "#25D366", color: "#fff",
@@ -360,24 +386,23 @@ export default function CustomerTracking() {
 
   /* Kumpulkan semua foto (awal + album + checkpoint + serah terima) sebagai link
      untuk tombol "Bagikan Semua Foto ke WhatsApp". */
-  const allPhotoLines = (() => {
-    const lines = [];
+  const allPhotoItems = (() => {
+    const items = [];
     INITIAL_SLOTS.forEach((s) => {
       const u = data.initial_photos?.[s]?.url;
-      if (u) lines.push(`${SLOT_LABELS[s]}: ${resolveUrl(u)}`);
+      if (u) items.push({ url: resolveUrl(u), label: SLOT_LABELS[s] });
     });
     ALBUM_STAGES.forEach((st) => (album[st] || []).forEach((p, i) => {
-      if (p.url) lines.push(`${stageLabel(st)} ${i + 1}: ${resolveUrl(p.url)}`);
+      if (p.url) items.push({ url: resolveUrl(p.url), label: `${stageLabel(st)} ${i + 1}` });
     }));
-    daily.forEach((cp, i) => { if (cp.url) lines.push(`Checkpoint ${i + 1}: ${resolveUrl(cp.url)}`); });
-    (data.handover?.bastk || []).forEach((b, i) => { if (b.url) lines.push(`BASTK ${i + 1}: ${resolveUrl(b.url)}`); });
-    if (data.handover?.resi?.url) lines.push(`Resi: ${resolveUrl(data.handover.resi.url)}`);
-    return lines;
+    daily.forEach((cp, i) => { if (cp.url) items.push({ url: resolveUrl(cp.url), label: `Checkpoint ${i + 1}` }); });
+    (data.handover?.bastk || []).forEach((b, i) => { if (b.url) items.push({ url: resolveUrl(b.url), label: `BASTK ${i + 1}` }); });
+    if (data.handover?.resi?.url) items.push({ url: resolveUrl(data.handover.resi.url), label: "Resi" });
+    return items;
   })();
   const shareAllPhotos = () => {
-    if (allPhotoLines.length === 0) return;
-    const header = `*Foto Pengiriman ${data.nopol || ""}*\nRute: ${data.route || "-"}\n\n`;
-    shareWaText(header + allPhotoLines.join("\n"));
+    if (allPhotoItems.length === 0) return;
+    shareWaPhotos(allPhotoItems);
   };
   const lastGps   = gpsPoints[gpsPoints.length - 1];
   const hasMap    = gpsPoints.length > 0;
@@ -742,9 +767,9 @@ export default function CustomerTracking() {
 
           {/* Footer */}
           <div className="trk-panel-footer">
-            {allPhotoLines.length > 0 && (
+            {allPhotoItems.length > 0 && (
               <button type="button" onClick={shareAllPhotos} className="trk-btn trk-btn-wa" style={{ marginBottom: 8, border: "none", width: "100%", cursor: "pointer" }}>
-                <IcoWA /> Bagikan Semua Foto ke WhatsApp ({allPhotoLines.length})
+                <IcoWA /> Bagikan Semua Foto ke WhatsApp ({allPhotoItems.length})
               </button>
             )}
             <a href={waUrl} target="_blank" rel="noreferrer" className="trk-btn trk-btn-wa">
