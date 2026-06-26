@@ -293,14 +293,41 @@ export default function DriverCheckpoint() {
     if (el) { el.value = ""; el.click(); }
   };
 
+  // Ambil GPS (best-effort) + cap lokasi & waktu ke dalam foto.
+  // Dipakai untuk foto awal wizard dan checkpoint harian.
+  const geotagPhoto = async (file) => {
+    const gps = await new Promise((resolve) => {
+      if (!("geolocation" in navigator)) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
+      );
+    });
+    const nowWib = new Date().toLocaleString("id-ID", {
+      timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+    const lines = [];
+    if (gps) {
+      const place = await reverseGeocode(gps.lat, gps.lng);
+      if (place) lines.push(place);
+      lines.push(`${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`);
+    }
+    lines.push(`${nowWib} WIB${trip?.nopol ? "  ·  " + trip.nopol : ""}`);
+    const stamped = await stampPhoto(file, lines);
+    return { file: stamped, gps };
+  };
+
   const uploadInitial = async (slot, file) => {
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) { showToast("Foto terlalu besar (max 8MB)", "err"); return; }
     setUploadingSlot(slot);
     try {
+      const { file: stamped } = await geotagPhoto(file);
       const fd = new FormData();
       fd.append("slot", slot);
-      fd.append("foto", file);
+      fd.append("foto", stamped);
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/initial`, fd);
       setTrip(r.data);
       showToast("Foto " + SLOT_LABELS[slot] + " tersimpan");
@@ -313,31 +340,8 @@ export default function DriverCheckpoint() {
     if (!file) return;
     if (file.size > 8 * 1024 * 1024) { showToast("Foto terlalu besar (max 8MB)", "err"); return; }
     setUploadingDaily(true);
-    // Best-effort GPS capture (5s timeout). Kalau gagal/denied, lanjut tanpa GPS.
-    const getGPS = () => new Promise((resolve) => {
-      if (!("geolocation" in navigator)) return resolve(null);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => resolve(null),
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 10000 }
-      );
-    });
     try {
-      const gps = await getGPS();
-      // Cap lokasi + waktu ke dalam foto (geotag tertanam di gambar).
-      const nowWib = new Date().toLocaleString("id-ID", {
-        timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      });
-      const stampLines = [];
-      if (gps) {
-        const place = await reverseGeocode(gps.lat, gps.lng);
-        if (place) stampLines.push(place);
-        stampLines.push(`${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`);
-      }
-      stampLines.push(`${nowWib} WIB${trip?.nopol ? "  ·  " + trip.nopol : ""}`);
-      const stamped = await stampPhoto(file, stampLines);
-
+      const { file: stamped, gps } = await geotagPhoto(file);
       const fd = new FormData();
       fd.append("foto", stamped);
       if (gps) {
