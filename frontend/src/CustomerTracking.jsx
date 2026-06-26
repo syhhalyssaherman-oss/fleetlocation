@@ -16,6 +16,51 @@ function resolveUrl(url) {
 }
 const ALBUM_STAGES = ["asal", "kapal", "tujuan", "dokumen"];
 
+const SLOT_LABELS = {
+  depan: "Tampak Depan", belakang: "Tampak Belakang",
+  kiri: "Sisi Kiri", kanan: "Sisi Kanan", spidometer: "Dashboard",
+};
+const INITIAL_SLOTS = ["depan", "belakang", "kiri", "kanan", "spidometer"];
+
+/* Buka WhatsApp dengan teks (pelanggan pilih kontak/grup tujuan sendiri).
+   wa.me hanya bisa kirim teks/link — foto dibagikan sebagai link Supabase publik. */
+function shareWaText(text) {
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+}
+
+/* Tombol bulat kecil "kirim ke WhatsApp" untuk 1 foto. */
+function WaShareBtn({ url, label }) {
+  return (
+    <button
+      type="button"
+      title="Kirim foto ini ke WhatsApp"
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); shareWaText(`${label ? label + "\n" : ""}${url}`); }}
+      style={{
+        position: "absolute", bottom: 6, right: 6, width: 28, height: 28, padding: 0,
+        borderRadius: "50%", border: "none", background: "#25D366", color: "#fff",
+        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        boxShadow: "0 1px 4px rgba(0,0,0,.45)", zIndex: 2,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 01-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 018.413 3.488 11.824 11.824 0 013.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 01-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 001.51 5.26l-.999 3.648 3.738-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+    </button>
+  );
+}
+
+/* Satu kartu foto: gambar (klik = buka) + tombol share WhatsApp. */
+function PhotoCard({ url, label, caption, isPdf }) {
+  const src = resolveUrl(url);
+  return (
+    <div className="trk-album-item" style={{ position: "relative" }}>
+      <a href={src} target="_blank" rel="noreferrer" style={{ display: "block", width: "100%", height: "100%" }}>
+        {isPdf ? <div className="trk-pdf-thumb">PDF</div> : <img src={src} alt={label || ""} loading="lazy" />}
+        {caption && <div className="trk-album-caption">{caption}</div>}
+      </a>
+      <WaShareBtn url={src} label={label} />
+    </div>
+  );
+}
+
 /* ── Fix leaflet default icon ── */
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -312,6 +357,28 @@ export default function CustomerTracking() {
     .filter((cp) => cp.lat != null && cp.lng != null);
 
   const positions = gpsPoints.map((cp) => [parseFloat(cp.lat), parseFloat(cp.lng)]);
+
+  /* Kumpulkan semua foto (awal + album + checkpoint + serah terima) sebagai link
+     untuk tombol "Bagikan Semua Foto ke WhatsApp". */
+  const allPhotoLines = (() => {
+    const lines = [];
+    INITIAL_SLOTS.forEach((s) => {
+      const u = data.initial_photos?.[s]?.url;
+      if (u) lines.push(`${SLOT_LABELS[s]}: ${resolveUrl(u)}`);
+    });
+    ALBUM_STAGES.forEach((st) => (album[st] || []).forEach((p, i) => {
+      if (p.url) lines.push(`${stageLabel(st)} ${i + 1}: ${resolveUrl(p.url)}`);
+    }));
+    daily.forEach((cp, i) => { if (cp.url) lines.push(`Checkpoint ${i + 1}: ${resolveUrl(cp.url)}`); });
+    (data.handover?.bastk || []).forEach((b, i) => { if (b.url) lines.push(`BASTK ${i + 1}: ${resolveUrl(b.url)}`); });
+    if (data.handover?.resi?.url) lines.push(`Resi: ${resolveUrl(data.handover.resi.url)}`);
+    return lines;
+  })();
+  const shareAllPhotos = () => {
+    if (allPhotoLines.length === 0) return;
+    const header = `*Foto Pengiriman ${data.nopol || ""}*\nRute: ${data.route || "-"}\n\n`;
+    shareWaText(header + allPhotoLines.join("\n"));
+  };
   const lastGps   = gpsPoints[gpsPoints.length - 1];
   const hasMap    = gpsPoints.length > 0;
 
@@ -550,14 +617,12 @@ export default function CustomerTracking() {
                         {cp.keterangan && <div className="trk-cp-note">{cp.keterangan}</div>}
                         {/* Thumbnail */}
                         {selectedCp?.id === cp.id && cp.url && (
-                          <a
-                            href={resolveUrl(cp.url)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="trk-cp-thumb-wrap"
-                          >
-                            <img src={resolveUrl(cp.url)} alt={`CP-${cpNum}`} className="trk-cp-thumb" />
-                          </a>
+                          <div className="trk-cp-thumb-wrap" style={{ position: "relative" }}>
+                            <a href={resolveUrl(cp.url)} target="_blank" rel="noreferrer">
+                              <img src={resolveUrl(cp.url)} alt={`CP-${cpNum}`} className="trk-cp-thumb" />
+                            </a>
+                            <WaShareBtn url={resolveUrl(cp.url)} label={`Checkpoint ${cpNum}`} />
+                          </div>
                         )}
                       </div>
                     </div>
@@ -599,11 +664,7 @@ export default function CustomerTracking() {
           {/* Foto Kondisi Awal Kendaraan */}
           {(() => {
             const initial = data.initial_photos || {};
-            const SLOT_LABELS = {
-              depan: "Tampak Depan", belakang: "Tampak Belakang",
-              kiri: "Sisi Kiri", kanan: "Sisi Kanan", spidometer: "Dashboard",
-            };
-            const slots = ["depan", "belakang", "kiri", "kanan", "spidometer"].filter(s => initial[s]?.url);
+            const slots = INITIAL_SLOTS.filter(s => initial[s]?.url);
             if (slots.length === 0) return null;
             return (
               <div className="trk-album-section">
@@ -616,10 +677,7 @@ export default function CustomerTracking() {
                 </div>
                 <div className="trk-album-grid">
                   {slots.map(s => (
-                    <a key={s} href={resolveUrl(initial[s].url)} target="_blank" rel="noreferrer" className="trk-album-item">
-                      <img src={resolveUrl(initial[s].url)} alt={SLOT_LABELS[s]} loading="lazy" />
-                      <div className="trk-album-caption">{SLOT_LABELS[s]}</div>
-                    </a>
+                    <PhotoCard key={s} url={initial[s].url} label={SLOT_LABELS[s]} caption={SLOT_LABELS[s]} />
                   ))}
                 </div>
               </div>
@@ -647,17 +705,10 @@ export default function CustomerTracking() {
               <div className="trk-album-empty">Belum ada foto {stageLabel(stage)}</div>
             ) : (
               <div className="trk-album-grid">
-                {(album[stage] || []).map((p) => {
-                  const isPdf = (p.url || "").toLowerCase().endsWith(".pdf");
-                  return (
-                    <a key={p.id} href={resolveUrl(p.url)} target="_blank" rel="noreferrer"
-                      className="trk-album-item" data-testid={`trk-item-${p.id}`}>
-                      {isPdf
-                        ? <div className="trk-pdf-thumb">PDF</div>
-                        : <img src={resolveUrl(p.url)} alt={stage} loading="lazy" />}
-                    </a>
-                  );
-                })}
+                {(album[stage] || []).map((p, i) => (
+                  <PhotoCard key={p.id} url={p.url} label={`${stageLabel(stage)} ${i + 1}`}
+                    isPdf={(p.url || "").toLowerCase().endsWith(".pdf")} />
+                ))}
               </div>
             )}
           </div>
@@ -670,14 +721,10 @@ export default function CustomerTracking() {
                 <>
                   <div className="trk-handover-label">BASTK ({(data.handover.bastk || []).length} lembar)</div>
                   <div className="trk-album-grid" style={{ marginBottom: 12 }}>
-                    {(data.handover.bastk || []).map((b) => {
-                      const isPdf = (b.url || "").toLowerCase().endsWith(".pdf");
-                      return (
-                        <a key={b.id} href={resolveUrl(b.url)} target="_blank" rel="noreferrer" className="trk-album-item">
-                          {isPdf ? <div className="trk-pdf-thumb">PDF</div> : <img src={resolveUrl(b.url)} alt="bastk" loading="lazy" />}
-                        </a>
-                      );
-                    })}
+                    {(data.handover.bastk || []).map((b, i) => (
+                      <PhotoCard key={b.id} url={b.url} label={`BASTK ${i + 1}`}
+                        isPdf={(b.url || "").toLowerCase().endsWith(".pdf")} />
+                    ))}
                   </div>
                 </>
               )}
@@ -685,11 +732,8 @@ export default function CustomerTracking() {
                 <>
                   <div className="trk-handover-label">Foto Resi Pengiriman</div>
                   <div className="trk-album-grid" style={{ gridTemplateColumns: "repeat(2,1fr)" }}>
-                    <a href={resolveUrl(data.handover.resi.url)} target="_blank" rel="noreferrer" className="trk-album-item">
-                      {(data.handover.resi.url || "").toLowerCase().endsWith(".pdf")
-                        ? <div className="trk-pdf-thumb">PDF</div>
-                        : <img src={resolveUrl(data.handover.resi.url)} alt="resi" loading="lazy" />}
-                    </a>
+                    <PhotoCard url={data.handover.resi.url} label="Resi Pengiriman"
+                      isPdf={(data.handover.resi.url || "").toLowerCase().endsWith(".pdf")} />
                   </div>
                 </>
               )}
@@ -698,6 +742,11 @@ export default function CustomerTracking() {
 
           {/* Footer */}
           <div className="trk-panel-footer">
+            {allPhotoLines.length > 0 && (
+              <button type="button" onClick={shareAllPhotos} className="trk-btn trk-btn-wa" style={{ marginBottom: 8, border: "none", width: "100%", cursor: "pointer" }}>
+                <IcoWA /> Bagikan Semua Foto ke WhatsApp ({allPhotoLines.length})
+              </button>
+            )}
             <a href={waUrl} target="_blank" rel="noreferrer" className="trk-btn trk-btn-wa">
               <IcoWA /> Hubungi Admin via WhatsApp
             </a>
