@@ -5,6 +5,13 @@ import "leaflet/dist/leaflet.css";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+/* Resolve foto URL — Supabase URLs sudah absolute, lainnya prepend backendUrl */
+function resolveUrl(backendUrl, url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${backendUrl}${url}`;
+}
+
 const STATUS_COLOR = {
   "Berangkat":     { bg: "#0C2D52", color: "#60A5FA", border: "#2563EB" },
   "Checkpoint 1":  { bg: "#0F2A1C", color: "#56d364", border: "#2ea043" },
@@ -83,8 +90,8 @@ export default function PoDCard({ photo, backendUrl, namaDriver, nopol, dayIndex
     <article className="pod-card" data-testid="pod-card">
       <div ref={cardRef}>
         <div className="pod-photo-wrap">
-          <a href={`${backendUrl}${photo.url}`} target="_blank" rel="noreferrer" className="pod-photo-link">
-            <img src={`${backendUrl}${photo.url}`} alt={`Checkpoint ${dayIndex + 1}`} className="pod-photo" crossOrigin="anonymous" />
+          <a href={resolveUrl(backendUrl, photo.url)} target="_blank" rel="noreferrer" className="pod-photo-link">
+            <img src={resolveUrl(backendUrl, photo.url)} alt={`Checkpoint ${dayIndex + 1}`} className="pod-photo" crossOrigin="anonymous" />
           </a>
           <div className="pod-photo-badge">CP-{dayIndex + 1}</div>
           {statusInfo && (

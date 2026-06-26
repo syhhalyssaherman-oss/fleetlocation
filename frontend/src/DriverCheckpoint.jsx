@@ -7,6 +7,13 @@ import PoDCard from "@/PoDCard";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+/* Resolve foto URL — Supabase URLs sudah absolute, lainnya prepend BACKEND_URL */
+function resolveUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${BACKEND_URL}${url}`;
+}
+
 const ID_MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const ID_DAYS = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 
@@ -564,7 +571,7 @@ export default function DriverCheckpoint() {
                     />
                     {photo ? (
                       <>
-                        <img src={`${BACKEND_URL}${photo.url}`} alt={slot} />
+                        <img src={resolveUrl(photo.url)} alt={slot} />
                         <div className="drv-slot-check">✓</div>
                       </>
                     ) : (
@@ -632,10 +639,10 @@ export default function DriverCheckpoint() {
                   const isPdf = (p.url || "").toLowerCase().endsWith(".pdf");
                   return (
                     <div key={p.id} className="drv-album-item" data-testid={`album-item-${p.id}`}>
-                      <a href={`${BACKEND_URL}${p.url}`} target="_blank" rel="noreferrer">
+                      <a href={resolveUrl(p.url)} target="_blank" rel="noreferrer">
                         {isPdf
                           ? <div className="drv-doc-pdf">PDF</div>
-                          : <img src={`${BACKEND_URL}${p.url}`} alt={albumStage} />}
+                          : <img src={resolveUrl(p.url)} alt={albumStage} />}
                       </a>
                       <button
                         className="drv-album-del"
@@ -859,8 +866,8 @@ export default function DriverCheckpoint() {
               <div className="drv-handover-sub">PDF atau foto. Max 6 lembar. ({bastkList.length}/6)</div>
               <div className="drv-doc-grid">
                 {bastkList.map((b) => (
-                  <a key={b.id} href={`${BACKEND_URL}${b.url}`} target="_blank" rel="noreferrer" className="drv-doc-thumb">
-                    {b.url.toLowerCase().endsWith(".pdf") ? <div className="drv-doc-pdf">PDF</div> : <img src={`${BACKEND_URL}${b.url}`} alt="bastk" />}
+                  <a key={b.id} href={resolveUrl(b.url)} target="_blank" rel="noreferrer" className="drv-doc-thumb">
+                    {b.url.toLowerCase().endsWith(".pdf") ? <div className="drv-doc-pdf">PDF</div> : <img src={resolveUrl(b.url)} alt="bastk" />}
                   </a>
                 ))}
                 {bastkList.length < 6 && (
@@ -893,8 +900,8 @@ export default function DriverCheckpoint() {
               />
               {resi ? (
                 <div className="drv-resi-done">
-                  <a href={`${BACKEND_URL}${resi.url}`} target="_blank" rel="noreferrer">
-                    {resi.url.toLowerCase().endsWith(".pdf") ? <div className="drv-doc-pdf">PDF</div> : <img src={`${BACKEND_URL}${resi.url}`} alt="resi" />}
+                  <a href={resolveUrl(resi.url)} target="_blank" rel="noreferrer">
+                    {resi.url.toLowerCase().endsWith(".pdf") ? <div className="drv-doc-pdf">PDF</div> : <img src={resolveUrl(resi.url)} alt="resi" />}
                   </a>
                   <button className="drv-btn drv-btn-ghost" onClick={() => triggerFile("resi")} disabled={uploadingResi} data-testid="btn-replace-resi">
                     {uploadingResi ? "Upload..." : "Ganti Foto"}
