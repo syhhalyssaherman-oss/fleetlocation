@@ -29,11 +29,11 @@ async function reverseGeocode(lat, lng) {
     const j = await r.json();
     const a = j.address || {};
     const lines = [];
-    const desa = a.village || a.hamlet || a.suburb || a.neighbourhood || a.residential;
+    const desa = a.village || a.hamlet || a.neighbourhood || a.residential || a.quarter;
     if (desa) lines.push(desa);
-    const kec = a.city_district || a.municipality || a.subdistrict || a.town;
-    if (kec) lines.push(/^kecamatan/i.test(kec) ? kec : `Kecamatan ${kec}`);
-    const kab = a.county || a.city || a.regency;
+    const kec = a.city_district || a.municipality || a.subdistrict || a.district || a.town || a.suburb;
+    if (kec && kec !== desa) lines.push(/^kecamatan/i.test(kec) ? kec : `Kecamatan ${kec}`);
+    const kab = a.county || a.city || a.regency || a.state_district;
     if (kab) lines.push(kab);
     if (a.state) lines.push(a.state);
     if (lines.length === 0 && j.display_name) {
@@ -66,8 +66,8 @@ function stampPhoto(file, lines) {
 
           const rows = (lines || []).filter(Boolean);
           if (rows.length) {
-            const fs = Math.max(14, Math.round(w * 0.028));
-            const fsHead = Math.round(fs * 1.18);
+            const fs = Math.max(19, Math.round(w * 0.038));
+            const fsHead = Math.round(fs * 1.15);
             const lh = Math.round(fs * 1.42);
             const pad = Math.round(w * 0.024);
             const barH = lh * rows.length + pad * 1.8 + Math.round(fs * 0.35);
