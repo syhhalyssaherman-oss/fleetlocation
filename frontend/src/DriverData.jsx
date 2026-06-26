@@ -37,7 +37,7 @@ const S = {
   pill: (c) => ({ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: c === "aktif" ? "#1a4a2a" : "#2d1a1a", color: c === "aktif" ? "#56d364" : "#f85149", border: `1px solid ${c === "aktif" ? "#2ea043" : "#f85149"}` }),
 };
 
-export default function DriverData() {
+export default function DriverData({ embedded = false }) {
   const [pin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const headers = { "X-Admin-Pin": pin };
 
@@ -130,10 +130,10 @@ export default function DriverData() {
   };
 
   return (
-    <div style={S.root}>
+    <div style={{ ...S.root, minHeight: embedded ? "unset" : "100vh" }}>
       {/* Topbar */}
-      <div style={S.topbar}>
-        <div style={S.title}>👷 Data Driver</div>
+      <div style={{ ...S.topbar, ...(embedded ? { background: "transparent", borderBottom: "1px solid #21262d", paddingLeft: 0 } : {}) }}>
+        {!embedded && <div style={S.title}>👷 Data Driver</div>}
         <div style={{ position: "relative" }}>
           <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "#8b949e" }}><IcoSearch /></span>
           <input style={{ ...S.input, paddingLeft: 30, width: 220 }} placeholder="Cari nama, ID, HP..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -145,7 +145,7 @@ export default function DriverData() {
         </select>
         <button style={S.btn("#2ea043")} onClick={() => setModal({ mode: "add" })}><IcoPlus /> Tambah Driver</button>
         <button style={S.btnGhost} onClick={load}><IcoRefresh /> Refresh</button>
-        <a href="/admin" style={{ ...S.btnGhost, textDecoration: "none" }}>← Admin</a>
+        {!embedded && <a href="/admin" style={{ ...S.btnGhost, textDecoration: "none" }}>← Admin</a>}
       </div>
 
       {/* Stats bar */}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { VEHICLE_TYPE_LIST } from "@/VehicleSketches";
 import CostCalculator from "@/CostCalculator";
+import DriverData from "@/DriverData";
 import "@/App.css";
 import "@/Driver.css";
 import "@/Admin.css";
@@ -292,6 +293,13 @@ function Dashboard({ pin, onLogout }) {
             color: activeTab === "kalkulator" ? "var(--gold)" : "var(--text-3)",
             borderBottom: activeTab === "kalkulator" ? "2px solid var(--gold)" : "2px solid transparent" }}
         ><IcoCalc /> Kalkulator HPP</button>
+        <button
+          onClick={() => setActiveTab("drivers")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            background: activeTab === "drivers" ? "var(--bg-card)" : "transparent",
+            color: activeTab === "drivers" ? "var(--gold)" : "var(--text-3)",
+            borderBottom: activeTab === "drivers" ? "2px solid var(--gold)" : "2px solid transparent" }}
+        >👷 Data Driver</button>
       </div>
 
       {activeTab === "kalkulator" && (
@@ -299,6 +307,8 @@ function Dashboard({ pin, onLogout }) {
           <CostCalculator />
         </div>
       )}
+
+      {activeTab === "drivers" && <DriverData embedded />}
 
       {activeTab === "pesanan" && <>
 
