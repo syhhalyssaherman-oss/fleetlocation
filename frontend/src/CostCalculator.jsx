@@ -129,6 +129,89 @@ export default function CostCalculator() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "hpp-alyssa.csv"; a.click();
   };
 
+  const printPDF = () => {
+    if (!routeList.length) return;
+    const tgl = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const rows = routeList.map((r, i) => `
+      <tr class="${i % 2 === 1 ? "alt" : ""}">
+        <td class="num">${i + 1}</td>
+        <td>${r.asal}</td>
+        <td>${r.tujuan}</td>
+        <td class="small">${r.tipe}</td>
+        <td class="small">${r.top}${r.risiko === "Rawan" ? "<br><span class='badge'>Rawan</span>" : ""}</td>
+        <td class="money eksp">${fRp(r.eksp)}</td>
+        <td class="money eksp2">${fRp(r.eksp2)}</td>
+        <td class="money sales">${fRp(r.sales)}</td>
+        <td class="money sales2">${fRp(r.sales2)}</td>
+        <td class="money corp">${fRp(r.corp)}</td>
+        <td class="money corp2">${fRp(r.corp2)}</td>
+        <td class="small">${r.catatan || "-"}</td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Daftar Harga - PT Alyssa Auto Logistik</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; font-size: 10px; color: #222; background: #fff; padding: 20px 24px; }
+      .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #BA7517; padding-bottom: 10px; margin-bottom: 14px; }
+      .co-name { font-size: 15px; font-weight: 800; color: #BA7517; letter-spacing: .5px; }
+      .co-sub { font-size: 9px; color: #666; margin-top: 2px; }
+      .doc-title { font-size: 13px; font-weight: 700; text-align: right; }
+      .doc-date { font-size: 9px; color: #666; text-align: right; margin-top: 2px; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+      th { background: #BA7517; color: #fff; padding: 5px 6px; text-align: center; font-size: 9px; border: 1px solid #a86612; }
+      td { padding: 4px 6px; border: 1px solid #ddd; vertical-align: top; }
+      tr.alt td { background: #fdf9f3; }
+      .num { text-align: center; color: #999; width: 22px; }
+      .small { font-size: 8.5px; color: #555; }
+      .money { text-align: right; font-weight: 600; white-space: nowrap; }
+      .eksp  { color: #1a7f37; } .eksp2  { color: #1a7f37; }
+      .sales { color: #9a5000; } .sales2 { color: #9a5000; }
+      .corp  { color: #0550ae; } .corp2  { color: #6e40c9; }
+      .badge { background: #f97316; color: #fff; font-size: 7px; padding: 1px 4px; border-radius: 3px; }
+      .footer { border-top: 1px solid #ddd; padding-top: 8px; font-size: 8.5px; color: #999; display: flex; justify-content: space-between; }
+      .legend { display: flex; gap: 16px; font-size: 8.5px; margin-bottom: 10px; }
+      .legend span { display: inline-flex; align-items: center; gap: 4px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+      @media print {
+        body { padding: 10px 14px; }
+        @page { margin: 12mm 10mm; size: A4 landscape; }
+      }
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="co-name">PT ALYSSA AUTO LOGISTIK</div>
+        <div class="co-sub">Solusi Transportasi &amp; Logistik Kendaraan</div>
+      </div>
+      <div>
+        <div class="doc-title">DAFTAR HARGA PENGIRIMAN</div>
+        <div class="doc-date">Diterbitkan: ${tgl}</div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#1a7f37"></span>Ekspedisi 1 &amp; 2</span>
+      <span><span class="dot" style="background:#9a5000"></span>Sales 1 &amp; 2</span>
+      <span><span class="dot" style="background:#0550ae"></span>Corporate 1</span>
+      <span><span class="dot" style="background:#6e40c9"></span>Corporate 2</span>
+      <span style="color:#999">• Harga sudah termasuk margin, asuransi, dan biaya penanganan</span>
+    </div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>Asal</th><th>Tujuan</th><th>Tipe Kendaraan</th><th>TOP / Risiko</th>
+        <th>Eksp 1</th><th>Eksp 2</th><th>Sales 1</th><th>Sales 2</th><th>Corp 1</th><th>Corp 2</th><th>Catatan</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">
+      <span>Harga berlaku sesuai kondisi aktual di lapangan. Hubungi kami untuk konfirmasi.</span>
+      <span>Total ${routeList.length} rute — PT Alyssa Auto Logistik</span>
+    </div>
+    <script>window.onload = () => { window.print(); }<\/script>
+    </body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
+
   const h = calc.h;
   const tl = h ? ` (${TIERS[h.tier]})${isRawan && calc.hppFinal >= 15000000 ? " *min6%" : ""}` : "";
   const MGROUPS = [
@@ -249,6 +332,7 @@ export default function CostCalculator() {
           <div style={{ padding: "10px 14px", borderBottom: "1px solid #21262d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 12, fontWeight: 700 }}>List Rute</span>
             <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={printPDF} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Cetak PDF</button>
               <button onClick={exportCSV} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: "#BA7517", color: "#FAEEDA", cursor: "pointer", fontWeight: 700 }}>Export CSV</button>
               <button onClick={clearList} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, background: "none", border: "1px solid #30363d", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>Clear</button>
             </div>
