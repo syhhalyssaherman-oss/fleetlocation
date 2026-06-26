@@ -129,26 +129,38 @@ export default function CostCalculator() {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "hpp-alyssa.csv"; a.click();
   };
 
-  const printPDF = () => {
+  // segmen: "eksp" | "sales" | "corp" | "all"
+  const printPDF = (segmen) => {
     if (!routeList.length) return;
     const tgl = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-    const rows = routeList.map((r, i) => `
-      <tr class="${i % 2 === 1 ? "alt" : ""}">
+
+    // Konfigurasi per segmen — label kode netral untuk pelanggan
+    const CFG = {
+      eksp:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "eksp", lbl: "Harga A", c: "#1a7f37" }, { key: "eksp2", lbl: "Harga B", c: "#1a7f37" }] },
+      sales: { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "sales", lbl: "Harga A", c: "#9a5000" }, { key: "sales2", lbl: "Harga B", c: "#9a5000" }] },
+      corp:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "corp", lbl: "Harga A", c: "#0550ae" }, { key: "corp2", lbl: "Harga B", c: "#6e40c9" }] },
+      all:   { title: "REKAP HARGA INTERNAL", cols: [
+        { key: "eksp", lbl: "Eksp 1", c: "#1a7f37" }, { key: "eksp2", lbl: "Eksp 2", c: "#1a7f37" },
+        { key: "sales", lbl: "Sales 1", c: "#9a5000" }, { key: "sales2", lbl: "Sales 2", c: "#9a5000" },
+        { key: "corp", lbl: "Corp 1", c: "#0550ae" }, { key: "corp2", lbl: "Corp 2", c: "#6e40c9" },
+      ]},
+    };
+    const cfg = CFG[segmen];
+    const thCols = cfg.cols.map(c => `<th style="color:#fff;background:#BA7517">${c.lbl}</th>`).join("");
+    const rows = routeList.map((r, i) => {
+      const priceCols = cfg.cols.map(c => `<td class="money" style="color:${c.c}">${fRp(r[c.key])}</td>`).join("");
+      return `<tr class="${i % 2 === 1 ? "alt" : ""}">
         <td class="num">${i + 1}</td>
-        <td>${r.asal}</td>
-        <td>${r.tujuan}</td>
+        <td>${r.asal}</td><td>${r.tujuan}</td>
         <td class="small">${r.tipe}</td>
         <td class="small">${r.top}${r.risiko === "Rawan" ? "<br><span class='badge'>Rawan</span>" : ""}</td>
-        <td class="money eksp">${fRp(r.eksp)}</td>
-        <td class="money eksp2">${fRp(r.eksp2)}</td>
-        <td class="money sales">${fRp(r.sales)}</td>
-        <td class="money sales2">${fRp(r.sales2)}</td>
-        <td class="money corp">${fRp(r.corp)}</td>
-        <td class="money corp2">${fRp(r.corp2)}</td>
+        ${priceCols}
         <td class="small">${r.catatan || "-"}</td>
-      </tr>`).join("");
+      </tr>`;
+    }).join("");
+
     const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>Daftar Harga - PT Alyssa Auto Logistik</title>
+    <title>${cfg.title} - PT Alyssa Auto Logistik</title>
     <style>
       * { box-sizing: border-box; margin: 0; padding: 0; }
       body { font-family: Arial, sans-serif; font-size: 10px; color: #222; background: #fff; padding: 20px 24px; }
@@ -163,41 +175,19 @@ export default function CostCalculator() {
       tr.alt td { background: #fdf9f3; }
       .num { text-align: center; color: #999; width: 22px; }
       .small { font-size: 8.5px; color: #555; }
-      .money { text-align: right; font-weight: 600; white-space: nowrap; }
-      .eksp  { color: #1a7f37; } .eksp2  { color: #1a7f37; }
-      .sales { color: #9a5000; } .sales2 { color: #9a5000; }
-      .corp  { color: #0550ae; } .corp2  { color: #6e40c9; }
+      .money { text-align: right; font-weight: 700; white-space: nowrap; font-size: 10.5px; }
       .badge { background: #f97316; color: #fff; font-size: 7px; padding: 1px 4px; border-radius: 3px; }
       .footer { border-top: 1px solid #ddd; padding-top: 8px; font-size: 8.5px; color: #999; display: flex; justify-content: space-between; }
-      .legend { display: flex; gap: 16px; font-size: 8.5px; margin-bottom: 10px; }
-      .legend span { display: inline-flex; align-items: center; gap: 4px; }
-      .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-      @media print {
-        body { padding: 10px 14px; }
-        @page { margin: 12mm 10mm; size: A4 landscape; }
-      }
+      @media print { body { padding: 10px 14px; } @page { margin: 12mm 10mm; size: A4 landscape; } }
     </style></head><body>
     <div class="header">
-      <div>
-        <div class="co-name">PT ALYSSA AUTO LOGISTIK</div>
-        <div class="co-sub">Solusi Transportasi &amp; Logistik Kendaraan</div>
-      </div>
-      <div>
-        <div class="doc-title">DAFTAR HARGA PENGIRIMAN</div>
-        <div class="doc-date">Diterbitkan: ${tgl}</div>
-      </div>
-    </div>
-    <div class="legend">
-      <span><span class="dot" style="background:#1a7f37"></span>Ekspedisi 1 &amp; 2</span>
-      <span><span class="dot" style="background:#9a5000"></span>Sales 1 &amp; 2</span>
-      <span><span class="dot" style="background:#0550ae"></span>Corporate 1</span>
-      <span><span class="dot" style="background:#6e40c9"></span>Corporate 2</span>
-      <span style="color:#999">• Harga sudah termasuk margin, asuransi, dan biaya penanganan</span>
+      <div><div class="co-name">PT ALYSSA AUTO LOGISTIK</div><div class="co-sub">Solusi Transportasi &amp; Logistik Kendaraan</div></div>
+      <div><div class="doc-title">${cfg.title}</div><div class="doc-date">Diterbitkan: ${tgl}</div></div>
     </div>
     <table>
       <thead><tr>
-        <th>#</th><th>Asal</th><th>Tujuan</th><th>Tipe Kendaraan</th><th>TOP / Risiko</th>
-        <th>Eksp 1</th><th>Eksp 2</th><th>Sales 1</th><th>Sales 2</th><th>Corp 1</th><th>Corp 2</th><th>Catatan</th>
+        <th>#</th><th>Asal</th><th>Tujuan</th><th>Tipe Kendaraan</th><th>TOP / Kondisi</th>
+        ${thCols}<th>Catatan</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -332,7 +322,10 @@ export default function CostCalculator() {
           <div style={{ padding: "10px 14px", borderBottom: "1px solid #21262d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 12, fontWeight: 700 }}>List Rute</span>
             <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={printPDF} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Cetak PDF</button>
+              <button onClick={() => printPDF("eksp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Ekspedisi</button>
+              <button onClick={() => printPDF("sales")} style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#9a5000", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Sales</button>
+              <button onClick={() => printPDF("corp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#0550ae", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Corporate</button>
+              <button onClick={() => printPDF("all")}   style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "1px solid #30363d", background: "none", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>🖨 Rekap Internal</button>
               <button onClick={exportCSV} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: "#BA7517", color: "#FAEEDA", cursor: "pointer", fontWeight: 700 }}>Export CSV</button>
               <button onClick={clearList} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, background: "none", border: "1px solid #30363d", color: "#8b949e", cursor: "pointer", fontWeight: 700 }}>Clear</button>
             </div>
