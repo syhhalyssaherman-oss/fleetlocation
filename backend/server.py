@@ -1597,6 +1597,90 @@ async def cron_pickup_reminders(x_cron_secret: str = Header(default="")):
     return {"date": sent_marker, "target": REMINDER_TARGET, "sent": sent_count, "details": results}
 
 
+# ══════════════════════════════════════════════════════
+# DATA DRIVER — CRUD
+# ══════════════════════════════════════════════════════
+
+def _gen_driver_id() -> str:
+    return "DRV-" + uuid.uuid4().hex[:6].upper()
+
+class DriverBody(BaseModel):
+    nama: str
+    no_hp: Optional[str] = ""
+    no_ktp: Optional[str] = ""
+    no_sim: Optional[str] = ""
+    tipe_sim: Optional[str] = ""
+    alamat: Optional[str] = ""
+    status: Optional[str] = "aktif"
+
+@api_router.get("/admin/drivers", dependencies=[Depends(require_admin_pin)])
+async def list_drivers(q: Optional[str] = None, status: Optional[str] = None):
+    filt: dict = {}
+    if status: filt["status"] = status
+    if q:
+        filt["$or"] = [
+            {"nama": {"$regex": q, "$options": "i"}},
+            {"no_hp": {"$regex": q, "$options": "i"}},
+            {"driver_id": {"$regex": q, "$options": "i"}},
+        ]
+    docs = await db.drivers.find(filt, {"_id": 0}).sort("created_at", -1).to_list(500)
+    return {"items": docs, "total": len(docs)}
+
+@api_router.post("/admin/drivers", dependencies=[Depends(require_admin_pin)])
+async def create_driver(body: DriverBody):
+    now = datetime.utcnow().isoformat()
+    doc = {
+        "driver_id": _gen_driver_id(),
+        "nama": body.nama.strip(),
+        "no_hp": (body.no_hp or "").strip(),
+        "no_ktp": (body.no_ktp or "").strip(),
+        "no_sim": (body.no_sim or "").strip(),
+        "tipe_sim": (body.tipe_sim or "").strip(),
+        "alamat": (body.alamat or "").strip(),
+        "status": body.status or "aktif",
+        "foto_ktp": None, "foto_sim": None, "foto_selfie": None,
+        "created_at": now, "updated_at": now,
+    }
+    await db.drivers.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.patch("/admin/drivers/{driver_id}", dependencies=[Depends(require_admin_pin)])
+async def patch_driver(driver_id: str, body: DriverBody):
+    drv = await db.drivers.find_one({"driver_id": driver_id})
+    if not drv: raise HTTPException(404, "Driver tidak ditemukan")
+    now = datetime.utcnow().isoformat()
+    upd = {"nama": body.nama.strip(), "no_hp": (body.no_hp or "").strip(),
+           "no_ktp": (body.no_ktp or "").strip(), "no_sim": (body.no_sim or "").strip(),
+           "tipe_sim": (body.tipe_sim or "").strip(), "alamat": (body.alamat or "").strip(),
+           "status": body.status or "aktif", "updated_at": now}
+    await db.drivers.update_one({"driver_id": driver_id}, {"$set": upd})
+    return {"ok": True}
+
+@api_router.delete("/admin/drivers/{driver_id}", dependencies=[Depends(require_admin_pin)])
+async def delete_driver(driver_id: str):
+    res = await db.drivers.delete_one({"driver_id": driver_id})
+    if res.deleted_count == 0: raise HTTPException(404, "Driver tidak ditemukan")
+    return {"ok": True}
+
+@api_router.post("/admin/drivers/{driver_id}/foto/{slot}", dependencies=[Depends(require_admin_pin)])
+async def upload_driver_foto(driver_id: str, slot: str, foto: UploadFile = File(...)):
+    """slot: ktp | sim | selfie"""
+    if slot not in ("ktp", "sim", "selfie"):
+        raise HTTPException(400, "Slot tidak valid")
+    drv = await db.drivers.find_one({"driver_id": driver_id})
+    if not drv: raise HTTPException(404, "Driver tidak ditemukan")
+    url = _save_upload(driver_id, f"driver-{slot}", foto, {".jpg", ".jpeg", ".png", ".webp"})
+    await db.drivers.update_one({"driver_id": driver_id}, {"$set": {f"foto_{slot}": url, "updated_at": datetime.utcnow().isoformat()}})
+    return {"ok": True, "url": url}
+
+@api_router.get("/admin/drivers/{driver_id}", dependencies=[Depends(require_admin_pin)])
+async def get_driver(driver_id: str):
+    drv = await db.drivers.find_one({"driver_id": driver_id}, {"_id": 0})
+    if not drv: raise HTTPException(404, "Driver tidak ditemukan")
+    return drv
+
+
 # ---------- Static file serving for uploads ----------
 app.add_middleware(
     CORSMiddleware,
