@@ -14,6 +14,82 @@ function resolveUrl(url) {
   return `${BACKEND_URL}${url}`;
 }
 
+/* Best-effort nama lokasi dari koordinat (OpenStreetMap). Gagal/timeout → "". */
+async function reverseGeocode(lat, lng) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&zoom=14&addressdetails=1&lat=${lat}&lon=${lng}`,
+      { signal: ctrl.signal, headers: { Accept: "application/json" } }
+    );
+    clearTimeout(t);
+    if (!r.ok) return "";
+    const j = await r.json();
+    const a = j.address || {};
+    const parts = [
+      a.suburb || a.village || a.town || a.city_district || a.neighbourhood,
+      a.city || a.county || a.regency,
+      a.state,
+    ].filter(Boolean);
+    return parts.slice(0, 2).join(", ") || (j.display_name || "").split(",").slice(0, 2).join(", ").trim();
+  } catch {
+    return "";
+  }
+}
+
+/* "Cap" foto: bakar lokasi + waktu ke dalam gambar (mirip GPS Map Camera).
+   `lines` ditulis di bar bawah. Gagal apa pun → kembalikan file asli. */
+function stampPhoto(file, lines) {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+      img.onload = () => {
+        try {
+          const maxW = 1280;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+
+          const rows = (lines || []).filter(Boolean);
+          if (rows.length) {
+            const fs = Math.max(15, Math.round(w * 0.030));
+            const lh = Math.round(fs * 1.4);
+            const pad = Math.round(w * 0.022);
+            const barH = lh * rows.length + pad * 1.6;
+            ctx.fillStyle = "rgba(8,18,36,0.62)";
+            ctx.fillRect(0, h - barH, w, barH);
+            ctx.fillStyle = "#D4A847";
+            ctx.fillRect(0, h - barH, Math.max(4, Math.round(w * 0.012)), barH);
+            ctx.textBaseline = "top";
+            let y = h - barH + pad * 0.8;
+            rows.forEach((ln, i) => {
+              ctx.font = `500 ${fs}px sans-serif`;
+              ctx.fillStyle = i === 0 ? "#FFD77A" : "#FFFFFF";
+              ctx.fillText(ln, pad * 1.6, y);
+              y += lh;
+            });
+          }
+          URL.revokeObjectURL(objUrl);
+          canvas.toBlob(
+            (blob) => resolve(blob
+              ? new File([blob], (file.name || "checkpoint").replace(/\.\w+$/, "") + "_geotag.jpg", { type: "image/jpeg" })
+              : file),
+            "image/jpeg", 0.9
+          );
+        } catch { URL.revokeObjectURL(objUrl); resolve(file); }
+      };
+      img.src = objUrl;
+    } catch { resolve(file); }
+  });
+}
+
 const ID_MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const ID_DAYS = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
 
@@ -213,8 +289,22 @@ export default function DriverCheckpoint() {
     });
     try {
       const gps = await getGPS();
+      // Cap lokasi + waktu ke dalam foto (geotag tertanam di gambar).
+      const nowWib = new Date().toLocaleString("id-ID", {
+        timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      });
+      const stampLines = [];
+      if (gps) {
+        const place = await reverseGeocode(gps.lat, gps.lng);
+        if (place) stampLines.push(place);
+        stampLines.push(`${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`);
+      }
+      stampLines.push(`${nowWib} WIB${trip?.nopol ? "  ·  " + trip.nopol : ""}`);
+      const stamped = await stampPhoto(file, stampLines);
+
       const fd = new FormData();
-      fd.append("foto", file);
+      fd.append("foto", stamped);
       if (gps) {
         fd.append("lat", String(gps.lat));
         fd.append("lng", String(gps.lng));
