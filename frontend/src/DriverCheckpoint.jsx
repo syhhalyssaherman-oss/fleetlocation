@@ -175,6 +175,27 @@ export default function DriverCheckpoint() {
   const [uploadingDaily, setUploadingDaily] = useState(false);
   const [dailyStatus, setDailyStatus] = useState("Berangkat");
   const [dailyNote, setDailyNote] = useState("");
+  const [gpsState, setGpsState] = useState("unknown"); // granted | denied | prompt | unknown
+
+  // Pantau izin lokasi agar bisa tuntun driver menyalakan GPS.
+  useEffect(() => {
+    let perm;
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: "geolocation" })
+        .then((res) => { perm = res; setGpsState(res.state); res.onchange = () => setGpsState(res.state); })
+        .catch(() => {});
+    }
+    return () => { if (perm) perm.onchange = null; };
+  }, []);
+
+  const requestGps = () => {
+    if (!("geolocation" in navigator)) { setGpsState("denied"); return; }
+    navigator.geolocation.getCurrentPosition(
+      () => setGpsState("granted"),
+      (err) => setGpsState(err && err.code === 1 ? "denied" : "prompt"),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
   const [uploadingBastk, setUploadingBastk] = useState(false);
   const [uploadingResi, setUploadingResi] = useState(false);
   const [cairingTahap, setCairingTahap] = useState(0);
@@ -596,6 +617,45 @@ export default function DriverCheckpoint() {
           <div className="drv-greet-name" data-testid="drv-greet-name">{trip.nama_driver}</div>
         </div>
       </section>
+
+      {/* PENGUMUMAN: AKTIFKAN GPS */}
+      {gpsState !== "granted" ? (
+        <section style={{ margin: "0 16px 14px", background: "#3A2E12", border: "1.5px solid #D4A847", borderRadius: 14, padding: "14px 16px" }} data-testid="gps-banner">
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 24 }}>📍</span>
+            <div style={{ fontWeight: 700, color: "#FFD77A", fontSize: 16 }}>Nyalakan GPS dulu, ya!</div>
+          </div>
+          <div style={{ color: "#EAD9B0", fontSize: 13.5, lineHeight: 1.6, marginBottom: 10 }}>
+            Foto checkpoint wajib ada lokasinya. Ikuti 3 langkah ini:
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
+              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>1</span>
+              <span>Geser layar dari <b>atas ke bawah</b> &nbsp;⬇️</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
+              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>2</span>
+              <span>Tap ikon <b>Lokasi</b> sampai menyala &nbsp;📍</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
+              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>3</span>
+              <span>Tekan tombol bawah, pilih <b>Izinkan</b></span>
+            </div>
+          </div>
+          <button onClick={requestGps} style={{ width: "100%", padding: "13px", background: "#D4A847", color: "#1A1206", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" }} data-testid="btn-gps">
+            📍 Aktifkan GPS Sekarang
+          </button>
+          {gpsState === "denied" && (
+            <div style={{ marginTop: 9, fontSize: 12.5, color: "#F0997B", lineHeight: 1.5 }}>
+              Lokasi terblokir. Buka <b>Setelan browser → Izin situs → Lokasi → Izinkan</b>, lalu muat ulang halaman ini.
+            </div>
+          )}
+        </section>
+      ) : (
+        <div style={{ margin: "0 16px 14px", background: "#13351F", border: "1px solid #2ea043", borderRadius: 12, padding: "10px 14px", color: "#56d364", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }} data-testid="gps-ok">
+          <span>✓</span> GPS aktif — lokasi otomatis tercatat di foto checkpoint
+        </div>
+      )}
 
       {/* RUTE PENGIRIMAN (LEGS) */}
       {trip.nama_driver && Array.isArray(trip.legs) && trip.legs.length > 0 && (
