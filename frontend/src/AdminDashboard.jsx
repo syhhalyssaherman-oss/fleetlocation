@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { VEHICLE_TYPE_LIST } from "@/VehicleSketches";
+import CostCalculator from "@/CostCalculator";
 import "@/App.css";
 import "@/Driver.css";
 import "@/Admin.css";
@@ -53,6 +54,8 @@ const IcoInbox    = () => <svg width="28" height="28" viewBox="0 0 24 24" fill="
 const IcoSun      = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
 const IcoMoon     = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
 const IcoOdoo     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><circle cx="8" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><path d="M10 10h4"/></svg>;
+const IcoCalc     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="14" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="14" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="14" y1="18" x2="16" y2="18"/></svg>;
+const IcoList     = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>;
 
 /* ════════════════════════════════════════
    ROOT
@@ -139,6 +142,7 @@ function PinScreen({ pin, setPin, doLogin, authing, authError }) {
 function Dashboard({ pin, onLogout }) {
   const headers = useMemo(() => ({ "X-Admin-Pin": pin }), [pin]);
   const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
+  const [activeTab, setActiveTab] = useState("pesanan");
   const [stats, setStats] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -261,6 +265,32 @@ function Dashboard({ pin, onLogout }) {
         </div>
       </header>
 
+      {/* ── Tab bar ── */}
+      <div style={{ display: "flex", gap: 4, padding: "10px 16px 0", borderBottom: "1px solid var(--border)", background: "var(--bg-2)" }}>
+        <button
+          onClick={() => setActiveTab("pesanan")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            background: activeTab === "pesanan" ? "var(--bg-card)" : "transparent",
+            color: activeTab === "pesanan" ? "var(--gold)" : "var(--text-3)",
+            borderBottom: activeTab === "pesanan" ? "2px solid var(--gold)" : "2px solid transparent" }}
+        ><IcoList /> Pesanan</button>
+        <button
+          onClick={() => setActiveTab("kalkulator")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            background: activeTab === "kalkulator" ? "var(--bg-card)" : "transparent",
+            color: activeTab === "kalkulator" ? "var(--gold)" : "var(--text-3)",
+            borderBottom: activeTab === "kalkulator" ? "2px solid var(--gold)" : "2px solid transparent" }}
+        ><IcoCalc /> Kalkulator HPP</button>
+      </div>
+
+      {activeTab === "kalkulator" && (
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <CostCalculator />
+        </div>
+      )}
+
+      {activeTab === "pesanan" && <>
+
       {/* ── Stats ── */}
       {stats && (
         <section className="adm-stats" data-testid="adm-stats">
@@ -367,6 +397,8 @@ function Dashboard({ pin, onLogout }) {
           onClose={() => setOdooModal(null)}
         />
       )}
+
+      </>}
     </div>
   );
 }
