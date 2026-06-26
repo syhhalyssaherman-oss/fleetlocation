@@ -79,6 +79,7 @@ export default function CostCalculator() {
   const [nextId, setNextId] = useState(4);
   const [M, setM] = useState(DEFAULT_MARGIN);
   const [savedMsg, setSavedMsg] = useState(false);
+  const [listSaved, setListSaved] = useState(false);
   const [routeList, setRouteList] = useState(() => {
     try { const raw = localStorage.getItem("alyssa_routelist"); return raw ? JSON.parse(raw) : []; } catch { return []; }
   });
@@ -112,6 +113,7 @@ export default function CostCalculator() {
   const setMargin = (id, v) => setM((m) => ({ ...m, [id]: v }));
 
   const saveMargin = () => { try { localStorage.setItem("alyssa_margin", JSON.stringify(M)); } catch (e) {} setSavedMsg(true); setTimeout(() => setSavedMsg(false), 2000); };
+  const saveList = () => { try { localStorage.setItem("alyssa_routelist", JSON.stringify(routeList)); } catch (e) {} setListSaved(true); setTimeout(() => setListSaved(false), 2000); };
 
   const addToList = () => {
     if (!asal.trim() || !tujuan.trim()) { alert("Isi Asal dan Tujuan dulu!"); return; }
@@ -328,6 +330,7 @@ export default function CostCalculator() {
           <div style={{ padding: "10px 14px", borderBottom: "1px solid #21262d", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 12, fontWeight: 700 }}>List Rute</span>
             <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={saveList} style={{ padding: "5px 12px", fontSize: 11, borderRadius: 7, border: "none", background: listSaved ? "#2ea043" : "#1f6feb", color: "#fff", cursor: "pointer", fontWeight: 700 }}>{listSaved ? "✓ Tersimpan!" : "💾 Simpan"}</button>
               <button onClick={() => printPDF("eksp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#1a7f37", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Ekspedisi</button>
               <button onClick={() => printPDF("sales")} style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#9a5000", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Sales</button>
               <button onClick={() => printPDF("corp")}  style={{ padding: "5px 10px", fontSize: 11, borderRadius: 7, border: "none", background: "#0550ae", color: "#fff", cursor: "pointer", fontWeight: 700 }}>🖨 Corporate</button>
