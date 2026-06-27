@@ -189,6 +189,7 @@ export default function DriverCheckpoint() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
+  const [celebration, setCelebration] = useState(false);
 
   const [showSOP, setShowSOP] = useState(false);
   const [namaInput, setNamaInput] = useState("");
@@ -294,6 +295,11 @@ export default function DriverCheckpoint() {
   const showToast = (msg, type="ok") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 2800);
+  };
+
+  const showCelebration = () => {
+    setCelebration(true);
+    setTimeout(() => setCelebration(false), 5000);
   };
 
   const reload = async () => {
@@ -407,9 +413,14 @@ export default function DriverCheckpoint() {
     try {
       const fd = new FormData();
       fd.append("foto", file);
+      const prevComplete = !!(trip?.handover?.bastk && trip?.handover?.resi);
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/handover-bastk`, fd);
       setTrip(r.data);
-      showToast("BASTK terupload");
+      if (!prevComplete && r.data?.handover?.bastk && r.data?.handover?.resi) {
+        showCelebration();
+      } else {
+        showToast("BASTK terupload");
+      }
     } catch (e) {
       const msg = e?.response?.data?.detail || "Upload gagal";
       showToast(msg, "err");
@@ -422,9 +433,14 @@ export default function DriverCheckpoint() {
     try {
       const fd = new FormData();
       fd.append("foto", file);
+      const prevComplete = !!(trip?.handover?.bastk && trip?.handover?.resi);
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/handover-resi`, fd);
       setTrip(r.data);
-      showToast("Foto Resi terupload");
+      if (!prevComplete && r.data?.handover?.bastk && r.data?.handover?.resi) {
+        showCelebration();
+      } else {
+        showToast("Foto Resi terupload");
+      }
     } catch (e) {
       showToast("Upload gagal", "err");
     } finally { setUploadingResi(false); }
@@ -1283,6 +1299,20 @@ export default function DriverCheckpoint() {
               </div>
             </button>
           </div>
+        </div>
+      )}
+
+      {/* CELEBRATION BANNER */}
+      {celebration && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 9999,
+          background: "linear-gradient(135deg, #1a7a3c, #2ea043)",
+          color: "#fff", textAlign: "center",
+          padding: "22px 20px",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+          fontSize: 17, fontWeight: 800, letterSpacing: 0.3,
+        }}>
+          🎉 SELESAI! Berkas lengkap. Bonus Rp 30.000 diproses admin!
         </div>
       )}
 

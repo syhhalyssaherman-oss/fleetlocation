@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Header, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File, Form, Header, Depends, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse, Response
 from dotenv import load_dotenv
@@ -1492,6 +1492,60 @@ async def admin_patch_trip_legs(trip_id: str, body: LegsBody):
     now = datetime.utcnow().isoformat()
     await db.trips.update_one({"trip_id": trip_id}, {"$set": {"legs": body.legs, "updated_at": now}})
     return {"ok": True, "trip_id": trip_id, "legs_count": len(body.legs)}
+
+
+class KoordinatorBody(BaseModel):
+    koordinator: str
+    koordinator_hp: str
+
+@api_router.patch("/admin/trips/{trip_id}/koordinator", dependencies=[Depends(require_admin_pin)])
+async def admin_patch_trip_koordinator(trip_id: str, body: KoordinatorBody):
+    """Set koordinator & koordinator_hp on a trip document."""
+    trip = await db.trips.find_one({"trip_id": trip_id})
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+    now = datetime.utcnow().isoformat()
+    await db.trips.update_one(
+        {"trip_id": trip_id},
+        {"$set": {"koordinator": body.koordinator.strip(), "koordinator_hp": body.koordinator_hp.strip(), "updated_at": now}}
+    )
+    return {"ok": True, "trip_id": trip_id}
+
+
+@api_router.get("/koordinator/trips")
+async def koordinator_trips(nama: str = Query(..., min_length=1)):
+    """Return trips assigned to a koordinator by name (case-insensitive). No auth required."""
+    import re as _re
+    rx = _re.compile(r"^\s*" + _re.escape(nama.strip()) + r"\s*$", _re.IGNORECASE)
+    cursor = db.trips.find({"koordinator": rx}, {"_id": 0})
+    items = []
+    async for t in cursor:
+        # Enrich with order data
+        order = await db.orders.find_one({"trip_id": t["trip_id"]}, {"_id": 0}) or {}
+        daily = t.get("daily_checkpoints") or []
+        legs = t.get("legs") or []
+        handover = t.get("handover") or {}
+        items.append({
+            "trip_id": t.get("trip_id"),
+            "order_id": order.get("order_id") or t.get("order_id"),
+            "asal_kota": order.get("asal_kota") or t.get("asal_kota"),
+            "tujuan_kota": order.get("tujuan_kota") or t.get("tujuan_kota"),
+            "vehicle_type": order.get("vehicle_type") or t.get("vehicle_type"),
+            "nopol": order.get("nopol") or t.get("nopol"),
+            "nama_driver": order.get("nama_driver") or t.get("nama_driver"),
+            "status": order.get("status") or t.get("status"),
+            "customer_nama": order.get("customer_nama"),
+            "legs": legs,
+            "daily_checkpoints_count": len(daily),
+            "last_checkpoint": daily[-1].get("created_at") if daily else None,
+            "handover": {
+                "bastk": bool(handover.get("bastk")),
+                "resi": bool(handover.get("resi")),
+            },
+            "koordinator": t.get("koordinator"),
+            "koordinator_hp": t.get("koordinator_hp"),
+        })
+    return {"count": len(items), "items": items}
 
 
 @api_router.delete("/admin/orders/{order_id}", dependencies=[Depends(require_admin_pin)])

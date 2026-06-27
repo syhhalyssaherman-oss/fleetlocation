@@ -429,6 +429,7 @@ function Dashboard({ pin, onLogout }) {
             onOdoo={doOdoo}
             onDelete={() => deleteOrder(o.order_id)}
             onOpenLegs={() => setLegsModal({ tripId: o.trip_id, order: o })}
+            headers={headers}
           />
         ))}
       </section>
@@ -455,6 +456,7 @@ function Dashboard({ pin, onLogout }) {
           order={legsModal.order}
           onClose={() => setLegsModal(null)}
           onSave={(legs) => saveLegs(legsModal.tripId, legs)}
+          headers={headers}
         />
       )}
 
@@ -484,7 +486,7 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 /* ════════════════════════════════════════
    ORDER CARD
 ════════════════════════════════════════ */
-function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLegs }) {
+function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLegs, headers }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const [editNama, setEditNama] = useState(false);
@@ -492,7 +494,20 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLeg
   const [editVehicle, setEditVehicle] = useState(false);
   const [vtDraft, setVtDraft] = useState(order.vehicle_type || "");
   const [nopolDraft, setNopolDraft] = useState(order.nopol || "");
+  const [editKord, setEditKord] = useState(false);
+  const [kordNama, setKordNama] = useState(order.koordinator || "");
+  const [kordHp, setKordHp] = useState(order.koordinator_hp || "");
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
+
+  const saveKord = async () => {
+    if (!order.trip_id) return;
+    try {
+      await axios.patch(`${API}/admin/trips/${order.trip_id}/koordinator`, { koordinator: kordNama.trim(), koordinator_hp: kordHp.trim() }, { headers });
+      setEditKord(false);
+    } catch (e) {
+      alert(e?.response?.data?.detail || "Gagal simpan koordinator");
+    }
+  };
 
   const saveVehicle = async () => {
     await onPatch({ vehicle_type: vtDraft, nopol: nopolDraft.trim() });
@@ -634,6 +649,39 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLeg
             )}
           </div>
         </div>
+        {order.trip_id && (
+          <div className="adm-field-row adm-full">
+            <div className="adm-field-key">Koordinator</div>
+            <div className="adm-field-val">
+              {editKord ? (
+                <span className="adm-driver-edit-row" style={{ flexWrap: "wrap", gap: 4 }}>
+                  <input
+                    className="adm-input-inline"
+                    value={kordNama}
+                    onChange={e => setKordNama(e.target.value)}
+                    placeholder="Nama koordinator"
+                    autoFocus
+                  />
+                  <input
+                    className="adm-input-inline adm-mono"
+                    value={kordHp}
+                    onChange={e => setKordHp(e.target.value)}
+                    placeholder="08xx-xxxx"
+                  />
+                  <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveKord}>OK</button>
+                  <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditKord(false); setKordNama(order.koordinator || ""); setKordHp(order.koordinator_hp || ""); }}><IcoX /></button>
+                </span>
+              ) : (
+                <span className="adm-driver-row">
+                  {order.koordinator
+                    ? <><span className="adm-pill">{order.koordinator}</span>{order.koordinator_hp && <span className="adm-mute" style={{ fontSize: 11 }}>{order.koordinator_hp}</span>}</>
+                    : <i className="adm-mute">belum ditugaskan</i>}
+                  <button className="adm-link" onClick={() => setEditKord(true)}><IcoPencil /></button>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
         {Array.isArray(order.attachments) && order.attachments.length > 0 && (
           <div className="adm-field-row adm-full">
             <div className="adm-field-key">Berkas</div>
@@ -894,18 +942,78 @@ function OdooModal({ order, orderId, headers, onClose }) {
 }
 
 /* ════════════════════════════════════════
+   DRIVER AUTOCOMPLETE
+════════════════════════════════════════ */
+function DriverAutocomplete({ value, hp, onChange, onSelect, headers }) {
+  const [q, setQ] = useState(value || "");
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [timer, setTimer] = useState(null);
+
+  const search = (val) => {
+    setQ(val);
+    onChange(val, hp);
+    if (timer) clearTimeout(timer);
+    if (!val.trim()) { setResults([]); setOpen(false); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await axios.get(`${API}/admin/drivers`, { params: { q: val }, headers });
+        setResults(r.data.items || []);
+        setOpen(true);
+      } catch { setResults([]); }
+    }, 300);
+    setTimer(t);
+  };
+
+  const pick = (drv) => {
+    setQ(drv.nama);
+    setResults([]);
+    setOpen(false);
+    onSelect(drv.nama, drv.no_hp || "");
+  };
+
+  const IL2 = { background: "#0d1117", border: "1px solid #30363d", borderRadius: 5, padding: "5px 8px", color: "#e6edf3", fontSize: 11, outline: "none", width: "100%" };
+  return (
+    <div style={{ position: "relative" }}>
+      <input
+        style={IL2}
+        value={q}
+        onChange={e => search(e.target.value)}
+        onBlur={() => setTimeout(() => setOpen(false), 200)}
+        placeholder="Cari nama driver..."
+      />
+      {hp && <div style={{ fontSize: 10, color: "#60a5fa", marginTop: 3 }}>HP: {hp}</div>}
+      {open && results.length > 0 && (
+        <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#161b22", border: "1px solid #30363d", borderRadius: 5, zIndex: 100, maxHeight: 160, overflowY: "auto" }}>
+          {results.map(drv => (
+            <div
+              key={drv.driver_id}
+              onMouseDown={() => pick(drv)}
+              style={{ padding: "6px 10px", cursor: "pointer", fontSize: 11, borderBottom: "1px solid #21262d" }}
+            >
+              <span style={{ color: "#e6edf3" }}>{drv.nama}</span>
+              {drv.no_hp && <span style={{ color: "#8b949e", marginLeft: 8 }}>{drv.no_hp}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════
    LEGS MODAL
 ════════════════════════════════════════ */
 const LEG_TIPE = ["Self Drive", "Kapal RoRo", "Kapal Kontainer", "Car Carrier", "Towing", "Self Loader", "Lainnya"];
 const LEG_STATUS = ["Menunggu", "Berlangsung", "Selesai"];
 
-function LegsModal({ tripId, order, onClose, onSave }) {
+function LegsModal({ tripId, order, onClose, onSave, headers }) {
   const [legs, setLegs] = useState(() => {
     if (Array.isArray(order?.legs) && order.legs.length > 0) return order.legs;
     return [
-      { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "" },
-      { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "" },
-      { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu", driver: "" },
+      { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "", driver_hp: "", kord_bayangan: "", kord_bayangan_hp: "" },
+      { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "", driver_hp: "", kord_kapal: "", kord_kapal_hp: "" },
+      { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu", driver: "", driver_hp: "", kord_bayangan: "", kord_bayangan_hp: "" },
     ];
   });
   const [saving, setSaving] = useState(false);
@@ -1059,6 +1167,14 @@ function LegsModal({ tripId, order, onClose, onSave }) {
                     style={{ width: "100%", padding: "7px", borderRadius: 6, border: "none", background: "#1f6feb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                     Cetak Kartu Muat — Share ke Perwakilan
                   </button>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>Koordinator Kapal
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.kord_kapal || ""} onChange={e => setLeg(i, { kord_kapal: e.target.value })} placeholder="Nama koordinator kapal" />
+                    </label>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>HP Koordinator Kapal
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.kord_kapal_hp || ""} onChange={e => setLeg(i, { kord_kapal_hp: e.target.value })} placeholder="08xx-xxxx" />
+                    </label>
+                  </div>
                 </div>
               )}
               {/* Field driver + link hanya untuk leg yang dikemudikan orang */}
@@ -1066,16 +1182,32 @@ function LegsModal({ tripId, order, onClose, onSave }) {
                 <div style={{ marginTop: 6, padding: "8px 10px", background: "#0a1628", border: "1px solid #1f3a5a", borderRadius: 6 }}>
                   <label style={{ fontSize: 10, color: "#60a5fa", display: "block", marginBottom: 4, fontWeight: 700 }}>NAMA DRIVER LEG INI</label>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <input style={{ ...IL, flex: 1 }} value={leg.driver || ""} onChange={e => setLeg(i, { driver: e.target.value })} placeholder="Nama driver (isi sebelum salin link)" />
+                    <div style={{ flex: 1 }}>
+                      <DriverAutocomplete
+                        value={leg.driver || ""}
+                        hp={leg.driver_hp || ""}
+                        onChange={(val, prevHp) => setLeg(i, { driver: val })}
+                        onSelect={(nama, hp) => setLeg(i, { driver: nama, driver_hp: hp })}
+                        headers={headers}
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => copyLegLink(leg, i)}
                       disabled={!tripId}
-                      style={{ padding: "5px 10px", borderRadius: 5, border: "none", background: copiedLeg === i ? "#2ea043" : "#1f6feb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                      style={{ padding: "5px 10px", borderRadius: 5, border: "none", background: copiedLeg === i ? "#2ea043" : "#1f6feb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", alignSelf: "flex-start" }}>
                       {copiedLeg === i ? "✓ Tersalin!" : "Salin Link"}
                     </button>
                   </div>
                   <div style={{ fontSize: 10, color: "#4a6fa5", marginTop: 4 }}>Kirim link ini ke driver yang bertugas di leg {i + 1}</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>Koordinator Bayangan
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.kord_bayangan || ""} onChange={e => setLeg(i, { kord_bayangan: e.target.value })} placeholder="Nama · 0812-xxxx (agen/pawang driver)" />
+                    </label>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>HP Koordinator Bayangan
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.kord_bayangan_hp || ""} onChange={e => setLeg(i, { kord_bayangan_hp: e.target.value })} placeholder="08xx-xxxx" />
+                    </label>
+                  </div>
                 </div>
               )}
             </div>
