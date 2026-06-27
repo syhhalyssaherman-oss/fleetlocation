@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -37,10 +37,18 @@ function fmtTimeWIB(iso) {
   try { const d = new Date(iso); return d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }) + " WIB"; } catch { return "—"; }
 }
 
+function MapAutoSize({ mapRef }) {
+  useEffect(() => {
+    if (mapRef.current) { setTimeout(() => mapRef.current.invalidateSize(), 100); }
+  }, [mapRef]);
+  return null;
+}
+
 export default function PoDCard({ photo, backendUrl, namaDriver, nopol, dayIndex = 0 }) {
   const hasGps = photo && typeof photo.lat === "number" && typeof photo.lng === "number";
   const center = useMemo(() => hasGps ? [photo.lat, photo.lng] : null, [hasGps, photo?.lat, photo?.lng]);
   const cardRef = useRef(null);
+  const mapRef = useRef(null);
   const [generating, setGenerating] = useState(false);
   const statusInfo = photo?.status ? (STATUS_COLOR[photo.status] || STATUS_COLOR["Berangkat"]) : null;
 
@@ -107,16 +115,19 @@ export default function PoDCard({ photo, backendUrl, namaDriver, nopol, dayIndex
         <div className="pod-map-wrap">
           {hasGps ? (
             <MapContainer
+              key={`map-${photo.id || photo.ts}`}
               center={center} zoom={15}
               scrollWheelZoom={false} dragging={false} zoomControl={false}
               doubleClickZoom={false} touchZoom={false}
               style={{ height: "100%", width: "100%" }}
+              ref={mapRef}
               data-testid="pod-map"
             >
               <TileLayer attribution='&copy; OSM' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
               <Marker position={center} icon={podIcon}>
                 <Popup>{photo.lat.toFixed(5)}, {photo.lng.toFixed(5)}</Popup>
               </Marker>
+              <MapAutoSize mapRef={mapRef} />
             </MapContainer>
           ) : (
             <div className="pod-map-no-gps">

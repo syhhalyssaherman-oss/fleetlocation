@@ -213,16 +213,26 @@ export default function DriverCheckpoint() {
 
   const requestGps = () => {
     if (!("geolocation" in navigator)) { setGpsState("denied"); return; }
-    showToast("Pilih yang PALING ATAS (Allow / Izinkan)");
     navigator.geolocation.getCurrentPosition(
       () => { setGpsState("granted"); showToast("GPS aktif! Lokasi siap dicatat."); },
       (err) => {
         setGpsState(err && err.code === 1 ? "denied" : "prompt");
-        showToast(err && err.code === 1 ? "Izin lokasi ditolak" : "Coba lagi ya", "err");
+        if (err && err.code === 1) showToast("Izin lokasi ditolak", "err");
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   };
+
+  // Auto-request GPS saat halaman pertama dibuka
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        () => setGpsState("granted"),
+        () => {},
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+  }, []);
   const [uploadingBastk, setUploadingBastk] = useState(false);
   const [uploadingResi, setUploadingResi] = useState(false);
   const [cairingTahap, setCairingTahap] = useState(0);
