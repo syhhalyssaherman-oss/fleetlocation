@@ -200,6 +200,10 @@ export default function DriverCheckpoint() {
   const [dailyNote, setDailyNote] = useState("");
   const [gpsState, setGpsState] = useState("unknown"); // granted | denied | prompt | unknown
   const cachedGps = useRef(null); // posisi terakhir dari watchPosition
+  const [gpsOnboarding, setGpsOnboarding] = useState(() => {
+    // Tampilkan onboarding kalau GPS belum pernah diizinkan di device ini
+    try { return localStorage.getItem("aal_gps_granted") !== "1"; } catch { return true; }
+  });
 
   // Pantau izin lokasi agar bisa tuntun driver menyalakan GPS.
   useEffect(() => {
@@ -212,16 +216,18 @@ export default function DriverCheckpoint() {
     return () => { if (perm) perm.onchange = null; };
   }, []);
 
-  // watchPosition di background — simpan posisi terbaru ke cachedGps
+  // watchPosition di background — simpan posisi terbaru ke cachedGps, jalan terus selama sesi
   useEffect(() => {
     if (!("geolocation" in navigator)) return;
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         cachedGps.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setGpsState("granted");
+        try { localStorage.setItem("aal_gps_granted", "1"); } catch {}
+        setGpsOnboarding(false);
       },
       () => {},
-      { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 }
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
@@ -232,13 +238,14 @@ export default function DriverCheckpoint() {
       (pos) => {
         cachedGps.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setGpsState("granted");
-        showToast("GPS aktif! Lokasi siap dicatat.");
+        setGpsOnboarding(false);
+        try { localStorage.setItem("aal_gps_granted", "1"); } catch {}
+        showToast("GPS aktif! Foto checkpoint siap dicatat.");
       },
       (err) => {
         setGpsState(err && err.code === 1 ? "denied" : "prompt");
-        if (err && err.code === 1) showToast("Izin lokasi ditolak", "err");
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000 }
     );
   };
   const [uploadingBastk, setUploadingBastk] = useState(false);
@@ -484,6 +491,78 @@ export default function DriverCheckpoint() {
     const txt = `Halo Admin, lapor posisi unit ${trip?.nopol}.\nNama: ${trip?.nama_driver || "-"}\nRute: ${trip?.route || "-"}`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(txt)}`, "_blank");
   };
+
+  // ── GPS ONBOARDING — fullscreen, muncul sekali sampai GPS diizinkan ──
+  if (gpsOnboarding && gpsState !== "granted") {
+    return (
+      <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#0d1117", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        {/* Header */}
+        <div style={{ background: "#161b22", padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, borderBottom: "1px solid #21262d" }}>
+          <Logo size={36} />
+          <div style={{ fontWeight: 800, fontSize: 15, color: "#EF9F27" }}>Alyssa Auto Logistik</div>
+        </div>
+
+        <div style={{ flex: 1, padding: "28px 20px", display: "flex", flexDirection: "column" }}>
+          {/* Title */}
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <div style={{ fontSize: 52, marginBottom: 12 }}>📍</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: "#FFD060", lineHeight: 1.2, marginBottom: 8 }}>
+              AKTIFKAN LOKASI DULU
+            </div>
+            <div style={{ fontSize: 15, color: "#8b949e", lineHeight: 1.5 }}>
+              Wajib sekali saja — setelah itu GPS aktif terus otomatis
+            </div>
+          </div>
+
+          {/* Steps */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32 }}>
+            {[
+              { no: "1", judul: "TAP TOMBOL KUNING DI BAWAH", isi: "Nanti muncul kotak izin dari HP kamu" },
+              { no: "2", judul: 'PILIH "SAAT APLIKASI DIGUNAKAN"', isi: "Bukan Hanya kali ini — bukan Jangan izinkan" },
+              { no: "3", judul: "SELESAI — GPS AKTIF TERUS", isi: "Semua foto checkpoint otomatis tercatat lokasinya" },
+            ].map(s => (
+              <div key={s.no} style={{ display: "flex", gap: 16, alignItems: "flex-start", background: "#161b22", border: "1px solid #21262d", borderRadius: 12, padding: "14px 16px" }}>
+                <div style={{ minWidth: 44, height: 44, borderRadius: 10, background: "#EF9F27", color: "#000", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 22 }}>{s.no}</div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#e6edf3", marginBottom: 4 }}>{s.judul}</div>
+                  <div style={{ fontSize: 13, color: "#8b949e", lineHeight: 1.5 }}>{s.isi}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Warning box */}
+          <div style={{ background: "#2d1a1a", border: "1px solid #f85149", borderRadius: 10, padding: "12px 16px", marginBottom: 24, textAlign: "center" }}>
+            <div style={{ fontSize: 13, color: "#f85149", fontWeight: 700, lineHeight: 1.5 }}>
+              Kalau tidak diizinkan → foto tidak ada GPS → pelanggan komplain → bonus tidak cair
+            </div>
+          </div>
+
+          {gpsState === "denied" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ background: "#3B0A0A", border: "2px solid #f85149", borderRadius: 12, padding: "16px", textAlign: "center" }}>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#FF6B6B", marginBottom: 8 }}>LOKASI DIBLOKIR</div>
+                <div style={{ fontSize: 14, color: "#F5C6C6", lineHeight: 1.6 }}>
+                  Buka <b>Setelan HP → Aplikasi → Browser → Izin → Lokasi → Izinkan</b><br/>lalu kembali ke sini dan muat ulang halaman
+                </div>
+              </div>
+              <button onClick={() => window.location.reload()} style={{ padding: "16px", borderRadius: 12, border: "none", background: "#f85149", color: "#fff", fontWeight: 900, fontSize: 17, cursor: "pointer" }}>
+                MUAT ULANG SETELAH IZIN DIBERIKAN
+              </button>
+            </div>
+          ) : (
+            <button onClick={requestGps} style={{ padding: "20px", borderRadius: 14, border: "none", background: "#EF9F27", color: "#000", fontWeight: 900, fontSize: 19, cursor: "pointer", boxShadow: "0 4px 20px #EF9F2755" }}>
+              TAP DI SINI — IZINKAN LOKASI
+            </button>
+          )}
+
+          <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: "#484f58" }}>
+            Izin lokasi hanya dipakai untuk cap foto checkpoint · Tidak disimpan ke server lain
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="drv-loading">Memuat…</div>;
