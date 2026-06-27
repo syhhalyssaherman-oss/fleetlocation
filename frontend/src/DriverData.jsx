@@ -150,7 +150,7 @@ export default function DriverData({ embedded = false }) {
       .stamp-box img { width: 70px; height: 70px; object-fit: contain; }
       .foto-row { display: flex; gap: 16px; margin-bottom: 20px; }
       .foto-box { text-align: center; }
-      .foto-box img { width: 120px; height: 80px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; display: block; }
+      .foto-box img { width: 120px; height: 80px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; display: block; image-orientation: from-image; }
       .foto-box .flbl { font-size: 9px; color: #666; margin-top: 4px; }
       @media print { @page { margin: 15mm; } }
     </style></head><body>

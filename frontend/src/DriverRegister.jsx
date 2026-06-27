@@ -43,24 +43,23 @@ export default function DriverRegister() {
     setPreviews(p => ({ ...p, [slot]: url }));
   };
 
-  const compressImage = (file) => new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 1000;
-      let w = img.width, h = img.height;
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
-        else { w = Math.round(w * MAX / h); h = MAX; }
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: "image/jpeg" })), "image/jpeg", 0.75);
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  });
+  const compressImage = async (file) => {
+    const MAX = 1200;
+    // createImageBitmap otomatis baca EXIF orientation → tidak muter sendiri
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    let w = bitmap.width, h = bitmap.height;
+    if (w > MAX || h > MAX) {
+      if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+      else { w = Math.round(w * MAX / h); h = MAX; }
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    return new Promise(resolve =>
+      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: "image/jpeg" })), "image/jpeg", 0.78)
+    );
+  };
 
   const uploadFoto = async (slot) => {
     if (!uploads[slot]) return;
