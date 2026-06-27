@@ -897,6 +897,64 @@ function LegsModal({ tripId, order, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [copiedLeg, setCopiedLeg] = useState(null);
 
+  const printKartuMuat = (leg, ord) => {
+    const tgl = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+    const eta = leg.eta ? new Date(leg.eta).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : "—";
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kartu Muat</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; background: #fff; padding: 20px; }
+      .card { border: 3px solid #BA7517; border-radius: 12px; max-width: 420px; margin: 0 auto; overflow: hidden; }
+      .head { background: #BA7517; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; }
+      .head-title { color: #fff; font-size: 13px; font-weight: 800; letter-spacing: 1px; }
+      .head-sub { color: #fff8e1; font-size: 10px; margin-top: 2px; }
+      .marking-box { background: #1a1a2e; padding: 16px 18px; text-align: center; border-bottom: 2px dashed #BA7517; }
+      .marking-lbl { font-size: 10px; color: #aaa; letter-spacing: 2px; text-transform: uppercase; }
+      .marking-val { font-size: 36px; font-weight: 900; color: #FFD060; letter-spacing: 4px; margin-top: 4px; font-family: monospace; }
+      .kapal-val { font-size: 15px; color: #e0e0e0; margin-top: 6px; font-weight: 700; }
+      .body { padding: 16px 18px; }
+      .row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #f0f0f0; }
+      .row:last-child { border-bottom: none; }
+      .rk { font-size: 11px; color: #888; }
+      .rv { font-size: 12px; font-weight: 800; color: #1a1a1a; text-align: right; max-width: 60%; }
+      .route-box { background: #fffbe6; border: 1px solid #ffe066; border-radius: 7px; padding: 10px 14px; margin: 12px 0 4px; text-align: center; }
+      .route-txt { font-size: 14px; font-weight: 900; color: #7a5700; letter-spacing: .5px; }
+      .eta-txt { font-size: 11px; color: #a07000; margin-top: 3px; }
+      .foot { background: #f8f8f8; padding: 10px 18px; font-size: 10px; color: #888; text-align: center; border-top: 1px solid #eee; }
+      @media print { @page { margin: 10mm; size: A6 portrait; } body { padding: 0; } }
+    </style></head><body>
+    <div class="card">
+      <div class="head">
+        <div>
+          <div class="head-title">PT ALYSSA AUTO LOGISTIK</div>
+          <div class="head-sub">KARTU MUAT KENDARAAN</div>
+        </div>
+        <div style="color:#fff8e1;font-size:10px;text-align:right">${tgl}</div>
+      </div>
+      <div class="marking-box">
+        <div class="marking-lbl">MARKING / KODE EKSPEDISI</div>
+        <div class="marking-val">${leg.marking || "—"}</div>
+        <div class="kapal-val">⚓ ${leg.kapal || "Nama kapal belum diisi"}</div>
+      </div>
+      <div class="body">
+        <div class="route-box">
+          <div class="route-txt">${leg.asal || "—"} &nbsp;→&nbsp; ${leg.tujuan || "—"}</div>
+          <div class="eta-txt">Estimasi Tiba: ${eta}</div>
+        </div>
+        <div class="row"><span class="rk">Tipe Kendaraan</span><span class="rv">${ord?.vehicle_type || "—"}</span></div>
+        <div class="row"><span class="rk">No. Polisi</span><span class="rv">${ord?.nopol || "—"}</span></div>
+        <div class="row"><span class="rk">No. Rangka</span><span class="rv">${ord?.no_rangka || "—"}</span></div>
+        <div class="row"><span class="rk">Warna</span><span class="rv">${ord?.warna || "—"}</span></div>
+        <div class="row"><span class="rk">Pemilik</span><span class="rv">${ord?.customer_nama || "—"}</span></div>
+        <div class="row"><span class="rk">No. HP</span><span class="rv">${ord?.customer_hp || "—"}</span></div>
+      </div>
+      <div class="foot">Siapkan area penerimaan sebelum kapal tiba &nbsp;·&nbsp; Hub admin: 0818 631 135</div>
+    </div>
+    <script>window.onload=()=>window.print()<\/script>
+    </body></html>`;
+    const w = window.open("", "_blank"); w.document.write(html); w.document.close();
+  };
+
   const copyLegLink = (leg, i) => {
     const base = window.location.origin;
     const p = new URLSearchParams({
@@ -972,9 +1030,23 @@ function LegsModal({ tripId, order, onClose, onSave }) {
                 </label>
               </div>
               {(leg.tipe.startsWith("Kapal") || leg.tipe === "Car Carrier" || leg.tipe === "Towing") && (
-                <label style={{ fontSize: 10, color: "#8b949e", display: "block", marginBottom: 6 }}>Nama Kapal / Armada
-                  <input style={{ ...IL, marginTop: 2 }} value={leg.kapal || ""} onChange={e => setLeg(i, { kapal: e.target.value })} placeholder="KM Mutiara Persada" />
-                </label>
+                <div style={{ background: "#0d1a2d", border: "1px solid #1f3a5a", borderRadius: 7, padding: "10px 10px 8px", marginBottom: 6 }}>
+                  <div style={{ fontSize: 10, color: "#60a5fa", fontWeight: 700, marginBottom: 8 }}>INFO KAPAL / EKSPEDISI</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>Nama Kapal
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.kapal || ""} onChange={e => setLeg(i, { kapal: e.target.value })} placeholder="KM Mutiara Persada" />
+                    </label>
+                    <label style={{ fontSize: 10, color: "#8b949e" }}>Marking / Kode Ekspedisi
+                      <input style={{ ...IL, marginTop: 2 }} value={leg.marking || ""} onChange={e => setLeg(i, { marking: e.target.value })} placeholder="AAL-001 / JKT-MKS" />
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => printKartuMuat(leg, order)}
+                    style={{ width: "100%", padding: "7px", borderRadius: 6, border: "none", background: "#1f6feb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                    Cetak Kartu Muat — Share ke Perwakilan
+                  </button>
+                </div>
               )}
               {/* Field driver + link hanya untuk leg yang dikemudikan orang */}
               {!leg.tipe.startsWith("Kapal") && leg.tipe !== "Kapal RoRo" && (
