@@ -43,11 +43,31 @@ export default function DriverRegister() {
     setPreviews(p => ({ ...p, [slot]: url }));
   };
 
+  const compressImage = (file) => new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 1000;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => resolve(new File([blob], file.name, { type: "image/jpeg" })), "image/jpeg", 0.75);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+
   const uploadFoto = async (slot) => {
     if (!uploads[slot]) return;
     setUploading(slot);
-    const fd = new FormData(); fd.append("foto", uploads[slot]);
     try {
+      const compressed = await compressImage(uploads[slot]);
+      const fd = new FormData(); fd.append("foto", compressed);
       await axios.post(`${API}/driver-register/${driverId}/foto/${slot}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
       setUploadDone(d => ({ ...d, [slot]: true }));
     } catch { setError(`Gagal upload foto ${slot}. Coba lagi.`); }
@@ -146,29 +166,33 @@ export default function DriverRegister() {
               </div>
             </div>
 
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {SLOTS.map(sl => (
-              <div key={sl.key} style={{ background: "#161b22", border: `1px solid ${uploadDone[sl.key] ? "#2ea043" : "#21262d"}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ fontSize: 22 }}>{sl.ico}</span>
+              <div key={sl.key} style={{ background: "#161b22", border: `1px solid ${uploadDone[sl.key] ? "#2ea043" : "#21262d"}`, borderRadius: 12, padding: 14 }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontSize: 20 }}>{sl.ico}</span>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{sl.label} {uploadDone[sl.key] && <span style={{ color: "#56d364" }}>✓ Terupload</span>}</div>
-                    <div style={{ fontSize: 11, color: "#8b949e" }}>{sl.desc}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>{sl.label}</div>
+                    {uploadDone[sl.key]
+                      ? <div style={{ fontSize: 11, color: "#56d364" }}>✓ Terupload</div>
+                      : <div style={{ fontSize: 11, color: "#8b949e" }}>{sl.desc}</div>}
                   </div>
                 </div>
 
-                {previews[sl.key] && (
-                  <img src={previews[sl.key]} alt="" style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 8, marginBottom: 10, border: "1px solid #30363d" }} />
-                )}
+                {previews[sl.key]
+                  ? <img src={previews[sl.key]} alt="" style={{ width: "100%", height: 110, objectFit: "cover", borderRadius: 7, marginBottom: 8, border: "1px solid #30363d" }} />
+                  : <div style={{ width: "100%", height: 110, borderRadius: 7, marginBottom: 8, border: "1px dashed #30363d", display: "flex", alignItems: "center", justifyContent: "center", color: "#484f58", fontSize: 24 }}>📷</div>
+                }
 
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   <button type="button" onClick={() => refs[sl.key].current?.click()}
-                    style={{ flex: 1, padding: "9px", borderRadius: 8, border: "1px solid #30363d", background: "none", color: "#e6edf3", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>
-                    {previews[sl.key] ? "Ganti Foto" : "📂 Pilih Foto"}
+                    style={{ padding: "8px", borderRadius: 7, border: "1px solid #30363d", background: "none", color: "#e6edf3", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                    {previews[sl.key] ? "Ganti" : "📂 Pilih Foto"}
                   </button>
                   {previews[sl.key] && !uploadDone[sl.key] && (
                     <button type="button" onClick={() => uploadFoto(sl.key)} disabled={uploading === sl.key}
-                      style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", background: uploading === sl.key ? "#30363d" : "#2ea043", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-                      {uploading === sl.key ? "Uploading..." : "⬆ Upload"}
+                      style={{ padding: "8px", borderRadius: 7, border: "none", background: uploading === sl.key ? "#30363d" : "#2ea043", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                      {uploading === sl.key ? "Mengompres & Upload..." : "⬆ Upload"}
                     </button>
                   )}
                 </div>
@@ -176,6 +200,7 @@ export default function DriverRegister() {
                   onChange={e => pickFile(sl.key, e.target.files[0])} />
               </div>
             ))}
+            </div>
 
             {error && <div style={{ background: "#2d1a1a", border: "1px solid #f85149", borderRadius: 8, padding: "10px 14px", color: "#f85149", fontSize: 13, marginBottom: 14 }}>{error}</div>}
 

@@ -89,9 +89,9 @@ export default function DriverData({ embedded = false }) {
       .info-grid .v { font-weight: 600; }
       .info-grid .sep { grid-column: 1/-1; border-bottom: 1px dashed #ddd; margin: 4px 0; }
       .note { background: #fffbe6; border: 1px solid #ffe066; border-radius: 6px; padding: 10px 14px; font-size: 10px; color: #7a5700; margin-bottom: 20px; }
-      .sign-row { display: flex; justify-content: space-between; margin-top: 40px; }
-      .sign-box { text-align: center; width: 180px; }
-      .sign-line { border-top: 1px solid #222; margin-top: 50px; padding-top: 4px; font-size: 10px; }
+      .stamp-area { margin-top: 36px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+      .stamp-box { border: 3px solid #BA7517; border-radius: 50%; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; opacity: 0.85; }
+      .stamp-box img { width: 70px; height: 70px; object-fit: contain; }
       .foto-row { display: flex; gap: 16px; margin-bottom: 20px; }
       .foto-box { text-align: center; }
       .foto-box img { width: 120px; height: 80px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; display: block; }
@@ -120,9 +120,9 @@ export default function DriverData({ embedded = false }) {
       ${drv.foto_sim ? `<div class="foto-box"><img src="${drv.foto_sim}" /><div class="flbl">Foto SIM</div></div>` : ""}
     </div>` : ""}
     <div class="note">Surat ini menyatakan bahwa driver tersebut di atas adalah tenaga pengiriman resmi dari PT Alyssa Auto Logistik dan berwenang untuk melakukan pengiriman kendaraan atas nama perusahaan.</div>
-    <div class="sign-row">
-      <div class="sign-box"><div class="sign-line">Driver<br><strong>${drv.nama}</strong></div></div>
-      <div class="sign-box"><div class="sign-line">PT Alyssa Auto Logistik<br><strong>Pimpinan</strong></div></div>
+    <div class="stamp-area">
+      <div style="text-align:right;font-size:9px;color:#888;line-height:1.6">Diterbitkan oleh<br><strong style="color:#BA7517">PT Alyssa Auto Logistik</strong><br>${tgl}</div>
+      <div class="stamp-box"><img src="${window.location.origin}/logo.png" alt="Stempel" /></div>
     </div>
     <script>window.onload=()=>window.print()<\/script>
     </body></html>`;
