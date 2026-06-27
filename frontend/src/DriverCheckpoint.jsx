@@ -1202,12 +1202,93 @@ export default function DriverCheckpoint() {
         <section className="drv-card" data-testid="handover-card">
           <div className="drv-card-head">
             <span>Serah Terima Akhir</span>
-            {handoverDone && <span className="drv-pill drv-pill-ok">Lengkap</span>}
+            {handoverDone && <span className="drv-pill drv-pill-ok">Lengkap ✓</span>}
           </div>
           <div className="drv-card-body">
+
+            {/* PANDUAN VISUAL SERAH TERIMA */}
+            {!handoverDone && (
+              <div style={{ background: "#0a1628", border: "1.5px solid #EF9F27", borderRadius: 14, padding: "18px 16px", marginBottom: 20 }}>
+                <div style={{ color: "#EF9F27", fontWeight: 900, fontSize: 15, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1 }}>
+                  PANDUAN SERAH TERIMA — 3 LANGKAH
+                </div>
+
+                {/* Step 1 */}
+                <div style={{ display: "flex", gap: 14, marginBottom: 16, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 36, height: 36, background: bastkList.length > 0 ? "#1DB954" : "#EF9F27", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18, color: "#000", flexShrink: 0 }}>
+                    {bastkList.length > 0 ? "✓" : "1"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: bastkList.length > 0 ? "#1DB954" : "#fff", marginBottom: 4 }}>
+                      FOTO SURAT BASTK
+                    </div>
+                    <div style={{ fontSize: 13, color: "#aaa", lineHeight: 1.6 }}>
+                      Minta pelanggan <b style={{ color: "#fff" }}>tanda tangan + stempel</b> di surat BASTK.<br/>
+                      Letakkan surat di permukaan datar, <b style={{ color: "#fff" }}>foto seluruh halaman jelas terbaca</b>.<br/>
+                      Kalau ada 2 lembar, foto masing-masing.
+                    </div>
+                    {/* Visual mock of document */}
+                    <div style={{ marginTop: 10, background: "#fff", borderRadius: 8, padding: "10px 12px", display: "flex", gap: 10, alignItems: "center" }}>
+                      <div style={{ width: 44, height: 58, background: "#f0f0f0", border: "1.5px solid #ccc", borderRadius: 4, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", padding: "4px 0" }}>
+                        <div style={{ width: 32, height: 3, background: "#999", borderRadius: 2, marginBottom: 3 }} />
+                        <div style={{ width: 28, height: 3, background: "#999", borderRadius: 2, marginBottom: 3 }} />
+                        <div style={{ width: 20, height: 3, background: "#EF9F27", borderRadius: 2, marginBottom: 5 }} />
+                        <div style={{ width: 18, height: 10, background: "#e74c3c", borderRadius: 2, opacity: 0.7 }} />
+                      </div>
+                      <div style={{ fontSize: 12, color: "#333", lineHeight: 1.7 }}>
+                        <div>✔ Tanda tangan terlihat</div>
+                        <div>✔ Stempel ada</div>
+                        <div>✔ Tulisan terbaca jelas</div>
+                        <div>✔ Semua sudut masuk frame</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 2 */}
+                <div style={{ display: "flex", gap: 14, marginBottom: 16, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 36, height: 36, background: "#1a2740", border: "2px solid #2a4a7f", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18, color: "#7fa8d4", flexShrink: 0 }}>
+                    2
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: "#fff", marginBottom: 4 }}>KIRIM BERKAS ASLI via JNE / J&T</div>
+                    <div style={{ fontSize: 13, color: "#aaa", lineHeight: 1.6 }}>
+                      Masukkan <b style={{ color: "#fff" }}>BASTK asli + copy STNK</b> ke dalam amplop.<br/>
+                      Kirim ke kantor PT Alyssa dalam <b style={{ color: "#EF9F27" }}>1–2 hari kerja</b> setelah serah terima.<br/>
+                      Alamat tujuan: <b style={{ color: "#fff" }}>tanyakan ke admin via WA 0818 631 135</b>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 3 */}
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 36, height: 36, background: resi ? "#1DB954" : "#1a2740", border: resi ? "none" : "2px solid #2a4a7f", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18, color: resi ? "#000" : "#7fa8d4", flexShrink: 0 }}>
+                    {resi ? "✓" : "3"}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: resi ? "#1DB954" : "#fff", marginBottom: 4 }}>FOTO RESI PENGIRIMAN</div>
+                    <div style={{ fontSize: 13, color: "#aaa", lineHeight: 1.6 }}>
+                      Setelah paket dikirim, <b style={{ color: "#fff" }}>foto struk/resi dari JNE atau J&T</b>.<br/>
+                      Upload foto resi di bawah — <b style={{ color: "#EF9F27" }}>Tahap 3 langsung cair!</b>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* BASTK UPLOAD */}
             <div className="drv-handover-block">
-              <div className="drv-handover-title">BASTK (Berita Acara Serah Terima Kendaraan)</div>
-              <div className="drv-handover-sub">PDF atau foto. Max 6 lembar. ({bastkList.length}/6)</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: bastkList.length > 0 ? "#1DB954" : "#fff" }}>
+                  {bastkList.length > 0 ? "✓ BASTK Terupload" : "LANGKAH 1 — Foto BASTK"}
+                </div>
+                <span style={{ fontSize: 12, color: "#888" }}>({bastkList.length}/6 foto)</span>
+              </div>
+              {bastkList.length === 0 && (
+                <div style={{ background: "#0d1a0d", border: "1px dashed #2ea043", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 13, color: "#aaa", lineHeight: 1.7 }}>
+                  Foto surat BASTK yang sudah <b style={{ color: "#fff" }}>ditandatangani pelanggan dan ada stempelnya</b>. Kalau ada 2 halaman, foto keduanya.
+                </div>
+              )}
               <div className="drv-doc-grid">
                 {bastkList.map((b) => (
                   <a key={b.id} href={resolveUrl(b.url)} target="_blank" rel="noreferrer" className="drv-doc-thumb">
@@ -1220,25 +1301,35 @@ export default function DriverCheckpoint() {
                       ref={(el) => fileRefs.current["bastk"] = el}
                       type="file"
                       accept="image/*,application/pdf"
+                      capture="environment"
                       onChange={(e) => uploadBastk(e.target.files?.[0])}
                       style={{ display: "none" }}
                     />
-                    <button className="drv-doc-add" onClick={() => triggerFile("bastk")} disabled={uploadingBastk} data-testid="btn-add-bastk">
-                      <span>+</span>
-                      <span>{uploadingBastk ? "Upload..." : "Tambah BASTK"}</span>
+                    <button className="drv-doc-add" onClick={() => triggerFile("bastk")} disabled={uploadingBastk} data-testid="btn-add-bastk"
+                      style={{ background: bastkList.length === 0 ? "#1a3a1a" : undefined, borderColor: bastkList.length === 0 ? "#2ea043" : undefined }}>
+                      <span style={{ fontSize: 24 }}>📄</span>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{uploadingBastk ? "Upload..." : (bastkList.length === 0 ? "FOTO BASTK\nSEKARANG" : "Tambah Halaman")}</span>
                     </button>
                   </>
                 )}
               </div>
             </div>
 
+            {/* RESI UPLOAD */}
             <div className="drv-handover-block">
-              <div className="drv-handover-title">Foto Resi Pengiriman Dokumen</div>
-              <div className="drv-handover-sub">Resi pengiriman berkas asli yang dikirim ke kantor.</div>
+              <div style={{ fontWeight: 800, fontSize: 15, color: resi ? "#1DB954" : "#fff", marginBottom: 6 }}>
+                {resi ? "✓ Resi Terupload" : "LANGKAH 3 — Foto Resi JNE / J&T"}
+              </div>
+              {!resi && (
+                <div style={{ background: "#1a1400", border: "1px dashed #EF9F27", borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 13, color: "#aaa", lineHeight: 1.7 }}>
+                  Setelah kirim berkas via ekspedisi, <b style={{ color: "#EF9F27" }}>foto struk resinya</b>. Pastikan <b style={{ color: "#fff" }}>nomor resi dan nama tujuan kelihatan</b>.
+                </div>
+              )}
               <input
                 ref={(el) => fileRefs.current["resi"] = el}
                 type="file"
                 accept="image/*,application/pdf"
+                capture="environment"
                 onChange={(e) => uploadResi(e.target.files?.[0])}
                 style={{ display: "none" }}
               />
@@ -1252,11 +1343,29 @@ export default function DriverCheckpoint() {
                   </button>
                 </div>
               ) : (
-                <button className="drv-btn drv-btn-blue" onClick={() => triggerFile("resi")} disabled={uploadingResi} data-testid="btn-upload-resi">
-                  {uploadingResi ? "Upload..." : "Upload Foto Resi"}
+                <button
+                  onClick={() => triggerFile("resi")}
+                  disabled={uploadingResi}
+                  data-testid="btn-upload-resi"
+                  style={{ width: "100%", padding: "16px", background: "#EF9F27", color: "#000", border: "none", borderRadius: 12, fontWeight: 900, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+                >
+                  <span style={{ fontSize: 22 }}>🧾</span>
+                  <span>{uploadingResi ? "Uploading..." : "FOTO RESI SEKARANG"}</span>
                 </button>
               )}
             </div>
+
+            {/* STATUS SERAH TERIMA */}
+            {handoverDone && (
+              <div style={{ background: "#0d1a0d", border: "2px solid #1DB954", borderRadius: 14, padding: "16px", textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+                <div style={{ fontWeight: 900, fontSize: 18, color: "#1DB954", marginBottom: 6 }}>SERAH TERIMA LENGKAP!</div>
+                <div style={{ fontSize: 13, color: "#aaa", lineHeight: 1.7 }}>
+                  BASTK & Resi sudah terupload.<br/>
+                  Admin sedang memproses pencairan <b style={{ color: "#EF9F27" }}>Tahap 3 + Bonus</b>.
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
