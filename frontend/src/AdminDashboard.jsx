@@ -328,6 +328,20 @@ function Dashboard({ pin, onLogout }) {
 
       {activeTab === "pesanan" && <>
 
+      {/* ── Link Form Pesanan ── */}
+      <div style={{ maxWidth: 960, margin: "12px auto 0", padding: "0 16px" }}>
+        <div style={{ background: "#1a2d4a", border: "1px solid #1f6feb", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, color: "#60a5fa", fontWeight: 700 }}>🔗 Link Form Pesanan:</span>
+          <code style={{ flex: 1, fontSize: 13, color: "#e6edf3", background: "#0d1117", padding: "5px 10px", borderRadius: 6, border: "1px solid #30363d", wordBreak: "break-all" }}>
+            {window.location.origin}/order
+          </code>
+          <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/order`)}
+            style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #1f6feb", background: "none", color: "#60a5fa", cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+            📋 Salin
+          </button>
+        </div>
+      </div>
+
       {/* ── Stats ── */}
       {stats && (
         <section className="adm-stats" data-testid="adm-stats">
