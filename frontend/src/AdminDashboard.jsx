@@ -308,7 +308,23 @@ function Dashboard({ pin, onLogout }) {
         </div>
       )}
 
-      {activeTab === "drivers" && <DriverData embedded />}
+      {activeTab === "drivers" && (
+        <>
+          <div style={{ maxWidth: 900, margin: "12px auto 0", padding: "0 16px" }}>
+            <div style={{ background: "#1a4a2a", border: "1px solid #2ea043", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: "#56d364", fontWeight: 700 }}>🔗 Link Daftar Driver:</span>
+              <code style={{ flex: 1, fontSize: 13, color: "#e6edf3", background: "#0d1117", padding: "5px 10px", borderRadius: 6, border: "1px solid #30363d", wordBreak: "break-all" }}>
+                {window.location.origin}/daftar-driver
+              </code>
+              <button onClick={() => navigator.clipboard.writeText(`${window.location.origin}/daftar-driver`)}
+                style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #2ea043", background: "none", color: "#56d364", cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+                📋 Salin
+              </button>
+            </div>
+          </div>
+          <DriverData embedded />
+        </>
+      )}
 
       {activeTab === "pesanan" && <>
 
