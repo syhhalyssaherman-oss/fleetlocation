@@ -945,8 +945,7 @@ function LegsModal({ tripId, order, onClose, onSave }) {
         <div class="row"><span class="rk">No. Polisi</span><span class="rv">${ord?.nopol || "—"}</span></div>
         <div class="row"><span class="rk">No. Rangka</span><span class="rv">${ord?.no_rangka || "—"}</span></div>
         <div class="row"><span class="rk">Warna</span><span class="rv">${ord?.warna || "—"}</span></div>
-        <div class="row"><span class="rk">Pemilik</span><span class="rv">${ord?.customer_nama || "—"}</span></div>
-        <div class="row"><span class="rk">No. HP</span><span class="rv">${ord?.customer_hp || "—"}</span></div>
+        <div class="row"><span class="rk">Pengirim</span><span class="rv">PT. ALYSSA AUTO LOGISTIK</span></div>
       </div>
       <div class="foot">Siapkan area penerimaan sebelum kapal tiba &nbsp;·&nbsp; Hub admin: 0818 631 135</div>
     </div>
