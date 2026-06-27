@@ -887,15 +887,30 @@ const LEG_STATUS = ["Menunggu", "Berlangsung", "Selesai"];
 
 function LegsModal({ tripId, order, onClose, onSave }) {
   const [legs, setLegs] = useState(() => {
-    // Pakai legs yang sudah tersimpan kalau ada
     if (Array.isArray(order?.legs) && order.legs.length > 0) return order.legs;
     return [
-      { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
-      { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
-      { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu" },
+      { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "" },
+      { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu", driver: "" },
+      { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu", driver: "" },
     ];
   });
   const [saving, setSaving] = useState(false);
+  const [copiedLeg, setCopiedLeg] = useState(null);
+
+  const copyLegLink = (leg, i) => {
+    const base = window.location.origin;
+    const p = new URLSearchParams({
+      trip: tripId,
+      nopol: order?.nopol || order?.vehicle_type || "",
+      driver: leg.driver || `Driver Leg ${i + 1}`,
+      route: `${leg.asal} → ${leg.tujuan}`,
+      tipe: leg.tipe,
+    });
+    if (order?.no_rangka) p.set("rangka", order.no_rangka);
+    navigator.clipboard.writeText(`${base}/trip/${tripId}?${p.toString()}`);
+    setCopiedLeg(i);
+    setTimeout(() => setCopiedLeg(null), 2000);
+  };
 
   const setLeg = (i, patch) => setLegs(ls => ls.map((l, idx) => idx === i ? { ...l, ...patch } : l));
   const addLeg = () => setLegs(ls => [...ls, { tipe: "Self Drive", asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu" }]);
@@ -957,9 +972,26 @@ function LegsModal({ tripId, order, onClose, onSave }) {
                 </label>
               </div>
               {(leg.tipe.startsWith("Kapal") || leg.tipe === "Car Carrier" || leg.tipe === "Towing") && (
-                <label style={{ fontSize: 10, color: "#8b949e" }}>Nama Kapal / Armada
-                  <input style={{ ...IL, marginTop: 2 }} value={leg.kapal} onChange={e => setLeg(i, { kapal: e.target.value })} placeholder="KM Mutiara Persada" />
+                <label style={{ fontSize: 10, color: "#8b949e", display: "block", marginBottom: 6 }}>Nama Kapal / Armada
+                  <input style={{ ...IL, marginTop: 2 }} value={leg.kapal || ""} onChange={e => setLeg(i, { kapal: e.target.value })} placeholder="KM Mutiara Persada" />
                 </label>
+              )}
+              {/* Field driver + link hanya untuk leg yang dikemudikan orang */}
+              {!leg.tipe.startsWith("Kapal") && leg.tipe !== "Kapal RoRo" && (
+                <div style={{ marginTop: 6, padding: "8px 10px", background: "#0a1628", border: "1px solid #1f3a5a", borderRadius: 6 }}>
+                  <label style={{ fontSize: 10, color: "#60a5fa", display: "block", marginBottom: 4, fontWeight: 700 }}>NAMA DRIVER LEG INI</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input style={{ ...IL, flex: 1 }} value={leg.driver || ""} onChange={e => setLeg(i, { driver: e.target.value })} placeholder="Nama driver (isi sebelum salin link)" />
+                    <button
+                      type="button"
+                      onClick={() => copyLegLink(leg, i)}
+                      disabled={!tripId}
+                      style={{ padding: "5px 10px", borderRadius: 5, border: "none", background: copiedLeg === i ? "#2ea043" : "#1f6feb", color: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+                      {copiedLeg === i ? "✓ Tersalin!" : "Salin Link"}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 10, color: "#4a6fa5", marginTop: 4 }}>Kirim link ini ke driver yang bertugas di leg {i + 1}</div>
+                </div>
               )}
             </div>
           ))}
