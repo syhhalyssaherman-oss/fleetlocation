@@ -497,11 +497,32 @@ async def xendit_disburse(trip_id: str, payload: CairBody):
 
 # ---------- BASTK (Berita Acara Serah Terima Kendaraan) — v2.6a ADDITIVE ----------
 VALID_VEHICLE_TYPES = {
-    # 16 bentuk unit (dropdown — cocok dgn sketsa)
-    "Sedan", "MPV / SUV", "Pickup / Double Cabin", "Truck Box", "Truck Bak",
-    "Dump Truck", "Truck Tangki", "Concrete Pump", "Fire Truck", "Motor",
-    "Excavator", "Grader", "Dozer", "Vibro Roller", "Forklift", "Dump Crawler",
-    # Tipe lama (backward-compat untuk data lama)
+    # Tipe utama
+    "Sedan", "MPV / SUV", "MPV / SUV Lainnya", "Pickup / Double Cabin",
+    "Truck Box", "Truck Bak", "Dump Truck", "Truck Tangki", "Concrete Pump",
+    "Fire Truck", "Motor", "Excavator", "Grader", "Dozer", "Vibro Roller",
+    "Forklift", "Dump Crawler",
+    # Toyota
+    "Toyota Avanza", "Toyota Veloz", "Toyota Rush", "Toyota Fortuner",
+    "Toyota Kijang Innova", "Toyota Innova Zenix", "Toyota Raize",
+    "Toyota Yaris Cross", "Toyota Alphard", "Toyota Vellfire", "Toyota Hilux",
+    # Daihatsu
+    "Daihatsu Xenia", "Daihatsu Terios", "Daihatsu Rocky", "Daihatsu Sigra",
+    "Daihatsu Ayla", "Daihatsu Gran Max",
+    # Honda
+    "Honda BR-V", "Honda HR-V", "Honda CR-V", "Honda Mobilio", "Honda Brio",
+    "Honda WR-V", "Honda Pilot",
+    # Mitsubishi
+    "Mitsubishi Xpander", "Mitsubishi Xpander Cross", "Mitsubishi Pajero Sport",
+    "Mitsubishi Outlander", "Mitsubishi Eclipse Cross", "Mitsubishi L300",
+    # Wuling
+    "Wuling Almaz", "Wuling Alvez", "Wuling Confero", "Wuling Air EV", "Wuling BinguoEV",
+    # BYD
+    "BYD Atto 3", "BYD Seal", "BYD Dolphin", "BYD Sealion 6", "BYD M6",
+    # Suzuki
+    "Suzuki Ertiga", "Suzuki XL7", "Suzuki Grand Vitara", "Suzuki Baleno",
+    "Suzuki Ignis", "Suzuki Carry",
+    # Tipe lama (backward-compat)
     "Mobil Kecil Biasa", "Mobil Kecil Medium",
     "Truck Ringan D4 Std", "Truck Ringan D4 Long",
     "Truck Sedang D6 Std", "Truck Sedang D6 Long",
