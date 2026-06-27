@@ -1613,6 +1613,37 @@ class DriverBody(BaseModel):
     alamat: Optional[str] = ""
     status: Optional[str] = "aktif"
 
+@api_router.post("/driver-register")
+async def driver_self_register(body: DriverBody):
+    """Form pendaftaran publik untuk driver — tidak butuh PIN admin."""
+    now = datetime.utcnow().isoformat()
+    doc = {
+        "driver_id": _gen_driver_id(),
+        "nama": body.nama.strip(),
+        "no_hp": (body.no_hp or "").strip(),
+        "no_ktp": (body.no_ktp or "").strip(),
+        "no_sim": (body.no_sim or "").strip(),
+        "tipe_sim": (body.tipe_sim or "").strip(),
+        "alamat": (body.alamat or "").strip(),
+        "status": "pending",
+        "foto_ktp": None, "foto_sim": None, "foto_selfie": None,
+        "created_at": now, "updated_at": now,
+    }
+    await db.drivers.insert_one(doc)
+    doc.pop("_id", None)
+    return {"ok": True, "driver_id": doc["driver_id"]}
+
+@api_router.post("/driver-register/{driver_id}/foto/{slot}")
+async def driver_register_foto(driver_id: str, slot: str, foto: UploadFile = File(...)):
+    """Upload foto KTP/SIM/selfie dari form pendaftaran driver (tanpa PIN)."""
+    if slot not in ("ktp", "sim", "selfie"):
+        raise HTTPException(400, "Slot tidak valid")
+    drv = await db.drivers.find_one({"driver_id": driver_id})
+    if not drv: raise HTTPException(404, "Driver tidak ditemukan")
+    url = _save_upload(driver_id, f"driver-{slot}", foto, {".jpg", ".jpeg", ".png", ".webp"})
+    await db.drivers.update_one({"driver_id": driver_id}, {"$set": {f"foto_{slot}": url, "updated_at": datetime.utcnow().isoformat()}})
+    return {"ok": True, "url": url}
+
 @api_router.get("/admin/drivers", dependencies=[Depends(require_admin_pin)])
 async def list_drivers(q: Optional[str] = None, status: Optional[str] = None):
     filt: dict = {}

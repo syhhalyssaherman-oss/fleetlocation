@@ -10,6 +10,7 @@ import OperationGuide from "@/OperationGuide";
 import Homepage from "@/Homepage";
 import CostCalculator from "@/CostCalculator";
 import DriverData from "@/DriverData";
+import DriverRegister from "@/DriverRegister";
 
 // Resolve path segment: /track/TRIP-XXX -> "TRIP-XXX"
 function pathSegment(pathname, prefix) {
@@ -28,6 +29,7 @@ function App() {
     if (p === "/admin")             return { route: "admin" };
     if (p === "/kalkulator")        return { route: "kalkulator" };
     if (p === "/drivers")           return { route: "drivers" };
+    if (p === "/daftar-driver")     return { route: "daftar-driver" };
     if (p === "/guide")             return { route: "guide" };
     if (p.startsWith("/track/"))    return { route: "track" };
     if (p.startsWith("/trip/"))     return { route: "driver" };
@@ -73,7 +75,8 @@ function App() {
   if (route === "guide")  return <OperationGuide />;
   if (route === "admin")  return <AdminDashboard />;
   if (route === "kalkulator") return <CostCalculator />;
-  if (route === "drivers")    return <DriverData />;
+  if (route === "drivers")        return <DriverData />;
+  if (route === "daftar-driver")  return <DriverRegister />;
   if (route === "order")  return <CustomerOrderForm />;
   if (route === "status") return <CustomerOrderStatus />;
   if (route === "bastk")  return <BASTKPage />;
