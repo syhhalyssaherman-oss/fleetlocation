@@ -414,6 +414,7 @@ function Dashboard({ pin, onLogout }) {
             onPatch={(body) => patchOrder(o.order_id, body)}
             onOdoo={doOdoo}
             onDelete={() => deleteOrder(o.order_id)}
+            onOpenLegs={() => setLegsModal({ tripId: o.trip_id, order: o })}
           />
         ))}
       </section>
@@ -469,7 +470,7 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 /* ════════════════════════════════════════
    ORDER CARD
 ════════════════════════════════════════ */
-function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete }) {
+function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLegs }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const [editNama, setEditNama] = useState(false);
@@ -659,7 +660,7 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete }) {
           </button>
         )}
         {order.trip_id && (
-          <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={() => setLegsModal({ tripId: order.trip_id, order })} data-testid={`adm-legs-${order.order_id}`}>
+          <button className="adm-btn adm-btn-ghost adm-btn-sm" onClick={onOpenLegs} data-testid={`adm-legs-${order.order_id}`}>
             <IcoRoute /> Rute Leg
           </button>
         )}
@@ -886,12 +887,13 @@ const LEG_STATUS = ["Menunggu", "Berlangsung", "Selesai"];
 
 function LegsModal({ tripId, order, onClose, onSave }) {
   const [legs, setLegs] = useState(() => {
-    const def = [
+    // Pakai legs yang sudah tersimpan kalau ada
+    if (Array.isArray(order?.legs) && order.legs.length > 0) return order.legs;
+    return [
       { tipe: "Self Drive", asal: order?.asal_kota || "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
       { tipe: "Kapal RoRo",  asal: "", tujuan: "", kapal: "", eta: "", status: "Menunggu" },
       { tipe: "Self Drive", asal: "", tujuan: order?.tujuan_kota || "", kapal: "", eta: "", status: "Menunggu" },
     ];
-    return def;
   });
   const [saving, setSaving] = useState(false);
 
