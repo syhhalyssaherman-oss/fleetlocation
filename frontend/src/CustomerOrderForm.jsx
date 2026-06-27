@@ -162,7 +162,15 @@ export default function CustomerOrderForm() {
     } finally { setSubmitting(false); }
   };
 
-  if (result) return <SuccessScreen order={result} />;
+  const addAnother = () => {
+    // Reset hanya data kendaraan, sisanya (asal/tujuan/customer) tetap
+    setData(d => ({ ...d, vehicle_type: "", nopol: "", warna: "", tahun: "", km: "", kondisi: "Bekas", no_rangka: "" }));
+    setFiles([]);
+    setResult(null);
+    setStep(0);
+  };
+
+  if (result) return <SuccessScreen order={result} prevData={data} onAddAnother={addAnother} />;
 
   return (
     <div className="of-root" data-testid="ord-root">
@@ -483,7 +491,13 @@ function SRow({ k, v }) {
   );
 }
 
-function SuccessScreen({ order }) {
+const IcoPlus = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+
+function SuccessScreen({ order, prevData, onAddAnother }) {
   const trackUrl = order.trip_id ? `${window.location.origin}/track/${order.trip_id}` : "";
   return (
     <div className="of-root">
@@ -510,6 +524,31 @@ function SuccessScreen({ order }) {
           <SRow k="Rute"       v={`${order.asal_kota} → ${order.tujuan_kota}`} />
           <SRow k="Kontak"     v={`${order.customer_nama} · ${order.customer_hp}`} />
         </div>
+
+        {/* Tambah kendaraan lain — tujuan sama */}
+        {onAddAnother && (
+          <div style={{ background: "linear-gradient(135deg,#0f2d1f,#1a4a2a)", border: "1px solid #2ea043", borderRadius: 14, padding: "18px 20px", margin: "16px 0", textAlign: "left" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#56d364", marginBottom: 4 }}>🚗 Kirim Kendaraan Lain?</div>
+            <div style={{ fontSize: 12, color: "#8b949e", marginBottom: 12 }}>
+              Data pickup &amp; tujuan sudah tersimpan — tinggal isi data kendaraan berikutnya.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+              {[
+                { ico: "📍", val: `${prevData?.asal_kota || "—"}` },
+                { ico: "🏁", val: `${prevData?.tujuan_kota || "—"}` },
+                { ico: "📅", val: `${prevData?.pickup_date || "—"} ${prevData?.pickup_time || ""}`.trim() },
+              ].map((item, i) => (
+                <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 8, background: "#0d1117", border: "1px solid #30363d", color: "#e6edf3" }}>
+                  {item.ico} {item.val}
+                </span>
+              ))}
+            </div>
+            <button onClick={onAddAnother} className="of-btn of-btn--primary" style={{ width: "100%", justifyContent: "center" }}>
+              <IcoPlus /> Tambah Kendaraan Lain ke Tujuan yang Sama
+            </button>
+          </div>
+        )}
+
         <div className="of-success-actions">
           <a className="of-btn of-btn--primary" href={`/status/${order.order_id}`} data-testid="ord-success-status">
             Cek Status Pesanan <IcoArrow />
@@ -520,7 +559,7 @@ function SuccessScreen({ order }) {
             </a>
           )}
           <a className="of-btn of-btn--ghost" href="?order=1" data-testid="ord-success-new">
-            Buat Pesanan Baru
+            Buat Pesanan Baru (Tujuan Berbeda)
           </a>
         </div>
         <p className="of-success-meta">
