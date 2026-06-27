@@ -128,7 +128,7 @@ const SLOT_GUIDE = {
 const SOP_POINTS = [
   { title: "CEK FISIK", body: "Cek oli, air radiator, lampu, dan ban (termasuk ban serep) sebelum berangkat." },
   { title: "FOTO UNIT", body: "Wajib upload foto 4 sisi mobil + foto dashboard bensin sebelum gas." },
-  { title: "UPDATE FOTO JALUR", body: "Klik tombol hijau setiap hari antara jam 06.00 – 12.00 siang. Foto lokasi wajib terkirim dalam window waktu tersebut. Dapat Rp 30.000 per foto!" },
+  { title: "UPDATE FOTO JALUR", body: "Klik tombol hijau setiap hari antara jam 06.00 – 18.00 sore. Foto lokasi wajib terkirim dalam window waktu tersebut. Dapat Rp 30.000 per foto!" },
   { title: "ATURAN KABIN", body: "Dilarang merokok di dalam mobil. Dilarang beri tumpangan orang asing. Kecepatan tol max 80–100 km/jam." },
   { title: "PENAMPILAN", body: "Wajib berpakaian rapi dan sopan saat bertemu pelanggan di tujuan." },
   { title: "ATURAN FINISH", body: "Mobil WAJIB DICUCI BERSIH dan bensin/solar minimal sisa 1 BAR sebelum serah terima ke konsumen." },
@@ -896,8 +896,8 @@ export default function DriverCheckpoint() {
       {trip.nama_driver && allInitialDone && !todayDone && (() => {
         const wibNow = new Date(Date.now() + (new Date().getTimezoneOffset() + 7 * 60) * 60000);
         const wibHour = wibNow.getHours();
-        const isWindow = wibHour >= 6 && wibHour < 12;
-        const isLate = wibHour >= 12;
+        const isWindow = wibHour >= 6 && wibHour < 18;
+        const isLate = wibHour >= 18;
         return (
           <section className={`drv-reminder ${isLate ? "drv-reminder-late" : (isWindow ? "drv-reminder-now" : "drv-reminder-soon")}`} data-testid="daily-reminder">
             <div className="drv-reminder-icon">{isLate ? "!" : (isWindow ? "CAM" : "~")}</div>
@@ -907,10 +907,10 @@ export default function DriverCheckpoint() {
               </b>
               <div>
                 {isLate
-                  ? "Window 06:00–12:00 WIB sudah lewat. Tetap foto sekarang untuk catat lokasi, tapi bonus harian besok ya."
+                  ? "Window 06:00–18:00 WIB sudah lewat. Tetap foto sekarang untuk catat lokasi, tapi bonus harian besok ya."
                   : (isWindow
-                      ? `Window aktif sampai 12:00 WIB. Sisa ${11 - wibHour} jam lagi. Tap kamera di bawah!`
-                      : "Jangan lupa foto checkpoint besok jam 06:00–12:00 WIB untuk dapat bonus Rp 30.000.")}
+                      ? `Window aktif sampai 18:00 WIB. Sisa ${17 - wibHour} jam lagi. Tap kamera di bawah!`
+                      : "Jangan lupa foto checkpoint besok jam 06:00–18:00 WIB untuk dapat bonus Rp 30.000.")}
               </div>
             </div>
           </section>
@@ -981,7 +981,7 @@ export default function DriverCheckpoint() {
           {todayDone ? (
             <div className="drv-alert drv-alert-ok">
               <b>✓ Foto hari ini sudah terkirim!</b>
-              <div>Bonus Rp 30.000 sedang diproses. Foto lagi besok jam 06.00 – 12.00 siang.</div>
+              <div>Bonus Rp 30.000 sedang diproses. Foto lagi besok jam 06.00 – 18.00 sore.</div>
             </div>
           ) : (
             <div className="drv-alert drv-alert-info">
