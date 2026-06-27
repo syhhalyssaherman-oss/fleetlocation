@@ -1495,29 +1495,184 @@ async def admin_patch_trip_legs(trip_id: str, body: LegsBody):
 
 
 class KoordinatorBody(BaseModel):
-    koordinator: str
-    koordinator_hp: str
+    koordinator_id: Optional[str] = None
+    koordinator_nama: Optional[str] = None
+    koordinator_hp: Optional[str] = ""
+    # Legacy fields kept for backward compat
+    koordinator: Optional[str] = None
 
 @api_router.patch("/admin/trips/{trip_id}/koordinator", dependencies=[Depends(require_admin_pin)])
 async def admin_patch_trip_koordinator(trip_id: str, body: KoordinatorBody):
-    """Set koordinator & koordinator_hp on a trip document."""
+    """Set koordinator_id, koordinator_nama, koordinator_hp on a trip document."""
     trip = await db.trips.find_one({"trip_id": trip_id})
     if not trip:
         raise HTTPException(404, "Trip not found")
     now = datetime.utcnow().isoformat()
-    await db.trips.update_one(
-        {"trip_id": trip_id},
-        {"$set": {"koordinator": body.koordinator.strip(), "koordinator_hp": body.koordinator_hp.strip(), "updated_at": now}}
-    )
+    upd: dict = {"updated_at": now}
+    # New-style fields
+    if body.koordinator_id is not None:
+        upd["koordinator_id"] = body.koordinator_id.strip()
+    if body.koordinator_nama is not None:
+        upd["koordinator_nama"] = body.koordinator_nama.strip()
+        upd["koordinator"] = body.koordinator_nama.strip()  # keep legacy field in sync
+    if body.koordinator_hp is not None:
+        upd["koordinator_hp"] = (body.koordinator_hp or "").strip()
+    # Legacy-only path (old frontend calling with just koordinator)
+    if body.koordinator is not None and body.koordinator_nama is None:
+        upd["koordinator"] = body.koordinator.strip()
+        upd["koordinator_nama"] = body.koordinator.strip()
+    await db.trips.update_one({"trip_id": trip_id}, {"$set": upd})
     return {"ok": True, "trip_id": trip_id}
 
 
-@api_router.get("/koordinator/trips")
-async def koordinator_trips(nama: str = Query(..., min_length=1)):
-    """Return trips assigned to a koordinator by name (case-insensitive). No auth required."""
+# ══════════════════════════════════════════════════════
+# KOORDINATOR ACCOUNT SYSTEM
+# ══════════════════════════════════════════════════════
+
+def _gen_kord_id() -> str:
+    return uuid.uuid4().hex[:8]
+
+class KordCreateBody(BaseModel):
+    nama: str
+    password: str
+
+class KordLoginBody(BaseModel):
+    nama: str
+    password: str
+
+class KordChangePasswordBody(BaseModel):
+    kord_id: str
+    old_password: str
+    new_password: str
+
+class KordResetPasswordBody(BaseModel):
+    password: str
+
+@api_router.post("/admin/koordinators", dependencies=[Depends(require_admin_pin)])
+async def create_koordinator(body: KordCreateBody):
+    """Create a new koordinator account."""
+    nama = body.nama.strip()
+    if not nama:
+        raise HTTPException(400, "Nama tidak boleh kosong")
+    # case-insensitive uniqueness check
     import re as _re
-    rx = _re.compile(r"^\s*" + _re.escape(nama.strip()) + r"\s*$", _re.IGNORECASE)
-    cursor = db.trips.find({"koordinator": rx}, {"_id": 0})
+    existing = await db.koordinators.find_one({"nama": _re.compile(r"^\s*" + _re.escape(nama) + r"\s*$", _re.IGNORECASE)})
+    if existing:
+        raise HTTPException(409, "Nama sudah dipakai")
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "id": _gen_kord_id(),
+        "nama": nama,
+        "password": body.password,
+        "aktif": True,
+        "first_login": True,
+        "created_at": now,
+    }
+    await db.koordinators.insert_one(doc)
+    return {"ok": True, "id": doc["id"], "nama": doc["nama"]}
+
+@api_router.get("/admin/koordinators", dependencies=[Depends(require_admin_pin)])
+async def list_koordinators():
+    """List all koordinators (excluding password)."""
+    items = []
+    async for k in db.koordinators.find({}, {"_id": 0, "password": 0}).sort("created_at", -1):
+        items.append(k)
+    return {"count": len(items), "items": items}
+
+@api_router.delete("/admin/koordinators/{kord_id}", dependencies=[Depends(require_admin_pin)])
+async def deactivate_koordinator(kord_id: str):
+    """Soft-delete: set aktif=False."""
+    res = await db.koordinators.update_one({"id": kord_id}, {"$set": {"aktif": False}})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Koordinator tidak ditemukan")
+    return {"ok": True}
+
+@api_router.post("/admin/koordinators/{kord_id}/reset-password", dependencies=[Depends(require_admin_pin)])
+async def reset_koordinator_password(kord_id: str, body: KordResetPasswordBody):
+    """Admin resets a koordinator password and forces first_login."""
+    res = await db.koordinators.update_one({"id": kord_id}, {"$set": {"password": body.password, "first_login": True}})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Koordinator tidak ditemukan")
+    return {"ok": True}
+
+@api_router.post("/koordinator/login")
+async def koordinator_login(body: KordLoginBody):
+    """Login for koordinator with nama + password."""
+    import re as _re
+    nama = (body.nama or "").strip()
+    kord = await db.koordinators.find_one({"nama": _re.compile(r"^\s*" + _re.escape(nama) + r"\s*$", _re.IGNORECASE)})
+    if not kord or not kord.get("aktif"):
+        raise HTTPException(401, "Nama atau password salah, atau akun tidak aktif")
+    if kord.get("password") != body.password:
+        raise HTTPException(401, "Nama atau password salah")
+    return {"ok": True, "id": kord["id"], "nama": kord["nama"], "first_login": bool(kord.get("first_login", False))}
+
+@api_router.post("/koordinator/change-password")
+async def koordinator_change_password(body: KordChangePasswordBody):
+    """Koordinator changes their own password."""
+    kord = await db.koordinators.find_one({"id": body.kord_id})
+    if not kord:
+        raise HTTPException(404, "Akun tidak ditemukan")
+    if kord.get("password") != body.old_password:
+        raise HTTPException(401, "Password lama salah")
+    await db.koordinators.update_one({"id": body.kord_id}, {"$set": {"password": body.new_password, "first_login": False}})
+    return {"ok": True}
+
+
+def _compute_trip_stats(t: dict, order: dict) -> dict:
+    """Compute checkpoint_rate, days_elapsed, on_time for a trip."""
+    daily = t.get("daily_checkpoints") or []
+    created_at_str = t.get("created_at") or order.get("created_at") or ""
+    status = (order.get("status") or t.get("status") or "").upper()
+    handover = t.get("handover") or {}
+    both_handover = bool(handover.get("bastk")) and bool(handover.get("resi"))
+
+    # Days elapsed
+    days_elapsed = 0
+    if created_at_str:
+        try:
+            start = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+            now_wib = datetime.now(WIB)
+            days_elapsed = max(1, (now_wib.date() - start.date()).days + 1)
+        except Exception:
+            days_elapsed = 1
+
+    # Checkpoint rate: unique dates in daily vs days elapsed
+    cp_dates = set(cp.get("date") for cp in daily if cp.get("date"))
+    if days_elapsed > 0:
+        checkpoint_rate = round(len(cp_dates) / days_elapsed * 100)
+        checkpoint_rate = min(100, checkpoint_rate)
+    else:
+        checkpoint_rate = 0
+
+    # on_time: only applicable for DELIVERED trips
+    on_time = None
+    if status == "DELIVERED":
+        estimated_days = t.get("estimated_days") or order.get("estimated_days")
+        if estimated_days:
+            on_time = days_elapsed <= int(estimated_days)
+        else:
+            on_time = True  # no estimate, assume on time
+
+    return {
+        "checkpoint_rate": checkpoint_rate,
+        "days_elapsed": days_elapsed,
+        "on_time": on_time,
+        "both_handover": both_handover,
+    }
+
+
+@api_router.get("/koordinator/trips")
+async def koordinator_trips(kord_id: Optional[str] = Query(None), nama: Optional[str] = Query(None)):
+    """Return trips assigned to a koordinator by kord_id (or legacy nama). No auth required."""
+    import re as _re
+    if kord_id:
+        cursor = db.trips.find({"koordinator_id": kord_id}, {"_id": 0})
+    elif nama:
+        rx = _re.compile(r"^\s*" + _re.escape(nama.strip()) + r"\s*$", _re.IGNORECASE)
+        cursor = db.trips.find({"koordinator": rx}, {"_id": 0})
+    else:
+        raise HTTPException(400, "kord_id atau nama diperlukan")
     items = []
     async for t in cursor:
         # Enrich with order data
@@ -1525,6 +1680,7 @@ async def koordinator_trips(nama: str = Query(..., min_length=1)):
         daily = t.get("daily_checkpoints") or []
         legs = t.get("legs") or []
         handover = t.get("handover") or {}
+        stats = _compute_trip_stats(t, order)
         items.append({
             "trip_id": t.get("trip_id"),
             "order_id": order.get("order_id") or t.get("order_id"),
@@ -1537,13 +1693,19 @@ async def koordinator_trips(nama: str = Query(..., min_length=1)):
             "customer_nama": order.get("customer_nama"),
             "legs": legs,
             "daily_checkpoints_count": len(daily),
-            "last_checkpoint": daily[-1].get("created_at") if daily else None,
+            "last_checkpoint": daily[-1].get("ts") if daily else None,
             "handover": {
                 "bastk": bool(handover.get("bastk")),
                 "resi": bool(handover.get("resi")),
             },
             "koordinator": t.get("koordinator"),
+            "koordinator_id": t.get("koordinator_id"),
+            "koordinator_nama": t.get("koordinator_nama"),
             "koordinator_hp": t.get("koordinator_hp"),
+            "checkpoint_rate": stats["checkpoint_rate"],
+            "days_elapsed": stats["days_elapsed"],
+            "on_time": stats["on_time"],
+            "both_handover": stats["both_handover"],
         })
     return {"count": len(items), "items": items}
 

@@ -157,6 +157,7 @@ function Dashboard({ pin, onLogout }) {
   const [odooModal, setOdooModal] = useState(null);
   const [legsModal, setLegsModal] = useState(null);
   const [toast, setToast] = useState("");
+  const [kordList, setKordList] = useState([]);
 
   const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2600); };
 
@@ -180,6 +181,12 @@ function Dashboard({ pin, onLogout }) {
   }, [headers, statusFilter, search, dateFrom, dateTo]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
+
+  useEffect(() => {
+    axios.get(`${API}/admin/koordinators`, { headers })
+      .then(r => setKordList(r.data.items || []))
+      .catch(() => {});
+  }, [headers]);
 
   const patchOrder = async (orderId, body) => {
     try {
@@ -300,6 +307,13 @@ function Dashboard({ pin, onLogout }) {
             color: activeTab === "drivers" ? "var(--gold)" : "var(--text-3)",
             borderBottom: activeTab === "drivers" ? "2px solid var(--gold)" : "2px solid transparent" }}
         >👷 Data Driver</button>
+        <button
+          onClick={() => setActiveTab("koordinator")}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: "8px 8px 0 0", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
+            background: activeTab === "koordinator" ? "var(--bg-card)" : "transparent",
+            color: activeTab === "koordinator" ? "var(--gold)" : "var(--text-3)",
+            borderBottom: activeTab === "koordinator" ? "2px solid var(--gold)" : "2px solid transparent" }}
+        >🧑‍💼 Koordinator</button>
       </div>
 
       {activeTab === "kalkulator" && (
@@ -324,6 +338,10 @@ function Dashboard({ pin, onLogout }) {
           </div>
           <DriverData embedded />
         </>
+      )}
+
+      {activeTab === "koordinator" && (
+        <KordManageTab headers={headers} />
       )}
 
       {activeTab === "pesanan" && <>
@@ -430,6 +448,7 @@ function Dashboard({ pin, onLogout }) {
             onDelete={() => deleteOrder(o.order_id)}
             onOpenLegs={() => setLegsModal({ tripId: o.trip_id, order: o })}
             headers={headers}
+            kordList={kordList}
           />
         ))}
       </section>
@@ -486,7 +505,7 @@ function StatTile({ label, value, cls = "", onClick, active, testid }) {
 /* ════════════════════════════════════════
    ORDER CARD
 ════════════════════════════════════════ */
-function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLegs, headers }) {
+function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLegs, headers, kordList = [] }) {
   const [editDriver, setEditDriver] = useState(false);
   const [driverDraft, setDriverDraft] = useState(order.driver_id || "");
   const [editNama, setEditNama] = useState(false);
@@ -494,19 +513,27 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLeg
   const [editVehicle, setEditVehicle] = useState(false);
   const [vtDraft, setVtDraft] = useState(order.vehicle_type || "");
   const [nopolDraft, setNopolDraft] = useState(order.nopol || "");
-  const [editKord, setEditKord] = useState(false);
-  const [kordNama, setKordNama] = useState(order.koordinator || "");
-  const [kordHp, setKordHp] = useState(order.koordinator_hp || "");
+  const [kordDraft, setKordDraft] = useState(order.koordinator_id || "");
+  const [kordSaving, setKordSaving] = useState(false);
   const lbl = STATUS_LABEL[order.status] || { txt: order.status, cls: "adm-chip-new" };
 
-  const saveKord = async () => {
+  const activeKords = kordList.filter(k => k.aktif !== false);
+
+  const saveKord = async (selectedId) => {
     if (!order.trip_id) return;
+    const kord = kordList.find(k => k.id === selectedId);
+    if (!kord) return;
+    setKordSaving(true);
     try {
-      await axios.patch(`${API}/admin/trips/${order.trip_id}/koordinator`, { koordinator: kordNama.trim(), koordinator_hp: kordHp.trim() }, { headers });
-      setEditKord(false);
+      await axios.patch(`${API}/admin/trips/${order.trip_id}/koordinator`, {
+        koordinator_id: kord.id,
+        koordinator_nama: kord.nama,
+        koordinator_hp: "",
+      }, { headers });
+      setKordDraft(selectedId);
     } catch (e) {
       alert(e?.response?.data?.detail || "Gagal simpan koordinator");
-    }
+    } finally { setKordSaving(false); }
   };
 
   const saveVehicle = async () => {
@@ -653,31 +680,32 @@ function OrderCard({ order, idx, onConvert, onPatch, onOdoo, onDelete, onOpenLeg
           <div className="adm-field-row adm-full">
             <div className="adm-field-key">Koordinator</div>
             <div className="adm-field-val">
-              {editKord ? (
-                <span className="adm-driver-edit-row" style={{ flexWrap: "wrap", gap: 4 }}>
-                  <input
+              {activeKords.length > 0 ? (
+                <span className="adm-driver-row">
+                  <select
                     className="adm-input-inline"
-                    value={kordNama}
-                    onChange={e => setKordNama(e.target.value)}
-                    placeholder="Nama koordinator"
-                    autoFocus
-                  />
-                  <input
-                    className="adm-input-inline adm-mono"
-                    value={kordHp}
-                    onChange={e => setKordHp(e.target.value)}
-                    placeholder="08xx-xxxx"
-                  />
-                  <button className="adm-btn adm-btn-gold adm-btn-xs" onClick={saveKord}>OK</button>
-                  <button className="adm-btn adm-btn-ghost adm-btn-xs" onClick={() => { setEditKord(false); setKordNama(order.koordinator || ""); setKordHp(order.koordinator_hp || ""); }}><IcoX /></button>
+                    value={kordDraft}
+                    onChange={e => saveKord(e.target.value)}
+                    disabled={kordSaving}
+                    style={{ minWidth: 160 }}
+                  >
+                    <option value="">— Pilih koordinator —</option>
+                    {activeKords.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                  </select>
+                  {kordSaving && <span style={{ fontSize: 11, color: "#8b949e" }}>Menyimpan...</span>}
+                  {!kordSaving && kordDraft && (
+                    <span className="adm-pill" style={{ marginLeft: 4 }}>
+                      {(kordList.find(k => k.id === kordDraft) || {}).nama || kordDraft}
+                    </span>
+                  )}
+                  {!kordSaving && !kordDraft && order.koordinator && (
+                    <span className="adm-mute" style={{ fontSize: 11, marginLeft: 4 }}>{order.koordinator}</span>
+                  )}
                 </span>
               ) : (
-                <span className="adm-driver-row">
-                  {order.koordinator
-                    ? <><span className="adm-pill">{order.koordinator}</span>{order.koordinator_hp && <span className="adm-mute" style={{ fontSize: 11 }}>{order.koordinator_hp}</span>}</>
-                    : <i className="adm-mute">belum ditugaskan</i>}
-                  <button className="adm-link" onClick={() => setEditKord(true)}><IcoPencil /></button>
-                </span>
+                <i className="adm-mute">
+                  {order.koordinator || "belum ditugaskan"}
+                </i>
               )}
             </div>
           </div>
@@ -1233,5 +1261,152 @@ function Field({ label, hint, children }) {
       {children}
       {hint && <span className="adm-field-hint">{hint}</span>}
     </label>
+  );
+}
+
+/* ════════════════════════════════════════
+   KOORDINATOR MANAGEMENT TAB
+════════════════════════════════════════ */
+function KordManageTab({ headers }) {
+  const [kords, setKords] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [newNama, setNewNama] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [addErr, setAddErr] = useState("");
+  const [resetId, setResetId] = useState(null);
+  const [resetPw, setResetPw] = useState("");
+  const [toast, setToast] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const flash = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2400); };
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await axios.get(`${API}/admin/koordinators`, { headers });
+      setKords(r.data.items || []);
+    } catch {} finally { setLoading(false); }
+  }, [headers]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const addKord = async () => {
+    setAddErr("");
+    if (!newNama.trim()) { setAddErr("Nama diperlukan"); return; }
+    if (!newPw) { setAddErr("Password diperlukan"); return; }
+    setAdding(true);
+    try {
+      await axios.post(`${API}/admin/koordinators`, { nama: newNama.trim(), password: newPw }, { headers });
+      setNewNama(""); setNewPw("");
+      flash("Koordinator ditambahkan");
+      await load();
+    } catch (e) {
+      setAddErr(e?.response?.data?.detail || "Gagal menambahkan");
+    } finally { setAdding(false); }
+  };
+
+  const deactivate = async (id) => {
+    if (!window.confirm("Nonaktifkan koordinator ini?")) return;
+    try {
+      await axios.delete(`${API}/admin/koordinators/${id}`, { headers });
+      flash("Dinonaktifkan");
+      await load();
+    } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
+  };
+
+  const doResetPw = async (id) => {
+    if (!resetPw) { flash("Isi password baru dulu"); return; }
+    try {
+      await axios.post(`${API}/admin/koordinators/${id}/reset-password`, { password: resetPw }, { headers });
+      flash("Password direset");
+      setResetId(null); setResetPw("");
+    } catch (e) { flash("Gagal: " + (e?.response?.data?.detail || "error")); }
+  };
+
+  const portalUrl = `${window.location.origin}/koordinator`;
+
+  const IL = { background: "#0d1117", border: "1px solid #30363d", borderRadius: 6, padding: "8px 10px", color: "#e6edf3", fontSize: 13, outline: "none", width: "100%" };
+
+  return (
+    <div style={{ maxWidth: 700, margin: "20px auto", padding: "0 16px" }}>
+      {/* Link portal */}
+      <div style={{ background: "#1a2d4a", border: "1px solid #1f6feb", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+        <span style={{ fontSize: 13, color: "#60a5fa", fontWeight: 700 }}>🔗 Portal Koordinator:</span>
+        <code style={{ flex: 1, fontSize: 13, color: "#e6edf3", background: "#0d1117", padding: "5px 10px", borderRadius: 6, border: "1px solid #30363d", wordBreak: "break-all" }}>{portalUrl}</code>
+        <button onClick={() => { navigator.clipboard.writeText(portalUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          style={{ padding: "6px 14px", borderRadius: 7, border: "1px solid #1f6feb", background: "none", color: copied ? "#2ea043" : "#60a5fa", cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
+          {copied ? "✓ Tersalin" : "📋 Salin"}
+        </button>
+      </div>
+
+      {/* Add form */}
+      <div style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: 10, padding: "18px 20px", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: "#EF9F27", marginBottom: 14 }}>Tambah Koordinator</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 4 }}>Nama</div>
+            <input style={IL} value={newNama} onChange={e => setNewNama(e.target.value)} placeholder="Nama koordinator" />
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: "#8b949e", marginBottom: 4 }}>Password</div>
+            <input style={IL} type="text" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="Password awal" onKeyDown={e => e.key === "Enter" && addKord()} />
+          </div>
+        </div>
+        {addErr && <div style={{ color: "#f85149", fontSize: 12, marginBottom: 8 }}>{addErr}</div>}
+        <button onClick={addKord} disabled={adding} style={{ padding: "8px 20px", background: "#EF9F27", color: "#0d1117", border: "none", borderRadius: 7, fontWeight: 800, fontSize: 13, cursor: "pointer", opacity: adding ? 0.6 : 1 }}>
+          {adding ? "Menambahkan..." : "+ Tambah"}
+        </button>
+      </div>
+
+      {/* List */}
+      <div style={{ fontSize: 13, fontWeight: 800, color: "#8b949e", marginBottom: 10 }}>
+        Daftar Koordinator {loading ? "(memuat...)" : `(${kords.length})`}
+      </div>
+      {kords.map(k => (
+        <div key={k.id} style={{ background: "#161b22", border: "1px solid #30363d", borderRadius: 8, padding: "12px 16px", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontWeight: 700, fontSize: 13, color: "#e6edf3" }}>{k.nama}</span>
+              <span style={{ marginLeft: 10, fontSize: 11, color: k.aktif ? "#2ea043" : "#f85149", background: k.aktif ? "#0a2a14" : "#2a0a0a", border: `1px solid ${k.aktif ? "#2ea04344" : "#f8514944"}`, borderRadius: 4, padding: "2px 7px", fontWeight: 700 }}>
+                {k.aktif ? "Aktif" : "Nonaktif"}
+              </span>
+              {k.first_login && <span style={{ marginLeft: 6, fontSize: 10, color: "#d29922", background: "#2a1e00", border: "1px solid #d2992244", borderRadius: 4, padding: "2px 6px" }}>Belum login</span>}
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={() => { setResetId(resetId === k.id ? null : k.id); setResetPw(""); }}
+                style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #30363d", background: "none", color: "#8b949e", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                Reset PW
+              </button>
+              {k.aktif && (
+                <button onClick={() => deactivate(k.id)} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f85149", background: "none", color: "#f85149", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                  Nonaktifkan
+                </button>
+              )}
+            </div>
+          </div>
+          {resetId === k.id && (
+            <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                style={{ ...IL, flex: 1 }}
+                type="text"
+                placeholder="Password baru"
+                value={resetPw}
+                onChange={e => setResetPw(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && doResetPw(k.id)}
+                autoFocus
+              />
+              <button onClick={() => doResetPw(k.id)} style={{ padding: "8px 14px", borderRadius: 6, border: "none", background: "#EF9F27", color: "#0d1117", cursor: "pointer", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>Simpan</button>
+              <button onClick={() => setResetId(null)} style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #30363d", background: "none", color: "#8b949e", cursor: "pointer", fontSize: 12 }}>Batal</button>
+            </div>
+          )}
+        </div>
+      ))}
+      {!loading && kords.length === 0 && (
+        <div style={{ textAlign: "center", padding: "30px 0", color: "#8b949e", fontSize: 13 }}>Belum ada koordinator.</div>
+      )}
+      {toast && <div className="adm-toast">{toast}</div>}
+    </div>
   );
 }
