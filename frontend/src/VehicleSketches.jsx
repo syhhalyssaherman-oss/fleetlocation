@@ -407,6 +407,13 @@ export const VEHICLE_TYPE_LIST = [
   "BYD Dolphin",
   "BYD Sealion 6",
   "BYD M6",
+  // ── Suzuki ──
+  "Suzuki Ertiga",
+  "Suzuki XL7",
+  "Suzuki Grand Vitara",
+  "Suzuki Baleno",
+  "Suzuki Ignis",
+  "Suzuki Carry",
   // ── Lainnya ──
   "MPV / SUV Lainnya",
   "Pickup / Double Cabin",
@@ -476,6 +483,13 @@ const TYPE_TO_FILENAME = {
   "BYD Dolphin":            "sedan",
   "BYD Sealion 6":          "mpv-suv",
   "BYD M6":                 "mpv-suv",
+  // Suzuki
+  "Suzuki Ertiga":          "mpv-suv",
+  "Suzuki XL7":             "mpv-suv",
+  "Suzuki Grand Vitara":    "mpv-suv",
+  "Suzuki Baleno":          "sedan",
+  "Suzuki Ignis":           "sedan",
+  "Suzuki Carry":           "pickup",
   "Pickup / Double Cabin":  "pickup",
   "Truck Box":              "truck-box",
   "Truck Bak":              "truck-bak",
