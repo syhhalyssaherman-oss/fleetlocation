@@ -38,9 +38,10 @@ const S = {
 };
 
 /* ── Cetak Surat: search & pick driver ── */
-function PrintSuratSearch({ drivers, onPrint }) {
+function PrintSuratSearch({ drivers, onPrint, headers }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [printing, setPrinting] = useState(null);
   const ref = useRef();
 
   useEffect(() => {
@@ -72,14 +73,22 @@ function PrintSuratSearch({ drivers, onPrint }) {
       {open && results.length > 0 && (
         <div style={{ position: "absolute", top: "110%", left: 0, right: 0, background: "#161b22", border: "1px solid #30363d", borderRadius: 8, zIndex: 999, boxShadow: "0 8px 24px #0008", overflow: "hidden" }}>
           {results.map(d => (
-            <button key={d.driver_id} onClick={() => { onPrint(d); setQ(""); setOpen(false); }}
+            <button key={d.driver_id} onClick={async () => {
+              setPrinting(d.driver_id);
+              try {
+                // Fetch detail lengkap agar foto_ktp/foto_sim tersedia
+                const r = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/admin/drivers/${d.driver_id}`, { headers });
+                onPrint(r.data);
+              } catch { onPrint(d); }
+              finally { setPrinting(null); setQ(""); setOpen(false); }
+            }}
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "none", border: "none", borderBottom: "1px solid #21262d", color: "#e6edf3", cursor: "pointer", textAlign: "left" }}>
               <span style={{ fontSize: 20 }}>👤</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700 }}>{d.nama}</div>
                 <div style={{ fontSize: 10, color: "#8b949e" }}>{d.driver_id} · KTP: {d.no_ktp ? `****${d.no_ktp.slice(-4)}` : "—"} · SIM {d.tipe_sim || "—"}</div>
               </div>
-              <span style={{ marginLeft: "auto", fontSize: 11, color: "#EF9F27", fontWeight: 700 }}>🖨 Cetak</span>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "#EF9F27", fontWeight: 700 }}>{printing === d.driver_id ? "⏳..." : "🖨 Cetak"}</span>
             </button>
           ))}
         </div>
@@ -199,7 +208,7 @@ export default function DriverData({ embedded = false }) {
           <option value="aktif">Aktif</option>
           <option value="nonaktif">Nonaktif</option>
         </select>
-        <PrintSuratSearch drivers={drivers} onPrint={printSurat} />
+        <PrintSuratSearch drivers={drivers} onPrint={printSurat} headers={headers} />
         <button style={S.btn("#2ea043")} onClick={() => setModal({ mode: "add" })}><IcoPlus /> Tambah Driver</button>
         <button style={S.btnGhost} onClick={load}><IcoRefresh /> Refresh</button>
         {!embedded && <a href="/admin" style={{ ...S.btnGhost, textDecoration: "none" }}>← Admin</a>}
