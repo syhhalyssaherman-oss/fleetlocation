@@ -17,11 +17,11 @@ export default function DriverRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const [uploads, setUploads] = useState({ selfie: null, ktp: null, sim: null });
-  const [previews, setPreviews] = useState({ selfie: null, ktp: null, sim: null });
+  const [uploads, setUploads] = useState({ ktp: null, sim: null });
+  const [previews, setPreviews] = useState({ ktp: null, sim: null });
   const [uploading, setUploading] = useState(null);
-  const [uploadDone, setUploadDone] = useState({ selfie: false, ktp: false, sim: false });
-  const refs = { selfie: useRef(), ktp: useRef(), sim: useRef() };
+  const [uploadDone, setUploadDone] = useState({ ktp: false, sim: false });
+  const refs = { ktp: useRef(), sim: useRef() };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -55,9 +55,8 @@ export default function DriverRegister() {
   };
 
   const SLOTS = [
-    { key: "selfie", label: "Foto Selfie", desc: "Foto wajah jelas, pencahayaan baik", ico: "🤳" },
-    { key: "ktp",    label: "Foto KTP",    desc: "Pastikan seluruh teks KTP terbaca", ico: "🪪" },
-    { key: "sim",    label: "Foto SIM",    desc: "Foto SIM sesuai tipe yang dipilih", ico: "🚗" },
+    { key: "ktp", label: "Foto KTP", desc: "Pastikan seluruh teks KTP terbaca", ico: "🪪" },
+    { key: "sim", label: "Foto SIM", desc: "Foto SIM sesuai tipe yang dipilih", ico: "🚗" },
   ];
 
   const allUploaded = SLOTS.every(s => uploadDone[s.key]);
@@ -141,7 +140,7 @@ export default function DriverRegister() {
             <div style={{ textAlign: "center", marginBottom: 24 }}>
               <div style={{ fontSize: 32, marginBottom: 8 }}>📸</div>
               <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Upload Foto Dokumen</h1>
-              <p style={{ fontSize: 13, color: "#8b949e" }}>Upload foto selfie, KTP, dan SIM kamu. Pastikan foto jelas dan tidak buram.</p>
+              <p style={{ fontSize: 13, color: "#8b949e" }}>Upload foto KTP dan SIM kamu. Pastikan foto jelas dan tidak buram.</p>
               <div style={{ marginTop: 10, display: "inline-block", background: "#1a4a2a", border: "1px solid #2ea043", borderRadius: 8, padding: "5px 14px", fontSize: 11, color: "#56d364", fontWeight: 700 }}>
                 ID Driver: {driverId}
               </div>
