@@ -670,43 +670,56 @@ export default function DriverCheckpoint() {
 
       {/* PENGUMUMAN: AKTIFKAN GPS */}
       {gpsState !== "granted" ? (
-        <section style={{ margin: "0 16px 14px", background: "#3A2E12", border: "1.5px solid #D4A847", borderRadius: 14, padding: "14px 16px" }} data-testid="gps-banner">
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 24 }}>📍</span>
-            <div style={{ fontWeight: 700, color: "#FFD77A", fontSize: 16 }}>Nyalakan GPS dulu, ya!</div>
+        <section style={{ margin: "0 0 0", background: gpsState === "denied" ? "#3B0A0A" : "#2B1A00", borderBottom: `4px solid ${gpsState === "denied" ? "#f85149" : "#D4A847"}`, padding: "20px 20px 24px" }} data-testid="gps-banner">
+
+          <div style={{ fontSize: 22, fontWeight: 900, color: gpsState === "denied" ? "#FF6B6B" : "#FFD060", marginBottom: 6, lineHeight: 1.2 }}>
+            {gpsState === "denied" ? "GPS DIBLOKIR — HARUS DIIZINKAN" : "AKTIFKAN LOKASI SEKARANG"}
           </div>
-          <div style={{ color: "#EAD9B0", fontSize: 13.5, lineHeight: 1.6, marginBottom: 10 }}>
-            Foto checkpoint wajib ada lokasinya. Ikuti 3 langkah ini:
+          <div style={{ fontSize: 15, color: "#EAD9B0", marginBottom: 20, lineHeight: 1.5 }}>
+            Foto checkpoint WAJIB pakai GPS. Kalau tidak aktif, lokasi tidak tercatat dan bisa kena teguran admin.
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
-              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>1</span>
-              <span>Geser layar dari <b>atas ke bawah</b> &nbsp;⬇️</span>
+
+          {gpsState === "denied" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                "BUKA Setelan di HP kamu",
+                "Cari menu APLIKASI atau IZIN APLIKASI",
+                "Pilih nama Browser kamu (Chrome / Firefox dll)",
+                "Tap IZIN lalu tap LOKASI",
+                "Pilih IZINKAN SAAT MENGGUNAKAN APLIKASI",
+                "Kembali ke halaman ini lalu MUAT ULANG",
+              ].map((txt, i) => (
+                <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 36, height: 36, borderRadius: 8, background: "#f85149", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18 }}>{i + 1}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#F5C6C6", lineHeight: 1.4, paddingTop: 6 }}>{txt}</div>
+                </div>
+              ))}
+              <button onClick={() => window.location.reload()} style={{ marginTop: 8, width: "100%", padding: "16px", background: "#f85149", color: "#fff", border: "none", borderRadius: 12, fontWeight: 900, fontSize: 17, cursor: "pointer" }}>
+                MUAT ULANG SETELAH IZIN DIBERIKAN
+              </button>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
-              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>2</span>
-              <span>Tap ikon <b>Lokasi</b> sampai menyala &nbsp;📍</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#EAD9B0", fontSize: 13.5 }}>
-              <span style={{ background: "#D4A847", color: "#1A1206", width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flex: "0 0 auto" }}>3</span>
-              <span>Tekan tombol bawah → muncul pilihan, <b>tap yang PALING ATAS</b> (Allow / Izinkan)</span>
-            </div>
-          </div>
-          <button onClick={requestGps} style={{ width: "100%", padding: "13px", background: "#D4A847", color: "#1A1206", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer" }} data-testid="btn-gps">
-            📍 Aktifkan GPS Sekarang
-          </button>
-          <div style={{ marginTop: 9, fontSize: 12.5, color: "#C9B98F", lineHeight: 1.5, textAlign: "center" }}>
-            Setelah tap tombol, muncul kotak izin lokasi.<br/>Pilih opsi <b style={{ color: "#FFD77A" }}>paling atas</b> — cukup sekali, seterusnya otomatis.
-          </div>
-          {gpsState === "denied" && (
-            <div style={{ marginTop: 9, fontSize: 12.5, color: "#F0997B", lineHeight: 1.5 }}>
-              Lokasi terblokir. Buka <b>Setelan browser → Izin situs → Lokasi → Izinkan</b>, lalu muat ulang halaman ini.
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {[
+                "Geser layar HP dari ATAS KE BAWAH buka notifikasi cepat",
+                "Cari tulisan LOKASI lalu TAP sampai menyala atau aktif",
+                "Kembali ke halaman ini lalu tekan tombol kuning di bawah",
+                "Muncul kotak izin — pilih yang PALING ATAS yaitu IZINKAN",
+              ].map((txt, i) => (
+                <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ minWidth: 36, height: 36, borderRadius: 8, background: "#D4A847", color: "#1A1206", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 18 }}>{i + 1}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: "#EAD9B0", lineHeight: 1.4, paddingTop: 6 }}>{txt}</div>
+                </div>
+              ))}
+              <button onClick={requestGps} style={{ marginTop: 8, width: "100%", padding: "16px", background: "#D4A847", color: "#1A1206", border: "none", borderRadius: 12, fontWeight: 900, fontSize: 17, cursor: "pointer" }} data-testid="btn-gps">
+                TAP DI SINI UNTUK IZINKAN LOKASI
+              </button>
             </div>
           )}
         </section>
       ) : (
-        <div style={{ margin: "0 16px 14px", background: "#13351F", border: "1px solid #2ea043", borderRadius: 12, padding: "10px 14px", color: "#56d364", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }} data-testid="gps-ok">
-          <span>✓</span> GPS aktif — lokasi otomatis tercatat di foto checkpoint
+        <div style={{ margin: "0 16px 14px", background: "#13351F", border: "1px solid #2ea043", borderRadius: 12, padding: "12px 16px", color: "#56d364", fontSize: 15, fontWeight: 700 }} data-testid="gps-ok">
+          LOKASI AKTIF — foto checkpoint otomatis tercatat koordinatnya
         </div>
       )}
 
