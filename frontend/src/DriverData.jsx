@@ -37,6 +37,62 @@ const S = {
   pill: (c) => ({ display: "inline-block", padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 700, background: c === "aktif" ? "#1a4a2a" : "#2d1a1a", color: c === "aktif" ? "#56d364" : "#f85149", border: `1px solid ${c === "aktif" ? "#2ea043" : "#f85149"}` }),
 };
 
+/* ── Cetak Surat: search & pick driver ── */
+function PrintSuratSearch({ drivers, onPrint }) {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  const results = q.trim().length >= 2
+    ? drivers.filter(d =>
+        d.nama?.toLowerCase().includes(q.toLowerCase()) ||
+        (d.no_ktp || "").slice(-4).includes(q.replace(/\D/g, ""))
+      ).slice(0, 8)
+    : [];
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#1c2128", border: "1px solid #30363d", borderRadius: 7, padding: "6px 10px" }}>
+        <IcoPrint />
+        <input
+          style={{ background: "none", border: "none", outline: "none", color: "#e6edf3", fontSize: 12, width: 180, fontFamily: "inherit" }}
+          placeholder="Cetak surat — ketik nama / 4 digit KTP"
+          value={q}
+          onChange={e => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+        {q && <button onClick={() => { setQ(""); setOpen(false); }} style={{ background: "none", border: "none", color: "#8b949e", cursor: "pointer", padding: 0, display: "flex" }}><IcoX /></button>}
+      </div>
+      {open && results.length > 0 && (
+        <div style={{ position: "absolute", top: "110%", left: 0, right: 0, background: "#161b22", border: "1px solid #30363d", borderRadius: 8, zIndex: 999, boxShadow: "0 8px 24px #0008", overflow: "hidden" }}>
+          {results.map(d => (
+            <button key={d.driver_id} onClick={() => { onPrint(d); setQ(""); setOpen(false); }}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: "none", border: "none", borderBottom: "1px solid #21262d", color: "#e6edf3", cursor: "pointer", textAlign: "left" }}>
+              <span style={{ fontSize: 20 }}>👤</span>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{d.nama}</div>
+                <div style={{ fontSize: 10, color: "#8b949e" }}>{d.driver_id} · KTP: {d.no_ktp ? `****${d.no_ktp.slice(-4)}` : "—"} · SIM {d.tipe_sim || "—"}</div>
+              </div>
+              <span style={{ marginLeft: "auto", fontSize: 11, color: "#EF9F27", fontWeight: 700 }}>🖨 Cetak</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {open && q.trim().length >= 2 && results.length === 0 && (
+        <div style={{ position: "absolute", top: "110%", left: 0, right: 0, background: "#161b22", border: "1px solid #30363d", borderRadius: 8, zIndex: 999, padding: "12px", fontSize: 12, color: "#8b949e", textAlign: "center" }}>
+          Tidak ditemukan
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DriverData({ embedded = false }) {
   const [pin] = useState(() => localStorage.getItem(PIN_KEY) || "");
   const headers = { "X-Admin-Pin": pin };
@@ -143,6 +199,7 @@ export default function DriverData({ embedded = false }) {
           <option value="aktif">Aktif</option>
           <option value="nonaktif">Nonaktif</option>
         </select>
+        <PrintSuratSearch drivers={drivers} onPrint={printSurat} />
         <button style={S.btn("#2ea043")} onClick={() => setModal({ mode: "add" })}><IcoPlus /> Tambah Driver</button>
         <button style={S.btnGhost} onClick={load}><IcoRefresh /> Refresh</button>
         {!embedded && <a href="/admin" style={{ ...S.btnGhost, textDecoration: "none" }}>← Admin</a>}
