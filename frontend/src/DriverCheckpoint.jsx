@@ -199,6 +199,7 @@ export default function DriverCheckpoint() {
   const [dailyStatus, setDailyStatus] = useState("Berangkat");
   const [dailyNote, setDailyNote] = useState("");
   const [gpsState, setGpsState] = useState("unknown"); // granted | denied | prompt | unknown
+  const cachedGps = useRef(null); // posisi terakhir dari watchPosition
 
   // Pantau izin lokasi agar bisa tuntun driver menyalakan GPS.
   useEffect(() => {
@@ -211,10 +212,28 @@ export default function DriverCheckpoint() {
     return () => { if (perm) perm.onchange = null; };
   }, []);
 
+  // watchPosition di background — simpan posisi terbaru ke cachedGps
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        cachedGps.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGpsState("granted");
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
   const requestGps = () => {
     if (!("geolocation" in navigator)) { setGpsState("denied"); return; }
     navigator.geolocation.getCurrentPosition(
-      () => { setGpsState("granted"); showToast("GPS aktif! Lokasi siap dicatat."); },
+      (pos) => {
+        cachedGps.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGpsState("granted");
+        showToast("GPS aktif! Lokasi siap dicatat.");
+      },
       (err) => {
         setGpsState(err && err.code === 1 ? "denied" : "prompt");
         if (err && err.code === 1) showToast("Izin lokasi ditolak", "err");
@@ -222,17 +241,6 @@ export default function DriverCheckpoint() {
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
-
-  // Auto-request GPS saat halaman pertama dibuka
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        () => setGpsState("granted"),
-        () => {},
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }
-  }, []);
   const [uploadingBastk, setUploadingBastk] = useState(false);
   const [uploadingResi, setUploadingResi] = useState(false);
   const [cairingTahap, setCairingTahap] = useState(0);
@@ -319,12 +327,14 @@ export default function DriverCheckpoint() {
   // Ambil GPS (best-effort) + cap lokasi & waktu ke dalam foto.
   // Dipakai untuk foto awal wizard dan checkpoint harian.
   const geotagPhoto = async (file) => {
+    // Coba dapat posisi fresh, fallback ke cachedGps dari watchPosition
     const gps = await new Promise((resolve) => {
-      if (!("geolocation" in navigator)) return resolve(null);
+      if (!("geolocation" in navigator)) return resolve(cachedGps.current);
+      const timer = setTimeout(() => resolve(cachedGps.current), 5000);
       navigator.geolocation.getCurrentPosition(
-        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => resolve(null),
-        { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 }
+        (pos) => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+        () => { clearTimeout(timer); resolve(cachedGps.current); },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
       );
     });
     const now = new Date();
