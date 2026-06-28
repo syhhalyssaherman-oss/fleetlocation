@@ -1613,8 +1613,10 @@ async def koordinator_change_password(body: KordChangePasswordBody):
     kord = await db.koordinators.find_one({"id": body.kord_id})
     if not kord:
         raise HTTPException(404, "Akun tidak ditemukan")
-    if kord.get("password") != body.old_password:
-        raise HTTPException(401, "Password lama salah")
+    # Skip old password check on first login
+    if not kord.get("first_login", False):
+        if kord.get("password") != body.old_password:
+            raise HTTPException(401, "Password lama salah")
     await db.koordinators.update_one({"id": body.kord_id}, {"$set": {"password": body.new_password, "first_login": False}})
     return {"ok": True}
 
