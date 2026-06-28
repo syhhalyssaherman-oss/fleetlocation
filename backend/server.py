@@ -1951,6 +1951,150 @@ async def get_driver(driver_id: str):
     return drv
 
 
+# ══════════════════════════════════════════════════════
+# PELANGGAN PROFILE SYSTEM (Customer Price Memory)
+# ══════════════════════════════════════════════════════
+
+import random as _random
+import string as _string
+
+def _gen_pelanggan_id() -> str:
+    return uuid.uuid4().hex[:8]
+
+def _gen_token(n: int = 12) -> str:
+    chars = _string.ascii_letters + _string.digits
+    return "".join(_random.choice(chars) for _ in range(n))
+
+class PelangganCreateBody(BaseModel):
+    nama_pt: str
+    pic_nama: str = ""
+    pic_hp: str = ""
+    catatan: str = ""
+    margin_khusus: dict = {}
+
+class PelangganPatchBody(BaseModel):
+    catatan: Optional[str] = None
+    pic_nama: Optional[str] = None
+    pic_hp: Optional[str] = None
+    margin_khusus: Optional[dict] = None
+
+class PelangganHargaBody(BaseModel):
+    rute: str
+    hpp: int
+    harga_deal: int
+    tipe_kendaraan: str
+    catatan: str = ""
+
+@api_router.post("/admin/pelanggan", dependencies=[Depends(require_admin_pin)])
+async def create_pelanggan(body: PelangganCreateBody):
+    """Create a new pelanggan profile or return existing (case-insensitive)."""
+    import re as _re
+    nama_pt = body.nama_pt.strip()
+    if not nama_pt:
+        raise HTTPException(400, "nama_pt tidak boleh kosong")
+    existing = await db.pelanggan_profiles.find_one(
+        {"nama_pt": _re.compile(r"^\s*" + _re.escape(nama_pt) + r"\s*$", _re.IGNORECASE)},
+        {"_id": 0}
+    )
+    if existing:
+        return existing
+    now = datetime.utcnow().isoformat()
+    doc = {
+        "id": _gen_pelanggan_id(),
+        "nama_pt": nama_pt,
+        "pic_nama": body.pic_nama.strip(),
+        "pic_hp": body.pic_hp.strip(),
+        "catatan": body.catatan.strip(),
+        "margin_khusus": body.margin_khusus or {},
+        "token": _gen_token(12),
+        "created_at": now,
+        "harga_history": [],
+    }
+    await db.pelanggan_profiles.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api_router.get("/admin/pelanggan", dependencies=[Depends(require_admin_pin)])
+async def list_pelanggan(q: Optional[str] = None):
+    """List all pelanggan sorted by nama_pt, optional search by q."""
+    import re as _re
+    filt = {}
+    if q:
+        filt["nama_pt"] = _re.compile(_re.escape(q.strip()), _re.IGNORECASE)
+    items = []
+    async for p in db.pelanggan_profiles.find(filt, {"_id": 0, "harga_history": 0}).sort("nama_pt", 1):
+        items.append(p)
+    return {"count": len(items), "items": items}
+
+@api_router.get("/admin/pelanggan/{pelanggan_id}", dependencies=[Depends(require_admin_pin)])
+async def get_pelanggan(pelanggan_id: str):
+    """Get full pelanggan document including last 20 harga_history."""
+    doc = await db.pelanggan_profiles.find_one({"id": pelanggan_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Pelanggan tidak ditemukan")
+    doc["harga_history"] = (doc.get("harga_history") or [])[-20:]
+    return doc
+
+@api_router.patch("/admin/pelanggan/{pelanggan_id}", dependencies=[Depends(require_admin_pin)])
+async def patch_pelanggan(pelanggan_id: str, body: PelangganPatchBody):
+    """Update catatan, pic_nama, pic_hp, margin_khusus."""
+    upd = {}
+    if body.catatan is not None: upd["catatan"] = body.catatan.strip()
+    if body.pic_nama is not None: upd["pic_nama"] = body.pic_nama.strip()
+    if body.pic_hp is not None: upd["pic_hp"] = body.pic_hp.strip()
+    if body.margin_khusus is not None: upd["margin_khusus"] = body.margin_khusus
+    if not upd:
+        raise HTTPException(400, "Tidak ada field yang diupdate")
+    res = await db.pelanggan_profiles.update_one({"id": pelanggan_id}, {"$set": upd})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Pelanggan tidak ditemukan")
+    return {"ok": True}
+
+@api_router.post("/admin/pelanggan/{pelanggan_id}/harga", dependencies=[Depends(require_admin_pin)])
+async def add_pelanggan_harga(pelanggan_id: str, body: PelangganHargaBody):
+    """Push a new price record to harga_history."""
+    doc = await db.pelanggan_profiles.find_one({"id": pelanggan_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Pelanggan tidak ditemukan")
+    margin_aktual = round((body.harga_deal / body.hpp - 1) * 100, 1) if body.hpp else 0
+    entry = {
+        "id": _gen_pelanggan_id(),
+        "rute": body.rute,
+        "hpp": body.hpp,
+        "harga_deal": body.harga_deal,
+        "margin_aktual": margin_aktual,
+        "tipe_kendaraan": body.tipe_kendaraan,
+        "catatan": body.catatan.strip(),
+        "tanggal": datetime.utcnow().isoformat(),
+    }
+    await db.pelanggan_profiles.update_one(
+        {"id": pelanggan_id},
+        {"$push": {"harga_history": {"$each": [entry], "$slice": -100}}}
+    )
+    updated = await db.pelanggan_profiles.find_one({"id": pelanggan_id}, {"_id": 0})
+    updated["harga_history"] = (updated.get("harga_history") or [])[-20:]
+    return updated
+
+@api_router.get("/pelanggan/{token}")
+async def public_pelanggan_harga(token: str):
+    """Public endpoint — return PT name + last 10 price records (no HPP/margin)."""
+    doc = await db.pelanggan_profiles.find_one({"token": token}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Link tidak valid")
+    history = (doc.get("harga_history") or [])[-10:]
+    safe_history = [
+        {
+            "rute": h.get("rute"),
+            "harga_deal": h.get("harga_deal"),
+            "tipe_kendaraan": h.get("tipe_kendaraan"),
+            "tanggal": h.get("tanggal"),
+        }
+        for h in history
+    ]
+    safe_history.reverse()
+    return {"nama_pt": doc["nama_pt"], "harga_history": safe_history}
+
+
 # ---------- Static file serving for uploads ----------
 app.add_middleware(
     CORSMiddleware,

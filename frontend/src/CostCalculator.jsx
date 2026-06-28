@@ -1,8 +1,11 @@
-import { useState, useMemo, useEffect } from "react";
+/* eslint-disable */
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import axios from "axios";
 
 /* Port dari cost-calculator.html (app lama). Logika hitung 1:1:
    HPP + Margin bertingkat + Proteksi Risiko + Bunga Dana Talang. */
 
+const API = "";
 const LEG_TYPES = ["Self Drive", "Kapal Laut", "Car Carrier", "Towing", "Self Loader", "Low Bed", "Bongkar/Muat", "Trucking", "Lainnya"];
 const TIPE_OPTS = [
   "Kendaraan Kecil Biasa", "Kendaraan Kecil Medium", "Truck Ringan D4 Std", "Truck Ringan D4 Long",
@@ -65,6 +68,12 @@ const LBL = { fontSize: 10, color: "#8b949e", display: "block", marginBottom: 3,
 const CARD = { background: "#161b22", border: "1px solid #21262d", borderRadius: 10, padding: 14, marginBottom: 12 };
 const TITLE = { fontSize: 12, fontWeight: 700, color: "#EF9F27", marginBottom: 10, textTransform: "uppercase", letterSpacing: ".5px" };
 
+function marginColor(m) {
+  if (m > 15) return "#56d364";
+  if (m >= 8) return "#fbbf24";
+  return "#f85149";
+}
+
 export default function CostCalculator() {
   const [asal, setAsal] = useState("");
   const [tujuan, setTujuan] = useState("");
@@ -84,6 +93,17 @@ export default function CostCalculator() {
     try { const raw = localStorage.getItem("alyssa_routelist"); return raw ? JSON.parse(raw) : []; } catch { return []; }
   });
 
+  // Pelanggan state
+  const [ptQuery, setPtQuery] = useState("");
+  const [ptDropdown, setPtDropdown] = useState([]);
+  const [selectedPt, setSelectedPt] = useState(null); // full pelanggan doc
+  const [ptSaving, setPtSaving] = useState(false);
+  const [ptSaveMsg, setPtSaveMsg] = useState("");
+  const [ptLinkCopied, setPtLinkCopied] = useState(false);
+  const debounceRef = useRef(null);
+
+  const adminPin = typeof window !== "undefined" ? (localStorage.getItem("aal_admin_pin") || "") : "";
+
   useEffect(() => {
     try { const raw = localStorage.getItem("alyssa_margin"); if (raw) setM((m) => ({ ...m, ...JSON.parse(raw) })); } catch (e) {}
   }, []);
@@ -91,6 +111,106 @@ export default function CostCalculator() {
   useEffect(() => {
     try { localStorage.setItem("alyssa_routelist", JSON.stringify(routeList)); } catch (e) {}
   }, [routeList]);
+
+  // Debounced PT search
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (ptQuery.length < 2) { setPtDropdown([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await axios.get(`${API}/api/admin/pelanggan`, {
+          params: { q: ptQuery },
+          headers: { "x-admin-pin": adminPin },
+        });
+        setPtDropdown(res.data.items || []);
+      } catch (e) {
+        setPtDropdown([]);
+      }
+    }, 350);
+    return () => clearTimeout(debounceRef.current);
+  }, [ptQuery, adminPin]);
+
+  const selectPt = async (pt) => {
+    setPtDropdown([]);
+    setPtQuery(pt.nama_pt);
+    // Load full doc with history
+    try {
+      const res = await axios.get(`${API}/api/admin/pelanggan/${pt.id}`, {
+        headers: { "x-admin-pin": adminPin },
+      });
+      const full = res.data;
+      setSelectedPt(full);
+      // Load margin_khusus into M if set
+      if (full.margin_khusus && Object.keys(full.margin_khusus).length > 0) {
+        setM((m) => ({ ...m, ...full.margin_khusus }));
+      }
+    } catch (e) {
+      setSelectedPt(pt);
+    }
+  };
+
+  const createNewPt = async () => {
+    if (!ptQuery.trim()) { alert("Masukkan nama PT terlebih dahulu"); return; }
+    try {
+      const res = await axios.post(`${API}/api/admin/pelanggan`,
+        { nama_pt: ptQuery.trim() },
+        { headers: { "x-admin-pin": adminPin } }
+      );
+      setSelectedPt(res.data);
+      setPtDropdown([]);
+    } catch (e) {
+      alert("Gagal membuat PT: " + (e.response?.data?.detail || e.message));
+    }
+  };
+
+  const clearPt = () => {
+    setSelectedPt(null);
+    setPtQuery("");
+    setPtDropdown([]);
+    setPtSaveMsg("");
+  };
+
+  const simpanPenawaran = async () => {
+    if (!selectedPt || !calc.hppFinal) return;
+    const h = calc.h;
+    const hargaDealStr = window.prompt(
+      `Masukkan Harga Deal untuk ${selectedPt.nama_pt}\nRute: ${asal}→${tujuan}\nHPP: ${fRp(calc.hppFinal)}\nCorp1: ${fRp(h.corp)}`,
+      String(h.corp)
+    );
+    if (!hargaDealStr) return;
+    const hargaDeal = pNum(hargaDealStr);
+    if (!hargaDeal) { alert("Harga deal tidak valid"); return; }
+    setPtSaving(true);
+    try {
+      const res = await axios.post(
+        `${API}/api/admin/pelanggan/${selectedPt.id}/harga`,
+        {
+          rute: `${asal}→${tujuan}`,
+          hpp: calc.hppFinal,
+          harga_deal: hargaDeal,
+          tipe_kendaraan: tipe,
+          catatan: catatan.trim(),
+        },
+        { headers: { "x-admin-pin": adminPin } }
+      );
+      setSelectedPt(res.data);
+      setPtSaveMsg("✓ Tersimpan!");
+      setTimeout(() => setPtSaveMsg(""), 3000);
+    } catch (e) {
+      alert("Gagal simpan: " + (e.response?.data?.detail || e.message));
+    } finally {
+      setPtSaving(false);
+    }
+  };
+
+  const salinLinkHarga = () => {
+    if (!selectedPt) return;
+    const link = `${window.location.origin}/harga/${selectedPt.token}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setPtLinkCopied(true);
+      setTimeout(() => setPtLinkCopied(false), 2500);
+    });
+  };
 
   const isRawan = risiko === "rawan";
   const isTempo = top === "tempo30";
@@ -142,7 +262,6 @@ export default function CostCalculator() {
     if (!routeList.length) return;
     const tgl = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
 
-    // Konfigurasi per segmen — label kode netral untuk pelanggan
     const P = "Harga Pengiriman";
     const CFG = {
       eksp_a:  { title: "DAFTAR HARGA PENGIRIMAN", cols: [{ key: "eksp",  lbl: P, c: "#1a7f37" }] },
@@ -230,10 +349,66 @@ export default function CostCalculator() {
     { lbl: "Corp 1", val: h.corp, m: h.cp, c: "#58a6ff" }, { lbl: "Corp 2", val: h.corp2, m: h.cp2, c: "#a78bfa" },
   ] : [];
 
+  const ptHistory = selectedPt ? [...(selectedPt.harga_history || [])].reverse().slice(0, 10) : [];
+
   return (
     <div style={{ fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", background: "#0d1117", color: "#e6edf3", minHeight: "100vh", padding: 16 }}>
       <h1 style={{ fontSize: 17, fontWeight: 700, marginBottom: 3 }}>Cost <span style={{ color: "#BA7517" }}>Calculator</span></h1>
       <p style={{ fontSize: 12, color: "#8b949e", marginBottom: 16 }}>HPP + Margin + Proteksi Risiko + Bunga Dana Talang</p>
+
+      {/* ── Nama PT Section ── */}
+      <div style={{ ...CARD, marginBottom: 12 }}>
+        <div style={TITLE}>Nama PT / Pelanggan Korporat</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", position: "relative" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <input
+              style={I}
+              value={ptQuery}
+              onChange={(e) => { setPtQuery(e.target.value); if (selectedPt) setSelectedPt(null); }}
+              placeholder="Ketik nama PT untuk mencari atau membuat baru..."
+            />
+            {ptDropdown.length > 0 && (
+              <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#161b22", border: "1px solid #30363d", borderRadius: 6, zIndex: 100, maxHeight: 200, overflowY: "auto" }}>
+                {ptDropdown.map((pt) => (
+                  <div key={pt.id} onClick={() => selectPt(pt)}
+                    style={{ padding: "8px 12px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid #21262d" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "#21262d"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    <span style={{ fontWeight: 600 }}>{pt.nama_pt}</span>
+                    {pt.pic_nama && <span style={{ color: "#8b949e", marginLeft: 8, fontSize: 11 }}>PIC: {pt.pic_nama}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {!selectedPt && ptQuery.length >= 2 && (
+            <button onClick={createNewPt}
+              style={{ padding: "7px 14px", borderRadius: 6, border: "1px dashed #EF9F27", background: "none", color: "#EF9F27", fontSize: 11, cursor: "pointer", fontWeight: 700, whiteSpace: "nowrap" }}>
+              + PT Baru
+            </button>
+          )}
+          {selectedPt && (
+            <button onClick={clearPt}
+              style={{ padding: "7px 10px", borderRadius: 6, border: "1px solid #30363d", background: "none", color: "#8b949e", fontSize: 11, cursor: "pointer" }}>
+              ✕
+            </button>
+          )}
+        </div>
+
+        {selectedPt && (
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ background: "#0d3320", border: "1px solid #2ea043", borderRadius: 20, padding: "4px 14px", fontSize: 12, color: "#56d364", fontWeight: 700 }}>
+              ✓ {selectedPt.nama_pt}
+            </span>
+            {selectedPt.pic_nama && <span style={{ fontSize: 11, color: "#8b949e" }}>PIC: {selectedPt.pic_nama} {selectedPt.pic_hp && `· ${selectedPt.pic_hp}`}</span>}
+            <button onClick={salinLinkHarga}
+              style={{ padding: "4px 12px", borderRadius: 6, border: "1px solid #30363d", background: "none", color: ptLinkCopied ? "#56d364" : "#8b949e", fontSize: 11, cursor: "pointer" }}>
+              {ptLinkCopied ? "✓ Link Tersalin!" : "🔗 Salin Link Harga"}
+            </button>
+          </div>
+        )}
+      </div>
 
       <div style={CARD}>
         <div style={TITLE}>Data Rute &amp; Kondisi</div>
@@ -327,6 +502,17 @@ export default function CostCalculator() {
         </div>
       )}
 
+      {/* ── Simpan Penawaran & Salin Link (when PT selected) ── */}
+      {selectedPt && calc.hppFinal > 0 && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
+          <button onClick={simpanPenawaran} disabled={ptSaving}
+            style={{ padding: "8px 16px", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 700, border: "none", background: ptSaving ? "#21262d" : "#1f6feb", color: "#fff" }}>
+            {ptSaving ? "Menyimpan..." : `💾 Simpan Penawaran → ${selectedPt.nama_pt}`}
+          </button>
+          {ptSaveMsg && <span style={{ fontSize: 12, color: "#56d364", fontWeight: 700 }}>{ptSaveMsg}</span>}
+        </div>
+      )}
+
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
         <button onClick={addToList} style={{ padding: "8px 16px", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 700, border: "none", background: "#2ea043", color: "#fff" }}>+ Tambah ke List</button>
         <button onClick={() => { setAsal(""); setTujuan(""); setCatatan(""); setTop("cash"); setRisiko("normal"); setAdmin("0"); setAsuransi("0"); setLain("0"); setLegs([{ id: nextId, type: "Self Drive", cost: "" }, { id: nextId + 1, type: "Kapal Laut", cost: "" }, { id: nextId + 2, type: "Self Drive", cost: "" }]); setNextId((n) => n + 3); }} style={{ padding: "8px 16px", borderRadius: 7, cursor: "pointer", fontSize: 12, fontWeight: 700, background: "none", border: "1px solid #30363d", color: "#8b949e" }}>Reset Form</button>
@@ -377,6 +563,37 @@ export default function CostCalculator() {
                     <td style={{ ...TD, textAlign: "center" }}><button onClick={() => delRoute(i)} style={{ background: "none", border: "none", color: "#f85149", cursor: "pointer", fontSize: 12 }}>X</button></td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Price History Sidebar ── */}
+      {selectedPt && ptHistory.length > 0 && (
+        <div style={{ ...CARD, marginTop: 0 }}>
+          <div style={TITLE}>Histori Harga — {selectedPt.nama_pt}</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead><tr style={{ background: "#21262d" }}>
+                {["Tanggal", "Rute", "Tipe Kendaraan", "Harga Deal", "Margin %"].map((th) => (
+                  <th key={th} style={{ padding: "6px 8px", textAlign: "left", color: "#8b949e", fontWeight: 600, border: "1px solid #30363d" }}>{th}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {ptHistory.map((entry, i) => {
+                  const mc = marginColor(entry.margin_aktual || 0);
+                  const tgl = entry.tanggal ? new Date(entry.tanggal).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-";
+                  return (
+                    <tr key={entry.id || i}>
+                      <td style={{ ...TD, fontSize: 10, color: "#8b949e" }}>{tgl}</td>
+                      <td style={TD}>{entry.rute}</td>
+                      <td style={{ ...TD, fontSize: 10, color: "#8b949e" }}>{entry.tipe_kendaraan}</td>
+                      <td style={{ ...TD, textAlign: "right", color: "#e6edf3", fontWeight: 700 }}>{fRp(entry.harga_deal)}</td>
+                      <td style={{ ...TD, textAlign: "center", color: mc, fontWeight: 700 }}>{entry.margin_aktual}%</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

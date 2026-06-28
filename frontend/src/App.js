@@ -12,6 +12,7 @@ import CostCalculator from "@/CostCalculator";
 import DriverData from "@/DriverData";
 import DriverRegister from "@/DriverRegister";
 import KoordinatorPage from "@/KoordinatorPage";
+import CustomerPricePage from "@/CustomerPricePage";
 
 // Resolve path segment: /track/TRIP-XXX -> "TRIP-XXX"
 function pathSegment(pathname, prefix) {
@@ -33,6 +34,7 @@ function App() {
     if (p === "/daftar-driver")     return { route: "daftar-driver" };
     if (p === "/guide")             return { route: "guide" };
     if (p === "/koordinator")       return { route: "koordinator" };
+    if (p.startsWith("/harga/"))     return { route: "harga" };
     if (p.startsWith("/track/"))    return { route: "track" };
     if (p.startsWith("/trip/"))     return { route: "driver" };
     if (p.startsWith("/bastk/"))    return { route: "bastk" };
@@ -85,6 +87,7 @@ function App() {
   if (route === "track")  return <CustomerTracking />;
   if (route === "driver") return <DriverCheckpoint />;
   if (route === "koordinator") return <KoordinatorPage />;
+  if (route === "harga") return <CustomerPricePage />;
   return <Homepage />;
 }
 
