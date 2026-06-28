@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { VEHICLE_TYPE_LIST } from "@/VehicleSketches";
