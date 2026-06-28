@@ -1115,7 +1115,22 @@ function LegsModal({ tripId, order, onClose, onSave, headers }) {
       tipe: leg.tipe,
     });
     if (order?.no_rangka) p.set("rangka", order.no_rangka);
-    navigator.clipboard.writeText(`${base}/trip/${tripId}?${p.toString()}`);
+    const link = `${base}/trip/${tripId}?${p.toString()}`;
+    const isKapal = leg.tipe && leg.tipe.startsWith("Kapal");
+    const namaDriver = leg.driver || `Driver Leg ${i + 1}`;
+    const rute = `${leg.asal || "—"} → ${leg.tujuan || "—"}`;
+    const nopol = order?.nopol || order?.vehicle_type || "";
+
+    let panduan;
+    if (isKapal) {
+      panduan = `1. Foto kendaraan 5 sisi sebelum berangkat\n2. Foto mobil di dalam pelabuhan`;
+    } else {
+      panduan = `1. Foto kendaraan 5 sisi sebelum berangkat\n2. Foto checkpoint tiap hari jam 06.00–18.00 WIB`;
+    }
+
+    const teks = `Halo Pak ${namaDriver} 👋\n\nPengiriman: ${rute}\nKendaraan: ${nopol}\n\n🔗 ${link}\n\nPanduan:\n${panduan}\n\nInfo: PT Alyssa Auto Logistik · 0818 631 135`;
+
+    navigator.clipboard.writeText(teks);
     setCopiedLeg(i);
     setTimeout(() => setCopiedLeg(null), 2000);
   };
