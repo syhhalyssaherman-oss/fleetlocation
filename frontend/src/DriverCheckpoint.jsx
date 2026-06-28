@@ -1371,10 +1371,13 @@ export default function DriverCheckpoint() {
                       onChange={(e) => uploadBastk(e.target.files?.[0])}
                       style={{ display: "none" }}
                     />
-                    <button className="drv-doc-add" onClick={() => triggerFile("bastk")} disabled={uploadingBastk} data-testid="btn-add-bastk"
-                      style={{ background: bastkList.length === 0 ? "#1a3a1a" : undefined, borderColor: bastkList.length === 0 ? "#2ea043" : undefined }}>
-                      <span style={{ fontSize: 24 }}>📄</span>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>{uploadingBastk ? "Upload..." : (bastkList.length === 0 ? "FOTO BASTK\nSEKARANG" : "Tambah Halaman")}</span>
+                    <button onClick={() => triggerFile("bastk")} disabled={uploadingBastk} data-testid="btn-add-bastk"
+                      style={{ width: "100%", padding: "18px 14px", background: "#0d2a0d", border: "2.5px dashed #2ea043", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <div style={{ fontSize: 36 }}>📷</div>
+                      <div style={{ background: "#2ea043", color: "#fff", fontWeight: 900, fontSize: 15, padding: "6px 18px", borderRadius: 8, letterSpacing: 1 }}>
+                        {uploadingBastk ? "Upload..." : "▼ FOTO SCAN DI SINI ▼"}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#aaa" }}>Tap untuk buka kamera / galeri</div>
                     </button>
                   </>
                 )}
@@ -1413,10 +1416,13 @@ export default function DriverCheckpoint() {
                   onClick={() => triggerFile("resi")}
                   disabled={uploadingResi}
                   data-testid="btn-upload-resi"
-                  style={{ width: "100%", padding: "16px", background: "#EF9F27", color: "#000", border: "none", borderRadius: 12, fontWeight: 900, fontSize: 17, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+                  style={{ width: "100%", padding: "18px 14px", background: "#1a1400", border: "2.5px dashed #EF9F27", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}
                 >
-                  <span style={{ fontSize: 22 }}>🧾</span>
-                  <span>{uploadingResi ? "Uploading..." : "FOTO RESI SEKARANG"}</span>
+                  <div style={{ fontSize: 36 }}>🧾</div>
+                  <div style={{ background: "#EF9F27", color: "#000", fontWeight: 900, fontSize: 15, padding: "6px 18px", borderRadius: 8, letterSpacing: 1 }}>
+                    {uploadingResi ? "Uploading..." : "▼ FOTO SCAN DI SINI ▼"}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#aaa" }}>Tap untuk buka kamera / galeri</div>
                 </button>
               )}
             </div>
