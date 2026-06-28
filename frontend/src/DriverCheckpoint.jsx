@@ -871,7 +871,7 @@ export default function DriverCheckpoint() {
               <input
                 key={slot}
                 ref={(el) => fileRefs.current[`init-${slot}`] = el}
-                type="file" accept="image/*" capture="environment"
+                type="file" accept="image/*"
                 onChange={(e) => uploadInitial(slot, e.target.files?.[0])}
                 style={{ display: "none" }}
               />
@@ -969,7 +969,7 @@ export default function DriverCheckpoint() {
               ref={(el) => fileRefs.current["album"] = el}
               type="file"
               accept={albumStage === "dokumen" ? "image/*,application/pdf" : "image/*"}
-              capture={albumStage !== "dokumen" ? "environment" : undefined}
+              capture={undefined}
               onChange={(e) => uploadAlbum(e.target.files?.[0])}
               style={{ display: "none" }}
             />
@@ -1058,7 +1058,6 @@ export default function DriverCheckpoint() {
             ref={(el) => fileRefs.current["daily"] = el}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => uploadDaily(e.target.files?.[0])}
             style={{ display: "none" }}
           />
@@ -1301,7 +1300,6 @@ export default function DriverCheckpoint() {
                       ref={(el) => fileRefs.current["bastk"] = el}
                       type="file"
                       accept="image/*,application/pdf"
-                      capture="environment"
                       onChange={(e) => uploadBastk(e.target.files?.[0])}
                       style={{ display: "none" }}
                     />
@@ -1329,7 +1327,6 @@ export default function DriverCheckpoint() {
                 ref={(el) => fileRefs.current["resi"] = el}
                 type="file"
                 accept="image/*,application/pdf"
-                capture="environment"
                 onChange={(e) => uploadResi(e.target.files?.[0])}
                 style={{ display: "none" }}
               />
