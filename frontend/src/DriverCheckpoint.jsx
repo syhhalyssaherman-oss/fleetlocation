@@ -45,6 +45,69 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+/* Scan dokumen premium: enhance kontras + tajamkan teks biar terbaca jelas */
+function scanEnhance(file) {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+      img.onload = () => {
+        try {
+          const maxW = 2048;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement("canvas");
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(objUrl);
+
+          // Get pixel data
+          const imageData = ctx.getImageData(0, 0, w, h);
+          const d = imageData.data;
+
+          // Auto-level: find min/max brightness
+          let minL = 255, maxL = 0;
+          for (let i = 0; i < d.length; i += 4) {
+            const lum = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+            if (lum < minL) minL = lum;
+            if (lum > maxL) maxL = lum;
+          }
+          const range = maxL - minL || 1;
+
+          // Enhance: stretch contrast + boost clarity
+          for (let i = 0; i < d.length; i += 4) {
+            // Auto-level each channel
+            d[i]   = Math.min(255, Math.max(0, ((d[i]   - minL) / range) * 255));
+            d[i+1] = Math.min(255, Math.max(0, ((d[i+1] - minL) / range) * 255));
+            d[i+2] = Math.min(255, Math.max(0, ((d[i+2] - minL) / range) * 255));
+
+            // Contrast boost (S-curve)
+            for (let c = 0; c < 3; c++) {
+              let v = d[i+c] / 255;
+              v = v < 0.5 ? 2*v*v : 1 - Math.pow(-2*v+2,2)/2; // ease
+              // Extra punch: stretch toward white/black
+              v = Math.pow(v, 0.85);
+              d[i+c] = Math.min(255, Math.max(0, Math.round(v * 255)));
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+
+          canvas.toBlob(
+            (blob) => resolve(blob
+              ? new File([blob], (file.name||"scan").replace(/\.\w+$/,"") + "_scan.jpg", { type: "image/jpeg" })
+              : file),
+            "image/jpeg", 0.92
+          );
+        } catch { URL.revokeObjectURL(objUrl); resolve(file); }
+      };
+      img.src = objUrl;
+    } catch { resolve(file); }
+  });
+}
+
 /* "Cap" foto: bakar lokasi + waktu ke dalam gambar (mirip GPS Map Camera).
    `lines` ditulis di bar bawah. Gagal apa pun → kembalikan file asli. */
 function stampPhoto(file, lines) {
@@ -410,9 +473,11 @@ export default function DriverCheckpoint() {
     if (!file) return;
     if (file.size > 15 * 1024 * 1024) { showToast("File terlalu besar (max 15MB)", "err"); return; }
     setUploadingBastk(true);
+    showToast("Memproses scan dokumen...");
     try {
+      const enhanced = file.type.startsWith("image/") ? await scanEnhance(file) : file;
       const fd = new FormData();
-      fd.append("foto", file);
+      fd.append("foto", enhanced);
       const prevComplete = !!(trip?.handover?.bastk && trip?.handover?.resi);
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/handover-bastk`, fd);
       setTrip(r.data);
@@ -430,9 +495,11 @@ export default function DriverCheckpoint() {
   const uploadResi = async (file) => {
     if (!file) return;
     setUploadingResi(true);
+    showToast("Memproses scan dokumen...");
     try {
+      const enhanced = file.type.startsWith("image/") ? await scanEnhance(file) : file;
       const fd = new FormData();
-      fd.append("foto", file);
+      fd.append("foto", enhanced);
       const prevComplete = !!(trip?.handover?.bastk && trip?.handover?.resi);
       const r = await axios.post(`${API}/trips/${trip.trip_id}/photos/handover-resi`, fd);
       setTrip(r.data);
@@ -1300,6 +1367,7 @@ export default function DriverCheckpoint() {
                       ref={(el) => fileRefs.current["bastk"] = el}
                       type="file"
                       accept="image/*,application/pdf"
+                      capture="environment"
                       onChange={(e) => uploadBastk(e.target.files?.[0])}
                       style={{ display: "none" }}
                     />
@@ -1327,6 +1395,7 @@ export default function DriverCheckpoint() {
                 ref={(el) => fileRefs.current["resi"] = el}
                 type="file"
                 accept="image/*,application/pdf"
+                capture="environment"
                 onChange={(e) => uploadResi(e.target.files?.[0])}
                 style={{ display: "none" }}
               />
